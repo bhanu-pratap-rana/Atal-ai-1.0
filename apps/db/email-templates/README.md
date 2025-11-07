@@ -6,7 +6,8 @@ Professional SMTP email templates for Supabase authentication flows.
 
 | Template | File | Purpose | Expiry |
 |----------|------|---------|--------|
-| **Confirm Sign Up** | `confirm-signup.html` | Email verification after user registration | 24 hours |
+| **Confirm Sign Up** | `confirm-signup.html` | Email verification link after registration | 24 hours |
+| **OTP Verification** | `otp-verification.html` | 6-digit verification code (OTP) | 10 minutes |
 | **Invite User** | `invite-user.html` | Invitation to join the platform | 7 days |
 | **Magic Link** | `magic-link.html` | Passwordless login link | 1 hour |
 | **Change Email** | `change-email.html` | Confirm new email address | 24 hours |
@@ -76,6 +77,37 @@ For each template type, follow these steps:
 2. Replace the default HTML with content from `confirm-signup.html`
 3. **Subject Line:** `Welcome to ATAL AI - Confirm Your Email`
 4. Click **Save**
+
+#### **OTP Verification** (Custom Template)
+This template is for sending 6-digit verification codes. To use it:
+
+1. **In your application code**, when sending OTP emails:
+```typescript
+import { supabase } from '@/lib/supabaseClient'
+
+// Generate 6-digit code
+const otpCode = Math.floor(100000 + Math.random() * 900000).toString()
+
+// Send email using your SMTP provider or Supabase Edge Function
+await sendEmail({
+  to: userEmail,
+  subject: 'Your ATAL AI Verification Code',
+  html: otpTemplate.replace('{{ .Token }}', otpCode)
+})
+```
+
+2. **Alternative: Use Supabase's built-in OTP**
+```typescript
+// Supabase handles OTP generation and email sending
+await supabase.auth.signInWithOtp({
+  email: 'user@example.com',
+  options: {
+    emailRedirectTo: 'https://your-app.com/verify'
+  }
+})
+```
+
+**Note:** Supabase's default OTP template can be customized in **Authentication** → **Email Templates** → **Email OTP** section.
 
 #### **Invite User**
 1. Click on **Invite user** tab

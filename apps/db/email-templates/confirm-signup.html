@@ -31,27 +31,25 @@
                                 Thank you for signing up! We're excited to have you join our vibrant digital empowerment community powered by AI.
                             </p>
 
-                            <p style="color: #4b5563; font-size: 17px; line-height: 1.7; margin: 0 0 35px 0;">
-                                Please confirm your email address by clicking the colorful button below:
+                            <p style="color: #4b5563; font-size: 17px; line-height: 1.7; margin: 0 0 30px 0; text-align: center;">
+                                Use this verification code to confirm your email:
                             </p>
 
-                            <!-- Button with Orange Gradient -->
+                            <!-- Token Code Display -->
                             <table width="100%" cellpadding="0" cellspacing="0">
                                 <tr>
-                                    <td align="center" style="padding: 0 0 35px 0;">
-                                        <a href="{{ .ConfirmationURL }}" style="display: inline-block; background: linear-gradient(135deg, #ff8c42 0%, #ffa500 50%, #ffd700 100%); color: #ffffff; text-decoration: none; padding: 18px 50px; border-radius: 50px; font-size: 18px; font-weight: bold; box-shadow: 0 6px 20px rgba(255, 140, 66, 0.4);">
-                                            ✨ Confirm Email Address
-                                        </a>
+                                    <td align="center" style="padding: 0 0 30px 0;">
+                                        <div style="background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border: 3px solid #fb923c; border-radius: 16px; padding: 30px; display: inline-block; box-shadow: 0 4px 12px rgba(251, 146, 60, 0.2);">
+                                            <p style="margin: 0; font-size: 48px; font-weight: bold; letter-spacing: 8px; color: #ea580c; font-family: 'Courier New', monospace; text-align: center;">
+                                                {{ .Token }}
+                                            </p>
+                                        </div>
                                     </td>
                                 </tr>
                             </table>
 
-                            <p style="color: #6b7280; font-size: 15px; line-height: 1.6; margin: 0 0 20px 0; text-align: center;">
-                                Or copy and paste this link into your browser:
-                            </p>
-
-                            <p style="background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border: 2px solid #fed7aa; padding: 15px; border-radius: 8px; word-break: break-all; font-size: 14px; color: #ea580c; margin: 0 0 35px 0; font-family: monospace;">
-                                {{ .ConfirmationURL }}
+                            <p style="color: #4b5563; font-size: 16px; line-height: 1.7; margin: 0 0 30px 0; text-align: center;">
+                                Simply copy and paste this code where prompted, or click if it's clickable.
                             </p>
 
                             <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-left: 5px solid #fbbf24; padding: 20px; border-radius: 8px; margin: 0 0 20px 0;">
@@ -62,7 +60,7 @@
                             </div>
 
                             <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin: 0; text-align: center;">
-                                This link will expire in 24 hours. If you didn't create an account with ATAL AI, you can safely ignore this email.
+                                This code expires in <strong>24 hours</strong>. If you didn't create an account, please ignore this email.
                             </p>
                         </td>
                     </tr>

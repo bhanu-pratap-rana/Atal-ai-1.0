@@ -4,26 +4,30 @@ Professional SMTP email templates for Supabase authentication flows.
 
 ## 📧 Available Templates
 
+**All templates now use `{{ .Token }}` for beautiful code display!**
+
 | Template | File | Purpose | Expiry |
 |----------|------|---------|--------|
-| **Confirm Sign Up** | `confirm-signup.html` | Email verification link after registration | 24 hours |
+| **Confirm Sign Up** | `confirm-signup.html` | Email verification code after registration | 24 hours |
 | **OTP Verification** | `otp-verification.html` | 6-digit verification code (OTP) | 10 minutes |
-| **Invite User** | `invite-user.html` | Invitation to join the platform | 7 days |
-| **Magic Link** | `magic-link.html` | Passwordless login link | 1 hour |
-| **Change Email** | `change-email.html` | Confirm new email address | 24 hours |
-| **Reset Password** | `reset-password.html` | Password reset request | 1 hour |
-| **Reauthentication** | `reauthentication.html` | Identity verification for sensitive actions | 15 minutes |
+| **Invite User** | `invite-user.html` | Invitation code to join the platform | 7 days |
+| **Magic Link** | `magic-link.html` | Passwordless login code | 1 hour |
+| **Change Email** | `change-email.html` | Code to confirm new email address | 24 hours |
+| **Reset Password** | `reset-password.html` | Password reset code | 1 hour |
+| **Reauthentication** | `reauthentication.html` | Identity verification code | 15 minutes |
 
 ## 🎨 Design Features
 
-All templates include:
-- ✅ Professional gradient header with ATAL AI branding
-- ✅ Responsive design (mobile & desktop)
-- ✅ Clear call-to-action buttons
-- ✅ Security notices and warnings
-- ✅ Fallback URL for manual copying
-- ✅ Consistent color scheme (`#1d4ed8` primary blue)
-- ✅ Footer with copyright information
+All templates now feature **Token-based authentication** with:
+- 🌈 Rainbow gradient header (Pink → Orange → Yellow → Green)
+- 🤖 Friendly robot emoji logo
+- 🎯 **Large, prominent token/code display** (48px monospace font)
+- 📦 Beautiful orange gradient code box with shadows
+- ✅ Mobile & desktop responsive design
+- 🔐 Security notices and warnings
+- ⏱️ Clear expiry time indicators
+- 🎨 Vibrant orange/yellow color scheme matching ATAL AI brand
+- 📄 Professional footer with copyright
 
 ## 🖼️ Logo Setup (Important!)
 

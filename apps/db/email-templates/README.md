@@ -24,6 +24,41 @@ All templates include:
 - ✅ Consistent color scheme (`#1d4ed8` primary blue)
 - ✅ Footer with copyright information
 
+## 🖼️ Logo Setup (Important!)
+
+The email templates currently use a robot emoji (🤖) as a placeholder. To use your actual ATAL AI logo:
+
+### **Option 1: Use Supabase Storage (Recommended)**
+
+1. Upload your logo to Supabase Storage:
+   - Go to **Storage** in Supabase Dashboard
+   - Create a public bucket called `assets`
+   - Upload `logo.png` (from `/public/assets/logo.png`)
+   - Make the file public
+   - Copy the public URL
+
+2. Replace the logo div in ALL templates:
+```html
+<!-- Current emoji placeholder -->
+<div style="width: 120px; height: 120px; margin: 0 auto 20px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+    <span style="font-size: 60px; line-height: 1;">🤖</span>
+</div>
+
+<!-- Replace with actual image -->
+<img src="YOUR_SUPABASE_STORAGE_URL/logo.png" alt="ATAL AI" style="height: 120px; width: auto; margin: 0 auto 20px; display: block; border-radius: 50%; background: white; padding: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+```
+
+### **Option 2: Use CDN / External Hosting**
+
+Upload your logo to:
+- **Cloudinary**: Free tier available
+- **Imgur**: Simple image hosting
+- **Your own server**: Use HTTPS
+
+### **Option 3: Keep Emoji (Quick Start)**
+
+The robot emoji (🤖) works in all email clients and maintains the colorful, friendly brand aesthetic while you set up proper image hosting.
+
 ## 🔧 Setup Instructions
 
 ### 1. Access Supabase Dashboard

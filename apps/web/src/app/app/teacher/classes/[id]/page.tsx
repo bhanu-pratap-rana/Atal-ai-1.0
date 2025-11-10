@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { InviteStudentDialog } from '@/components/teacher/InviteStudentDialog'
 import { RosterTable } from '@/components/teacher/RosterTable'
+import { InvitePanel } from '@/components/teacher/InvitePanel'
 
 async function getClassWithRoster(classId: string, userId: string) {
   const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -102,6 +103,15 @@ export default async function ClassDetailPage({
               </div>
             </CardHeader>
           </Card>
+        </div>
+
+        {/* Invite Panel with QR Code */}
+        <div className="mb-8">
+          <InvitePanel
+            classCode={classData.class_code}
+            joinPin={classData.join_pin}
+            className={classData.name}
+          />
         </div>
 
         {/* Roster */}

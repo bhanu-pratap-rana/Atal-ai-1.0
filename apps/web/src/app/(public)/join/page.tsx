@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { AuthCard } from '@/components/auth/AuthCard'
 import { Button } from '@/components/ui/button'
@@ -9,12 +9,22 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { joinClass } from '@/app/actions/student'
 
-export default function JoinClassPage() {
+function JoinClassForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [classCode, setClassCode] = useState('')
   const [rollNumber, setRollNumber] = useState('')
   const [pin, setPin] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // Auto-fill class code from QR code scan
+  useEffect(() => {
+    const codeFromUrl = searchParams.get('code')
+    if (codeFromUrl) {
+      setClassCode(codeFromUrl.toUpperCase())
+      toast.success('Class code loaded from QR code!')
+    }
+  }, [searchParams])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -124,5 +134,19 @@ export default function JoinClassPage() {
         </div>
       </form>
     </AuthCard>
+  )
+}
+
+export default function JoinClassPage() {
+  return (
+    <Suspense fallback={
+      <AuthCard title="Join Class" description="Loading...">
+        <div className="flex justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+        </div>
+      </AuthCard>
+    }>
+      <JoinClassForm />
+    </Suspense>
   )
 }

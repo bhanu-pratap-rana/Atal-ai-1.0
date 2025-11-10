@@ -10,6 +10,17 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-devanagari: var(--font-devanagari);
+  --font-bengali: var(--font-bengali);
+}
+
+/* Indic script font utilities */
+.font-devanagari {
+  font-family: var(--font-devanagari), system-ui, -apple-system, sans-serif;
+}
+
+.font-bengali {
+  font-family: var(--font-bengali), system-ui, -apple-system, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {

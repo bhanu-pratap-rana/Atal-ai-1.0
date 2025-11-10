@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -32,6 +32,11 @@ interface ResponseData {
   chosenOption: string
 }
 
+interface EnhancedResponseData extends ResponseData {
+  hesitationCount: number
+  firstTimeToSelect: number
+}
+
 export function AssessmentRunner({
   sessionId,
   questions,
@@ -47,24 +52,45 @@ export function AssessmentRunner({
   const [focusBlurCount, setFocusBlurCount] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showRapidWarning, setShowRapidWarning] = useState(false)
+  const [selectionHistory, setSelectionHistory] = useState<number[]>([])
+  const [firstSelectionTime, setFirstSelectionTime] = useState<number | null>(null)
+
+  // Refs for accessibility
+  const questionRef = useRef<HTMLHeadingElement>(null)
+  const optionsContainerRef = useRef<HTMLDivElement>(null)
 
   const currentQuestion = questions[currentIndex]
   const progress = ((currentIndex + 1) / questions.length) * 100
 
-  // Shuffle options when question changes
-  useEffect(() => {
-    if (currentQuestion) {
-      const indices = currentQuestion.options.map((_, i) => i)
-      const shuffledIndices = shuffleArray([...indices])
-      const shuffled = shuffledIndices.map((i) => currentQuestion.options[i])
+  // Language-specific font classes
+  const fontClass = language === 'hi' ? 'font-devanagari' : language === 'as' ? 'font-bengali' : ''
 
-      setShuffledOptions(shuffled)
-      setShuffleMap(shuffledIndices)
-      setSelectedOption(null)
-      setStartTime(Date.now())
-      setShowRapidWarning(false)
+  // Memoized shuffle to prevent unnecessary recalculations
+  const { shuffled, shuffleMapping } = useMemo(() => {
+    if (!currentQuestion) return { shuffled: [], shuffleMapping: [] }
+
+    const indices = currentQuestion.options.map((_, i) => i)
+    const shuffledIndices = shuffleArray([...indices])
+    const shuffled = shuffledIndices.map((i) => currentQuestion.options[i])
+
+    return { shuffled, shuffleMapping: shuffledIndices }
+  }, [currentQuestion])
+
+  // Update shuffled options when question changes
+  useEffect(() => {
+    setShuffledOptions(shuffled)
+    setShuffleMap(shuffleMapping)
+    setSelectedOption(null)
+    setStartTime(Date.now())
+    setShowRapidWarning(false)
+    setSelectionHistory([])
+    setFirstSelectionTime(null)
+
+    // Focus on question for screen readers
+    if (questionRef.current) {
+      questionRef.current.focus()
     }
-  }, [currentIndex, currentQuestion])
+  }, [currentIndex, shuffled, shuffleMapping])
 
   // Track focus/blur events
   useEffect(() => {
@@ -76,9 +102,49 @@ export function AssessmentRunner({
     return () => window.removeEventListener('blur', handleBlur)
   }, [])
 
-  const handleOptionSelect = (optionIndex: number) => {
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isSubmitting) return
+
+      // Arrow key navigation
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault()
+        const direction = e.key === 'ArrowDown' ? 1 : -1
+        const newIndex = selectedOption === null
+          ? 0
+          : (selectedOption + direction + shuffledOptions.length) % shuffledOptions.length
+        handleOptionSelect(newIndex)
+      }
+
+      // Enter or Space to confirm
+      if ((e.key === 'Enter' || e.key === ' ') && selectedOption !== null) {
+        e.preventDefault()
+        handleNext()
+      }
+
+      // Number keys 1-4 for quick selection
+      const num = parseInt(e.key)
+      if (num >= 1 && num <= shuffledOptions.length) {
+        e.preventDefault()
+        handleOptionSelect(num - 1)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedOption, shuffledOptions.length, isSubmitting])
+
+  const handleOptionSelect = useCallback((optionIndex: number) => {
+    // Track first selection time
+    if (firstSelectionTime === null) {
+      setFirstSelectionTime(Date.now() - startTime)
+    }
+
+    // Track selection history for hesitation analysis
+    setSelectionHistory((prev) => [...prev, optionIndex])
     setSelectedOption(optionIndex)
-  }
+  }, [firstSelectionTime, startTime])
 
   const handleNext = () => {
     if (selectedOption === null) {
@@ -147,21 +213,33 @@ export function AssessmentRunner({
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 p-4 md:p-8">
       <div className="max-w-3xl mx-auto">
         {/* Progress Bar */}
-        <div className="mb-6">
+        <div className="mb-6" role="status" aria-live="polite">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-sm font-medium text-gray-700" id="progress-text">
               Question {currentIndex + 1} of {questions.length}
             </span>
             <span className="text-sm font-medium text-gray-700">
               {Math.round(progress)}%
             </span>
           </div>
-          <Progress value={progress} className="h-2" />
+          <Progress
+            value={progress}
+            className="h-2"
+            aria-labelledby="progress-text"
+            role="progressbar"
+            aria-valuenow={Math.round(progress)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          />
         </div>
 
         {/* Rapid Tap Warning */}
         {showRapidWarning && (
-          <div className="mb-4 bg-amber-100 border-l-4 border-amber-500 p-4 rounded">
+          <div
+            className="mb-4 bg-amber-100 border-l-4 border-amber-500 p-4 rounded"
+            role="alert"
+            aria-live="polite"
+          >
             <p className="text-sm text-amber-800">
               ⏱️ Take your time! Reading the question carefully helps you learn better.
             </p>
@@ -171,29 +249,47 @@ export function AssessmentRunner({
         {/* Question Card */}
         <Card className="p-6 md:p-8 shadow-lg">
           <div className="mb-6">
-            <span className="inline-block px-3 py-1 text-xs font-semibold text-orange-600 bg-orange-100 rounded-full mb-4">
+            <span
+              className="inline-block px-3 py-1 text-xs font-semibold text-orange-600 bg-orange-100 rounded-full mb-4"
+              aria-label={`Module: ${currentQuestion.module.replace(/-/g, ' ')}`}
+            >
               {currentQuestion.module.replace(/-/g, ' ').toUpperCase()}
             </span>
-            <h2 className="text-xl md:text-2xl font-bold text-gray-900">
+            <h2
+              ref={questionRef}
+              id="question-text"
+              className={`text-xl md:text-2xl font-bold text-gray-900 ${fontClass}`}
+              tabIndex={-1}
+            >
               {currentQuestion.question}
             </h2>
           </div>
 
           {/* Options */}
-          <div className="space-y-3">
+          <div
+            ref={optionsContainerRef}
+            role="radiogroup"
+            aria-labelledby="question-text"
+            className="space-y-3"
+          >
             {shuffledOptions.map((option, index) => (
               <button
                 key={index}
+                role="radio"
+                aria-checked={selectedOption === index}
+                aria-label={`Option ${index + 1}: ${option}`}
                 onClick={() => handleOptionSelect(index)}
-                className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                className={`w-full text-left p-4 rounded-lg border-2 transition-all focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 ${
                   selectedOption === index
                     ? 'border-orange-500 bg-orange-50 shadow-md'
                     : 'border-gray-200 bg-white hover:border-orange-200 hover:bg-orange-50/50'
                 }`}
                 disabled={isSubmitting}
+                tabIndex={0}
               >
                 <div className="flex items-start gap-3">
                   <div
+                    aria-hidden="true"
                     className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center ${
                       selectedOption === index
                         ? 'border-orange-500 bg-orange-500'
@@ -204,7 +300,9 @@ export function AssessmentRunner({
                       <div className="w-3 h-3 bg-white rounded-full" />
                     )}
                   </div>
-                  <span className="text-base text-gray-700">{option}</span>
+                  <span className={`text-base text-gray-700 ${fontClass}`} id={`option-${index}`}>
+                    {option}
+                  </span>
                 </div>
               </button>
             ))}
@@ -228,9 +326,12 @@ export function AssessmentRunner({
         </Card>
 
         {/* Helper Text */}
-        <div className="mt-4 text-center">
-          <p className="text-sm text-gray-600">
+        <div className="mt-4 space-y-2">
+          <p className="text-sm text-gray-600 text-center">
             💡 Tip: Take your time to read each question carefully
+          </p>
+          <p className="text-xs text-gray-500 text-center">
+            ⌨️ Use arrow keys to navigate, Enter/Space to submit, or 1-4 for quick selection
           </p>
         </div>
       </div>

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { AssessmentRunner } from '@/components/assessment/AssessmentRunner'
+import { AssessmentSkeleton } from '@/components/assessment/AssessmentSkeleton'
 import { startAssessment } from '@/app/actions/assessment'
 import { getQuestionsByLanguage } from '@/data/assessment-questions'
 
@@ -159,14 +160,7 @@ function AssessmentStartContent() {
 
 export default function AssessmentStartPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mb-4"></div>
-          <p className="text-gray-600">Loading assessment...</p>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<AssessmentSkeleton />}>
       <AssessmentStartContent />
     </Suspense>
   )

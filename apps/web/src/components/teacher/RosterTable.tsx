@@ -4,6 +4,14 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { removeStudent } from '@/app/actions/teacher'
 
 interface Enrollment {
@@ -49,25 +57,17 @@ export function RosterTable({ enrollments, classId }: RosterTableProps) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b border-gray-200">
-            <th className="text-left py-3 px-4 font-semibold text-gray-700">
-              Student
-            </th>
-            <th className="text-left py-3 px-4 font-semibold text-gray-700">
-              Email
-            </th>
-            <th className="text-left py-3 px-4 font-semibold text-gray-700">
-              Enrolled
-            </th>
-            <th className="text-right py-3 px-4 font-semibold text-gray-700">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody>
+    <div className="overflow-hidden rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Student</TableHead>
+            <TableHead className="hidden md:table-cell">Email</TableHead>
+            <TableHead className="hidden lg:table-cell">Enrolled</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {enrollments.map((enrollment) => {
             const enrolledDate = new Date(enrollment.created_at).toLocaleDateString('en-US', {
               month: 'short',
@@ -76,41 +76,49 @@ export function RosterTable({ enrollments, classId }: RosterTableProps) {
             })
 
             return (
-              <tr
-                key={enrollment.id}
-                className="border-b border-gray-100 hover:bg-orange-50/50 transition-colors"
-              >
-                <td className="py-3 px-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-yellow-400 rounded-full flex items-center justify-center text-white font-semibold">
-                      {enrollment.student.email[0].toUpperCase()}
+              <TableRow key={enrollment.id}>
+                <TableCell>
+                  <div className="flex flex-col gap-1 md:flex-row md:items-center md:gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="size-8 shrink-0 bg-gradient-to-br from-orange-400 to-yellow-400 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                        {enrollment.student.email[0].toUpperCase()}
+                      </div>
+                      <div className="flex flex-col md:flex-row md:items-center md:gap-2">
+                        <span className="font-medium text-sm md:text-base">
+                          {enrollment.student.email.split('@')[0]}
+                        </span>
+                        <span className="text-xs text-muted-foreground md:hidden">
+                          {enrollment.student.email}
+                        </span>
+                      </div>
                     </div>
-                    <span className="font-medium">
-                      {enrollment.student.email.split('@')[0]}
+                    <span className="text-xs text-muted-foreground lg:hidden ml-10 md:ml-0">
+                      {enrolledDate}
                     </span>
                   </div>
-                </td>
-                <td className="py-3 px-4 text-gray-600">
+                </TableCell>
+                <TableCell className="hidden md:table-cell text-muted-foreground">
                   {enrollment.student.email}
-                </td>
-                <td className="py-3 px-4 text-gray-600">
+                </TableCell>
+                <TableCell className="hidden lg:table-cell text-muted-foreground">
                   {enrolledDate}
-                </td>
-                <td className="py-3 px-4 text-right">
+                </TableCell>
+                <TableCell className="text-right">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => handleRemove(enrollment.student.id, enrollment.student.email)}
                     disabled={removingId === enrollment.student.id}
+                    className="h-9 px-3" // Touch-friendly size
                   >
                     {removingId === enrollment.student.id ? 'Removing...' : 'Remove'}
                   </Button>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             )
           })}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   )
 }

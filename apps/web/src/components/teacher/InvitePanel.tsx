@@ -74,15 +74,15 @@ export function InvitePanel({ classCode, joinPin, className }: InvitePanelProps)
         </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* QR Code Section */}
-        <div className="space-y-4">
+        <div className="space-y-4 order-2 md:order-1">
           <div className="flex flex-col items-center">
-            <Label className="mb-2">QR Code</Label>
-            <div className="bg-white p-4 rounded-lg border-2 border-orange-200 shadow-sm">
+            <Label className="mb-2 text-sm font-medium">QR Code</Label>
+            <div className="bg-white p-3 md:p-4 rounded-lg border-2 border-orange-200 shadow-sm">
               <canvas ref={canvasRef} className="max-w-full h-auto" />
             </div>
-            <p className="text-xs text-gray-500 mt-2 text-center">
+            <p className="text-xs text-muted-foreground mt-2 text-center max-w-[256px]">
               Students can scan this to auto-fill the class code
             </p>
           </div>
@@ -91,7 +91,7 @@ export function InvitePanel({ classCode, joinPin, className }: InvitePanelProps)
             <Button
               onClick={downloadQRCode}
               variant="outline"
-              className="w-full"
+              className="w-full h-10" // Touch-friendly size
             >
               Download QR Code
             </Button>
@@ -99,12 +99,12 @@ export function InvitePanel({ classCode, joinPin, className }: InvitePanelProps)
         </div>
 
         {/* Codes Section */}
-        <div className="space-y-6">
+        <div className="space-y-4 md:space-y-6 order-1 md:order-2">
           {/* Class Code */}
           <div className="space-y-2">
-            <Label>Class Code</Label>
-            <div className="bg-gradient-to-br from-orange-50 to-yellow-50 border-2 border-orange-300 rounded-lg p-4">
-              <p className="text-3xl font-mono font-bold text-center text-orange-600 tracking-widest">
+            <Label className="text-sm font-medium">Class Code</Label>
+            <div className="bg-gradient-to-br from-orange-50 to-yellow-50 border-2 border-orange-300 rounded-lg p-3 md:p-4">
+              <p className="text-2xl md:text-3xl font-mono font-bold text-center text-orange-600 tracking-widest break-all">
                 {classCode}
               </p>
             </div>
@@ -112,20 +112,20 @@ export function InvitePanel({ classCode, joinPin, className }: InvitePanelProps)
               onClick={() => copyToClipboard(classCode, 'Class code')}
               variant="outline"
               size="sm"
-              className="w-full"
+              className="w-full h-10" // Touch-friendly size
             >
               📋 Copy Class Code
             </Button>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               Students will enter this 6-character code
             </p>
           </div>
 
           {/* Join PIN */}
           <div className="space-y-2">
-            <Label>Join PIN</Label>
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-4">
-              <p className="text-3xl font-mono font-bold text-center text-blue-600 tracking-widest">
+            <Label className="text-sm font-medium">Join PIN</Label>
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-3 md:p-4">
+              <p className="text-2xl md:text-3xl font-mono font-bold text-center text-blue-600 tracking-widest">
                 {joinPin}
               </p>
             </div>
@@ -133,11 +133,11 @@ export function InvitePanel({ classCode, joinPin, className }: InvitePanelProps)
               onClick={() => copyToClipboard(joinPin, 'PIN')}
               variant="outline"
               size="sm"
-              className="w-full"
+              className="w-full h-10" // Touch-friendly size
             >
               📋 Copy PIN
             </Button>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               4-digit PIN for class security
             </p>
           </div>

@@ -113,29 +113,29 @@ export function CreateClassDialog() {
               </DialogDescription>
             </DialogHeader>
 
-            <div className="py-6 space-y-6">
+            <div className="py-4 md:py-6 space-y-4 md:space-y-6">
               {/* Class Code */}
               <div className="space-y-2">
-                <Label>Class Code</Label>
-                <div className="bg-gradient-to-br from-orange-50 to-yellow-50 border-2 border-orange-300 rounded-lg p-4">
-                  <p className="text-3xl font-mono font-bold text-center text-orange-600 tracking-widest">
+                <Label className="text-sm font-medium">Class Code</Label>
+                <div className="bg-gradient-to-br from-orange-50 to-yellow-50 border-2 border-orange-300 rounded-lg p-3 md:p-4">
+                  <p className="text-2xl md:text-3xl font-mono font-bold text-center text-orange-600 tracking-widest break-all">
                     {createdClass.classCode}
                   </p>
                 </div>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   Students will enter this 6-character code
                 </p>
               </div>
 
               {/* Join PIN */}
               <div className="space-y-2">
-                <Label>Join PIN</Label>
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-4">
-                  <p className="text-3xl font-mono font-bold text-center text-blue-600 tracking-widest">
+                <Label className="text-sm font-medium">Join PIN</Label>
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-3 md:p-4">
+                  <p className="text-2xl md:text-3xl font-mono font-bold text-center text-blue-600 tracking-widest">
                     {createdClass.joinPin}
                   </p>
                 </div>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   4-digit PIN for class security
                 </p>
               </div>

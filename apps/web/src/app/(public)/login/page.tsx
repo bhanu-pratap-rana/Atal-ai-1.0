@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { AuthCard } from '@/components/auth/AuthCard'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,11 +13,9 @@ export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setError('')
     setLoading(true)
 
     try {
@@ -25,12 +24,13 @@ export default function LoginPage() {
       if (result.success) {
         // Store email in sessionStorage for verify page
         sessionStorage.setItem('otp_email', email)
+        toast.success('Verification code sent! Check your email.')
         router.push('/verify')
       } else {
-        setError(result.error || 'Failed to send OTP')
+        toast.error(result.error || 'Failed to send OTP')
       }
     } catch (err) {
-      setError('An unexpected error occurred')
+      toast.error('An unexpected error occurred')
     } finally {
       setLoading(false)
     }
@@ -54,12 +54,6 @@ export default function LoginPage() {
             disabled={loading}
           />
         </div>
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md text-sm">
-            {error}
-          </div>
-        )}
 
         <Button
           type="submit"

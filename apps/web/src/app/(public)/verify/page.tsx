@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { AuthCard } from '@/components/auth/AuthCard'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,7 +14,6 @@ export default function VerifyPage() {
   const [email, setEmail] = useState('')
   const [token, setToken] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
   const [resending, setResending] = useState(false)
 
   useEffect(() => {
@@ -26,7 +26,6 @@ export default function VerifyPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setError('')
     setLoading(true)
 
     try {
@@ -35,13 +34,14 @@ export default function VerifyPage() {
       if (result.success) {
         // Clear stored email
         sessionStorage.removeItem('otp_email')
+        toast.success('Email verified successfully!')
         // Redirect to dashboard
         router.push('/app/dashboard')
       } else {
-        setError(result.error || 'Invalid verification code')
+        toast.error(result.error || 'Invalid verification code')
       }
     } catch (err) {
-      setError('An unexpected error occurred')
+      toast.error('An unexpected error occurred')
     } finally {
       setLoading(false)
     }
@@ -49,24 +49,17 @@ export default function VerifyPage() {
 
   async function handleResend() {
     setResending(true)
-    setError('')
 
     try {
       const result = await requestOtp(email)
 
       if (result.success) {
-        setError('') // Clear any previous errors
-        // Show success message briefly
-        const successMsg = document.createElement('div')
-        successMsg.className = 'bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-md text-sm'
-        successMsg.textContent = 'New code sent! Check your email.'
-        document.querySelector('form')?.prepend(successMsg)
-        setTimeout(() => successMsg.remove(), 3000)
+        toast.success('New code sent! Check your email.')
       } else {
-        setError(result.error || 'Failed to resend code')
+        toast.error(result.error || 'Failed to resend code')
       }
     } catch (err) {
-      setError('Failed to resend code')
+      toast.error('Failed to resend code')
     } finally {
       setResending(false)
     }
@@ -108,12 +101,6 @@ export default function VerifyPage() {
             Enter the 6-digit code from your email
           </p>
         </div>
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md text-sm">
-            {error}
-          </div>
-        )}
 
         <Button
           type="submit"

@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { InviteStudentDialog } from '@/components/teacher/InviteStudentDialog'
 import { RosterTable } from '@/components/teacher/RosterTable'
 import { InvitePanel } from '@/components/teacher/InvitePanel'
+import { AnalyticsTiles } from '@/components/teacher/AnalyticsTiles'
+import { getClassAnalytics } from '@/app/actions/teacher'
 
 async function getClassWithRoster(classId: string, userId: string) {
   const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -74,6 +76,14 @@ export default async function ClassDetailPage({
 
   const { class: classData, enrollments } = data
 
+  // Fetch analytics
+  const analyticsResult = await getClassAnalytics(id)
+  const analytics = analyticsResult.success ? analyticsResult.data : {
+    activeThisWeek: 0,
+    avgMinutesPerDay: 0,
+    atRiskCount: 0,
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-green-50 p-8">
       <div className="max-w-6xl mx-auto">
@@ -104,6 +114,17 @@ export default async function ClassDetailPage({
             </CardHeader>
           </Card>
         </div>
+
+        {/* Analytics Tiles */}
+        {enrollments.length > 0 && (
+          <div className="mb-8">
+            <AnalyticsTiles
+              activeThisWeek={analytics?.activeThisWeek || 0}
+              avgMinutesPerDay={analytics?.avgMinutesPerDay || 0}
+              atRiskCount={analytics?.atRiskCount || 0}
+            />
+          </div>
+        )}
 
         {/* Invite Panel with QR Code */}
         <div className="mb-8">

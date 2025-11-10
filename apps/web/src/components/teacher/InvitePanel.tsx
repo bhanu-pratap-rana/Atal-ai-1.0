@@ -20,10 +20,12 @@ export function InvitePanel({ classCode, joinPin, className }: InvitePanelProps)
     if (canvasRef.current && classCode) {
       const joinUrl = `${window.location.origin}/join?code=${classCode}`
 
+      // Generate QR code with high error correction for better scanning reliability
       QRCode.toCanvas(
         canvasRef.current,
         joinUrl,
         {
+          errorCorrectionLevel: 'H', // High error correction for printed/low-quality scans
           width: 256,
           margin: 2,
           color: {

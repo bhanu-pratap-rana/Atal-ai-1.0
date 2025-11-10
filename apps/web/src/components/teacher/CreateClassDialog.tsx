@@ -22,6 +22,10 @@ export function CreateClassDialog() {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
+  const [createdClass, setCreatedClass] = useState<{
+    classCode: string
+    joinPin: string
+  } | null>(null)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -30,11 +34,13 @@ export function CreateClassDialog() {
     try {
       const result = await createClass(name)
 
-      if (result.success) {
+      if (result.success && result.data) {
+        setCreatedClass({
+          classCode: result.data.class_code,
+          joinPin: result.data.join_pin,
+        })
         toast.success('Class created successfully!')
-        setName('')
-        setOpen(false)
-        router.refresh()
+        // Don't close dialog yet - show codes first
       } else {
         toast.error(result.error || 'Failed to create class')
       }
@@ -43,6 +49,13 @@ export function CreateClassDialog() {
     } finally {
       setLoading(false)
     }
+  }
+
+  function handleClose() {
+    setName('')
+    setCreatedClass(null)
+    setOpen(false)
+    router.refresh()
   }
 
   return (
@@ -54,42 +67,94 @@ export function CreateClassDialog() {
         </Button>
       </DialogTrigger>
       <DialogContent>
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>Create New Class</DialogTitle>
-            <DialogDescription>
-              Add a new class to manage students and assignments.
-            </DialogDescription>
-          </DialogHeader>
+        {!createdClass ? (
+          <form onSubmit={handleSubmit}>
+            <DialogHeader>
+              <DialogTitle>Create New Class</DialogTitle>
+              <DialogDescription>
+                Add a new class to manage students and assignments.
+              </DialogDescription>
+            </DialogHeader>
 
-          <div className="py-4">
-            <div className="space-y-2">
-              <Label htmlFor="class-name">Class Name</Label>
-              <Input
-                id="class-name"
-                placeholder="e.g., Digital Literacy 101"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                disabled={loading}
-              />
+            <div className="py-4">
+              <div className="space-y-2">
+                <Label htmlFor="class-name">Class Name</Label>
+                <Input
+                  id="class-name"
+                  placeholder="e.g., Digital Literacy 101"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
             </div>
-          </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-              disabled={loading}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={loading || !name}>
-              {loading ? 'Creating...' : 'Create Class'}
-            </Button>
-          </DialogFooter>
-        </form>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpen(false)}
+                disabled={loading}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading || !name}>
+                {loading ? 'Creating...' : 'Create Class'}
+              </Button>
+            </DialogFooter>
+          </form>
+        ) : (
+          <div>
+            <DialogHeader>
+              <DialogTitle>Class Created! 🎉</DialogTitle>
+              <DialogDescription>
+                Share these codes with your students to join the class
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="py-6 space-y-6">
+              {/* Class Code */}
+              <div className="space-y-2">
+                <Label>Class Code</Label>
+                <div className="bg-gradient-to-br from-orange-50 to-yellow-50 border-2 border-orange-300 rounded-lg p-4">
+                  <p className="text-3xl font-mono font-bold text-center text-orange-600 tracking-widest">
+                    {createdClass.classCode}
+                  </p>
+                </div>
+                <p className="text-xs text-gray-500">
+                  Students will enter this 6-character code
+                </p>
+              </div>
+
+              {/* Join PIN */}
+              <div className="space-y-2">
+                <Label>Join PIN</Label>
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-4">
+                  <p className="text-3xl font-mono font-bold text-center text-blue-600 tracking-widest">
+                    {createdClass.joinPin}
+                  </p>
+                </div>
+                <p className="text-xs text-gray-500">
+                  4-digit PIN for class security
+                </p>
+              </div>
+
+              <div className="bg-amber-50 border-l-4 border-amber-400 p-3 rounded">
+                <p className="text-sm text-amber-800">
+                  <strong>📋 Keep these codes safe!</strong> Students need both the class code and PIN to join.
+                  You can view these codes anytime in the class details.
+                </p>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button onClick={handleClose} className="w-full">
+                Done
+              </Button>
+            </DialogFooter>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   )

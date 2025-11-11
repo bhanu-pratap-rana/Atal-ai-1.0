@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabaseClient'
+import { createClient } from '@/lib/supabase-browser'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -10,6 +10,7 @@ export default function DashboardPage() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const supabase = createClient()
 
   useEffect(() => {
     async function getUser() {
@@ -21,8 +22,13 @@ export default function DashboardPage() {
   }, [])
 
   async function handleSignOut() {
-    await supabase.auth.signOut()
-    router.push('/login')
+    try {
+      await supabase.auth.signOut()
+      router.refresh()
+      router.push('/login')
+    } catch (error) {
+      console.error('Error signing out:', error)
+    }
   }
 
   if (loading) {
@@ -71,7 +77,10 @@ export default function DashboardPage() {
 
         {/* Feature Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Card>
+          <Card
+            className="cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => router.push('/app/curriculum')}
+          >
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <span>📚</span>
@@ -85,7 +94,10 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card
+            className="cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => router.push(user?.user_metadata?.role === 'teacher' ? '/app/teacher/classes' : '/app/student/classes')}
+          >
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <span>👥</span>
@@ -99,7 +111,10 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card
+            className="cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => router.push('/app/progress')}
+          >
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <span>📊</span>
@@ -113,7 +128,10 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card
+            className="cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => router.push('/app/ai-tools')}
+          >
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <span>🤖</span>
@@ -127,7 +145,10 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card
+            className="cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => router.push(user?.user_metadata?.role === 'teacher' ? '/app/teacher/assessments' : '/app/student/assessments')}
+          >
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <span>📝</span>
@@ -141,7 +162,10 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card
+            className="cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => router.push('/app/settings')}
+          >
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <span>⚙️</span>

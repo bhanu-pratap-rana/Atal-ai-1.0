@@ -161,13 +161,13 @@ export async function getClassAnalytics(classId: string) {
     // 2. Avg minutes/day: avg(sum(rt_ms)/60000 per user) last 7 days
     const { data: userSessions } = await supabase
       .from('assessment_sessions')
-      .select('user_id, started_at')
+      .select('id, user_id, started_at')
       .eq('class_id', classId)
       .gte('started_at', sevenDaysAgo.toISOString())
       .not('submitted_at', 'is', null)
 
     if (userSessions && userSessions.length > 0) {
-      const sessionIds = userSessions.map(s => s.user_id)
+      const sessionIds = userSessions.map(s => s.id)
 
       const { data: responses } = await supabase
         .from('assessment_responses')

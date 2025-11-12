@@ -1,17 +1,70 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Brand Colors - Orange-Yellow Theme */
+  --primary: #FF8C42;
+  --primary-light: #FFD166;
+
+  /* Backgrounds */
+  --background: #FFFFFF;
+  --surface: #F8F9FA;
+
+  /* Text Colors */
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --text-tertiary: #999999;
+  --text-on-primary: #FFFFFF;
+
+  /* Borders */
+  --border: #E8E8E8;
+  --border-light: #DDDDDD;
+
+  /* Shadows - Orange Tinted */
+  --shadow-sm: 0 1px 2px rgba(255, 140, 66, 0.15);
+  --shadow: 0 4px 12px rgba(255, 140, 66, 0.2);
+  --shadow-md: 0 8px 20px rgba(255, 140, 66, 0.35);
+  --shadow-lg: 0 12px 28px rgba(255, 140, 66, 0.45);
+
+  /* Gradient */
+  --gradient-primary: linear-gradient(135deg, #FF8C42 0%, #FFD166 100%);
+
+  /* Legacy support */
+  --foreground: var(--text-primary);
 }
 
 @theme inline {
+  /* Brand Colors */
+  --color-primary: var(--primary);
+  --color-primary-light: var(--primary-light);
+
+  /* Backgrounds */
   --color-background: var(--background);
+  --color-surface: var(--surface);
+
+  /* Text */
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-text-on-primary: var(--text-on-primary);
+
+  /* Borders */
+  --color-border: var(--border);
+  --color-border-light: var(--border-light);
+
+  /* Foreground (legacy) */
   --color-foreground: var(--foreground);
+
+  /* Fonts */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-devanagari: var(--font-devanagari);
   --font-bengali: var(--font-bengali);
+
+  /* Shadows */
+  --shadow-sm: var(--shadow-sm);
+  --shadow: var(--shadow);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
 }
 
 /* Indic script font utilities */
@@ -34,4 +87,92 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Gradient Utilities */
+.gradient-primary {
+  background: var(--gradient-primary);
+}
+
+.gradient-border {
+  position: relative;
+  background: var(--gradient-primary);
+  padding: 3px;
+  border-radius: 12px;
+}
+
+.gradient-border > * {
+  background: var(--background);
+  border-radius: 9px;
+}
+
+.text-gradient {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Animation Utilities */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s ease-out;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s ease-out;
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

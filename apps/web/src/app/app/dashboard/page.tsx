@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase-browser'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -45,14 +46,23 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg">
-              <span className="text-3xl">🤖</span>
+            <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary-light rounded-full flex items-center justify-center shadow-lg p-1">
+              <div className="w-full h-full bg-white rounded-full flex items-center justify-center p-2">
+                <Image
+                  src="/assets/logo.png"
+                  alt="ATAL AI Logo"
+                  width={60}
+                  height={60}
+                  className="w-full h-full object-contain"
+                  priority
+                />
+              </div>
             </div>
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-500 via-orange-500 to-yellow-500 bg-clip-text text-transparent">
+              <h1 className="text-3xl font-bold text-gradient">
                 ATAL AI
               </h1>
-              <p className="text-sm text-gray-500">Digital Empowerment Platform</p>
+              <p className="text-sm text-text-secondary">Digital Empowerment Platform</p>
             </div>
           </div>
           <Button onClick={handleSignOut} variant="outline">
@@ -61,123 +71,137 @@ export default function DashboardPage() {
         </div>
 
         {/* Welcome Card */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="text-orange-600">Welcome to ATAL AI! 🎉</CardTitle>
-            <CardDescription>
-              You're successfully logged in as {user?.email}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-600">
-              This is your dashboard. From here, you'll be able to access all the features of the ATAL AI platform.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="mb-8 p-[3px] rounded-xl bg-gradient-to-br from-primary to-primary-light shadow-md">
+          <Card className="border-0">
+            <CardHeader>
+              <CardTitle className="text-primary">Welcome to ATAL AI! 🎉</CardTitle>
+              <CardDescription>
+                You're successfully logged in as {user?.email}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-text-secondary">
+                This is your dashboard. From here, you'll be able to access all the features of the ATAL AI platform.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Feature Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Card
-            className="cursor-pointer hover:shadow-lg transition-shadow"
+          <div
+            className="p-[3px] rounded-xl bg-gradient-to-br from-primary to-primary-light shadow-md cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1"
             onClick={() => router.push('/app/curriculum')}
           >
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <span>📚</span>
-                <span>Curriculum</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600">
-                Access digital literacy curriculum and educational resources.
-              </p>
-            </CardContent>
-          </Card>
+            <Card className="border-0 h-full">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-primary">
+                  <span>📚</span>
+                  <span>Curriculum</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-text-secondary">
+                  Access digital literacy curriculum and educational resources.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
-          <Card
-            className="cursor-pointer hover:shadow-lg transition-shadow"
+          <div
+            className="p-[3px] rounded-xl bg-gradient-to-br from-primary to-primary-light shadow-md cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1"
             onClick={() => router.push(user?.user_metadata?.role === 'teacher' ? '/app/teacher/classes' : '/app/student/classes')}
           >
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <span>👥</span>
-                <span>Classes</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600">
-                Manage your classes and student enrollments.
-              </p>
-            </CardContent>
-          </Card>
+            <Card className="border-0 h-full">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-primary">
+                  <span>👥</span>
+                  <span>Classes</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-text-secondary">
+                  Manage your classes and student enrollments.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
-          <Card
-            className="cursor-pointer hover:shadow-lg transition-shadow"
+          <div
+            className="p-[3px] rounded-xl bg-gradient-to-br from-primary to-primary-light shadow-md cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1"
             onClick={() => router.push('/app/progress')}
           >
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <span>📊</span>
-                <span>Progress</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600">
-                Track student progress and performance metrics.
-              </p>
-            </CardContent>
-          </Card>
+            <Card className="border-0 h-full">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-primary">
+                  <span>📊</span>
+                  <span>Progress</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-text-secondary">
+                  Track student progress and performance metrics.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
-          <Card
-            className="cursor-pointer hover:shadow-lg transition-shadow"
+          <div
+            className="p-[3px] rounded-xl bg-gradient-to-br from-primary to-primary-light shadow-md cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1"
             onClick={() => router.push('/app/ai-tools')}
           >
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <span>🤖</span>
-                <span>AI Tools</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600">
-                Leverage AI-powered tools for personalized learning.
-              </p>
-            </CardContent>
-          </Card>
+            <Card className="border-0 h-full">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-primary">
+                  <span>🤖</span>
+                  <span>AI Tools</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-text-secondary">
+                  Leverage AI-powered tools for personalized learning.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
-          <Card
-            className="cursor-pointer hover:shadow-lg transition-shadow"
+          <div
+            className="p-[3px] rounded-xl bg-gradient-to-br from-primary to-primary-light shadow-md cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1"
             onClick={() => router.push(user?.user_metadata?.role === 'teacher' ? '/app/teacher/assessments' : '/app/student/assessments')}
           >
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <span>📝</span>
-                <span>Assessments</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600">
-                Create and manage assessments and quizzes.
-              </p>
-            </CardContent>
-          </Card>
+            <Card className="border-0 h-full">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-primary">
+                  <span>📝</span>
+                  <span>Assessments</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-text-secondary">
+                  Create and manage assessments and quizzes.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
-          <Card
-            className="cursor-pointer hover:shadow-lg transition-shadow"
+          <div
+            className="p-[3px] rounded-xl bg-gradient-to-br from-primary to-primary-light shadow-md cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1"
             onClick={() => router.push('/app/settings')}
           >
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <span>⚙️</span>
-                <span>Settings</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600">
-                Manage your account and application preferences.
-              </p>
-            </CardContent>
-          </Card>
+            <Card className="border-0 h-full">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-primary">
+                  <span>⚙️</span>
+                  <span>Settings</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-text-secondary">
+                  Manage your account and application preferences.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>

@@ -1,15 +1,53 @@
 {
-  "name": "ATAL AI",
-  "short_name": "ATAL",
+  "name": "ATAL AI - Digital Empowerment Platform",
+  "short_name": "ATAL AI",
+  "description": "Empowering education through AI & technology",
   "icons": [
     {
-      "src": "/assets/logo.png",
+      "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "start_url": "/",
   "display": "standalone",
-  "theme_color": "#1d4ed8",
-  "background_color": "#ffffff"
+  "orientation": "portrait-primary",
+  "theme_color": "#FF8C42",
+  "background_color": "#FFFFFF",
+  "categories": ["education", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Go to dashboard",
+      "url": "/app/dashboard",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Classes",
+      "short_name": "Classes",
+      "description": "View your classes",
+      "url": "/app/student/classes",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
 }

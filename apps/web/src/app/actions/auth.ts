@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { BLOCKED_EMAIL_DOMAINS, VALID_EMAIL_PROVIDERS, EMAIL_REGEX } from '@/lib/auth-constants'
 import { authLogger } from '@/lib/auth-logger'
+import { checkOtpRateLimit, checkPasswordResetRateLimit } from '@/lib/rate-limiter'
 
 // Check if email domain is valid
 function isValidEmailDomain(email: string): boolean {
@@ -108,6 +109,15 @@ export async function requestOtp(email: string) {
       return {
         success: false,
         error: 'Please enter a valid email address from a recognized email provider.'
+      }
+    }
+
+    // Check rate limit - prevent brute force attacks
+    if (!checkOtpRateLimit(trimmedEmail)) {
+      authLogger.warn('[requestOtp] Rate limit exceeded', { type: 'otp_limit' })
+      return {
+        success: false,
+        error: 'Too many OTP requests. Please wait an hour before requesting again.',
       }
     }
 
@@ -366,6 +376,15 @@ export async function sendForgotPasswordOtp(email: string) {
 
     if (!EMAIL_REGEX.test(trimmedEmail)) {
       return { success: false, error: 'Please enter a valid email address.' }
+    }
+
+    // Check rate limit - prevent password reset spam/abuse
+    if (!checkPasswordResetRateLimit(trimmedEmail)) {
+      authLogger.warn('[sendForgotPasswordOtp] Rate limit exceeded', { type: 'password_reset_limit' })
+      return {
+        success: false,
+        error: 'Too many password reset requests. Please wait an hour before requesting again.',
+      }
     }
 
     const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'

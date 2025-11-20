@@ -26,7 +26,7 @@ export default function DashboardPage() {
     try {
       await supabase.auth.signOut()
       router.refresh()
-      router.push('/login')
+      router.push('/student/start')
     } catch (error) {
       console.error('Error signing out:', error)
     }
@@ -34,38 +34,49 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-yellow-50 to-green-50">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <p className="text-gray-600">Loading...</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-green-50 p-8">
+    <div className="min-h-screen bg-white p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary-light rounded-full flex items-center justify-center shadow-lg p-1">
-              <div className="w-full h-full bg-white rounded-full flex items-center justify-center p-2">
-                <Image
-                  src="/assets/logo.png"
-                  alt="ATAL AI Logo"
-                  width={60}
-                  height={60}
-                  className="w-full h-full object-contain"
-                  priority
-                />
-              </div>
+          <div className="flex items-center gap-3 md:gap-4">
+            <div className="w-14 h-14 md:w-20 md:h-20 flex-shrink-0">
+              <Image
+                src="/assets/logo.png"
+                alt="ATAL AI Logo"
+                width={80}
+                height={80}
+                className="w-full h-full object-contain rounded-full"
+                style={{
+                  boxShadow: `
+                    0 0 0 2px white,
+                    0 0 0 4px rgba(255, 140, 66, 1),
+                    0 0 0 6px white,
+                    0 0 0 8px rgba(255, 140, 66, 0.3),
+                    0 4px 12px rgba(255, 140, 66, 0.25)
+                  `
+                }}
+                priority
+              />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gradient">
-                ATAL AI
+              <h1 className="text-2xl md:text-3xl font-bold text-[#333]">
+                ATAL AI Tutorial
               </h1>
-              <p className="text-sm text-text-secondary">Digital Empowerment Platform</p>
+              <p className="text-xs md:text-sm text-[#666]">Smart Learning Platform</p>
             </div>
           </div>
-          <Button onClick={handleSignOut} variant="outline">
+          <Button
+            onClick={handleSignOut}
+            variant="outline"
+            className="border-2 border-primary text-primary hover:bg-orange-50"
+          >
             Sign Out
           </Button>
         </div>
@@ -74,7 +85,7 @@ export default function DashboardPage() {
         <div className="mb-8 p-[3px] rounded-xl bg-gradient-to-br from-primary to-primary-light shadow-md">
           <Card className="border-0">
             <CardHeader>
-              <CardTitle className="text-primary">Welcome to ATAL AI! 🎉</CardTitle>
+              <CardTitle className="text-[#333]">Welcome to ATAL AI! 🎉</CardTitle>
               <CardDescription>
                 You're successfully logged in as {user?.email}
               </CardDescription>
@@ -95,7 +106,7 @@ export default function DashboardPage() {
           >
             <Card className="border-0 h-full">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-primary">
+                <CardTitle className="flex items-center gap-2 text-[#333]">
                   <span>📚</span>
                   <span>Curriculum</span>
                 </CardTitle>
@@ -114,7 +125,7 @@ export default function DashboardPage() {
           >
             <Card className="border-0 h-full">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-primary">
+                <CardTitle className="flex items-center gap-2 text-[#333]">
                   <span>👥</span>
                   <span>Classes</span>
                 </CardTitle>
@@ -133,7 +144,7 @@ export default function DashboardPage() {
           >
             <Card className="border-0 h-full">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-primary">
+                <CardTitle className="flex items-center gap-2 text-[#333]">
                   <span>📊</span>
                   <span>Progress</span>
                 </CardTitle>
@@ -152,7 +163,7 @@ export default function DashboardPage() {
           >
             <Card className="border-0 h-full">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-primary">
+                <CardTitle className="flex items-center gap-2 text-[#333]">
                   <span>🤖</span>
                   <span>AI Tools</span>
                 </CardTitle>
@@ -171,7 +182,7 @@ export default function DashboardPage() {
           >
             <Card className="border-0 h-full">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-primary">
+                <CardTitle className="flex items-center gap-2 text-[#333]">
                   <span>📝</span>
                   <span>Assessments</span>
                 </CardTitle>
@@ -190,7 +201,7 @@ export default function DashboardPage() {
           >
             <Card className="border-0 h-full">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-primary">
+                <CardTitle className="flex items-center gap-2 text-[#333]">
                   <span>⚙️</span>
                   <span>Settings</span>
                 </CardTitle>

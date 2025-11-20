@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { getCurrentUser } from '@/lib/supabase-server'
+import { createClient, getCurrentUser } from '@/lib/supabase-server'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { InviteStudentDialog } from '@/components/teacher/InviteStudentDialog'
@@ -10,49 +10,57 @@ import { AnalyticsTiles } from '@/components/teacher/AnalyticsTiles'
 import { getClassAnalytics } from '@/app/actions/teacher'
 
 async function getClassWithRoster(classId: string, userId: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  try {
+    const supabase = await createClient()
 
-  // Fetch class details
-  const classResponse = await fetch(
-    `${baseUrl}/rest/v1/classes?id=eq.${classId}&teacher_id=eq.${userId}&select=*`,
-    {
-      headers: {
-        'apikey': apiKey,
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      cache: 'no-store',
+    // Fetch class details
+    const { data: classData, error: classError } = await supabase
+      .from('classes')
+      .select('*')
+      .eq('id', classId)
+      .eq('teacher_id', userId)
+      .single()
+
+    if (classError || !classData) {
+      console.error('Error fetching class:', classError)
+      return null
     }
-  )
 
-  if (!classResponse.ok) {
-    return null
-  }
+    // Fetch enrollments
+    const { data: enrollmentsData, error: enrollmentsError } = await supabase
+      .from('enrollments')
+      .select('id, created_at, student_id')
+      .eq('class_id', classId)
 
-  const classes = await classResponse.json()
-  if (classes.length === 0) {
-    return null
-  }
-
-  const classData = classes[0]
-
-  // Fetch enrollments with user details
-  const enrollmentsResponse = await fetch(
-    `${baseUrl}/rest/v1/enrollments?class_id=eq.${classId}&select=id,created_at,student:users!enrollments_student_id_fkey(id,email,role)`,
-    {
-      headers: {
-        'apikey': apiKey,
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      cache: 'no-store',
+    if (enrollmentsError) {
+      console.error('Error fetching enrollments:', enrollmentsError)
     }
-  )
 
-  const enrollments = enrollmentsResponse.ok ? await enrollmentsResponse.json() : []
+    // Fetch student details for each enrollment
+    let enrollmentsWithStudents: any[] = []
+    if (enrollmentsData && enrollmentsData.length > 0) {
+      const studentIds = enrollmentsData.map((e: any) => e.student_id)
+      const { data: students } = await supabase
+        .from('users')
+        .select('id, email, role')
+        .in('id', studentIds)
 
-  return {
-    class: classData,
-    enrollments,
+      if (students) {
+        const studentMap = new Map(students.map((s: any) => [s.id, s]))
+        enrollmentsWithStudents = enrollmentsData.map((enrollment: any) => ({
+          ...enrollment,
+          student: studentMap.get(enrollment.student_id),
+        }))
+      }
+    }
+
+    return {
+      class: classData,
+      enrollments: enrollmentsWithStudents,
+    }
+  } catch (error) {
+    console.error('Unexpected error in getClassWithRoster:', error)
+    return null
   }
 }
 
@@ -152,10 +160,9 @@ export default async function ClassDetailPage({
                 <h3 className="text-xl font-semibold text-gray-700 mb-2">
                   No students enrolled yet
                 </h3>
-                <p className="text-gray-500 mb-6">
-                  Invite students to join your class
+                <p className="text-gray-500">
+                  Use the Invite Student button above or share the class details from the invitation section
                 </p>
-                <InviteStudentDialog classId={id} />
               </div>
             ) : (
               <RosterTable enrollments={enrollments} classId={id} />

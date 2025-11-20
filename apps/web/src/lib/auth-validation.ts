@@ -44,7 +44,7 @@ export function validateEmail(email: string): { valid: boolean; error?: string }
   const [, domain] = trimmedEmail.split('@')
 
   // Check against blocked domains (disposable emails)
-  if (BLOCKED_EMAIL_DOMAINS.includes(domain)) {
+  if (BLOCKED_EMAIL_DOMAINS.has(domain)) {
     return { valid: false, error: AUTH_ERRORS.DISPOSABLE_EMAIL }
   }
 

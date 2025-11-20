@@ -32,16 +32,19 @@ export async function middleware(request: NextRequest) {
 
   // Check if accessing protected route
   const isProtectedRoute = request.nextUrl.pathname.startsWith('/app')
-  const isAuthRoute = request.nextUrl.pathname.startsWith('/login') ||
-                      request.nextUrl.pathname.startsWith('/verify')
+  const isStudentAuth = request.nextUrl.pathname.startsWith('/student/start')
+  const isTeacherAuth = request.nextUrl.pathname.startsWith('/teacher/start')
+  const isJoinRoute = request.nextUrl.pathname.startsWith('/join')
+  const isAuthRoute = isStudentAuth || isTeacherAuth
 
-  // If accessing protected route without session, redirect to login
+  // If accessing protected route without session, redirect to student start
   if (isProtectedRoute && !user) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    return NextResponse.redirect(new URL('/student/start', request.url))
   }
 
   // If already authenticated and trying to access auth pages, redirect to dashboard
-  if (isAuthRoute && user) {
+  // BUT allow teacher onboarding and join pages (they handle their own logic)
+  if (isAuthRoute && user && !isTeacherAuth && !isJoinRoute) {
     return NextResponse.redirect(new URL('/app/dashboard', request.url))
   }
 
@@ -49,5 +52,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/app/:path*', '/login', '/verify'],
+  matcher: ['/app/:path*', '/student/start', '/teacher/start', '/teacher/:path*', '/join'],
 }

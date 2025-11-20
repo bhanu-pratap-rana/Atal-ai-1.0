@@ -21,6 +21,7 @@ export function CreateClassDialog() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
+  const [subject, setSubject] = useState('')
   const [loading, setLoading] = useState(false)
   const [createdClass, setCreatedClass] = useState<{
     classCode: string
@@ -32,7 +33,7 @@ export function CreateClassDialog() {
     setLoading(true)
 
     try {
-      const result = await createClass(name)
+      const result = await createClass(name, subject)
 
       if (result.success && result.data) {
         setCreatedClass({
@@ -53,6 +54,7 @@ export function CreateClassDialog() {
 
   function handleClose() {
     setName('')
+    setSubject('')
     setCreatedClass(null)
     setOpen(false)
     router.refresh()
@@ -76,15 +78,26 @@ export function CreateClassDialog() {
               </DialogDescription>
             </DialogHeader>
 
-            <div className="py-4">
+            <div className="py-4 space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="class-name">Class Name</Label>
                 <Input
                   id="class-name"
-                  placeholder="e.g., Digital Literacy 101"
+                  placeholder="e.g., Class 10-A"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
+                  disabled={loading}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="subject">Subject (Optional)</Label>
+                <Input
+                  id="subject"
+                  placeholder="e.g., Mathematics, English, Science"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
                   disabled={loading}
                 />
               </div>

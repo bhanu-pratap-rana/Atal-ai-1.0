@@ -1,24 +1,42 @@
 import { redirect } from 'next/navigation'
-import { getCurrentUser } from '@/lib/supabase-server'
+import { createClient, getCurrentUser } from '@/lib/supabase-server'
 import { CreateClassDialog } from '@/components/teacher/CreateClassDialog'
 import { ClassCard } from '@/components/teacher/ClassCard'
+import { SignOutButton } from '@/components/teacher/SignOutButton'
 
-async function getTeacherClasses(userId: string) {
-  // This will be fetched via Supabase MCP in production
-  // For now, we'll create a server action to fetch classes
-  const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/classes?teacher_id=eq.${userId}&select=*`, {
-    headers: {
-      'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-    },
-    cache: 'no-store',
-  })
+async function getTeacherData(userId: string) {
+  try {
+    const supabase = await createClient()
 
-  if (!response.ok) {
-    return []
+    // Fetch teacher profile
+    const { data: teacherProfile } = await supabase
+      .from('teacher_profiles')
+      .select('name, subject')
+      .eq('user_id', userId)
+      .single()
+
+    // Fetch classes
+    const { data: classes, error } = await supabase
+      .from('classes')
+      .select('*')
+      .eq('teacher_id', userId)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching classes:', error)
+    }
+
+    return {
+      teacherName: teacherProfile?.name || 'Teacher',
+      classes: classes || [],
+    }
+  } catch (error) {
+    console.error('Unexpected error fetching teacher data:', error)
+    return {
+      teacherName: 'Teacher',
+      classes: [],
+    }
   }
-
-  return response.json()
 }
 
 export default async function TeacherClassesPage() {
@@ -28,7 +46,7 @@ export default async function TeacherClassesPage() {
     redirect('/login')
   }
 
-  const classes = await getTeacherClasses(user.id)
+  const { teacherName, classes } = await getTeacherData(user.id)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-green-50 p-8">
@@ -43,7 +61,10 @@ export default async function TeacherClassesPage() {
               Manage your classes and students
             </p>
           </div>
-          <CreateClassDialog />
+          <div className="flex items-center gap-4">
+            <CreateClassDialog />
+            <SignOutButton />
+          </div>
         </div>
 
         {/* Classes Grid */}
@@ -58,12 +79,11 @@ export default async function TeacherClassesPage() {
             <p className="text-gray-500 mb-6">
               Create your first class to get started
             </p>
-            <CreateClassDialog />
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {classes.map((classItem: any) => (
-              <ClassCard key={classItem.id} classData={classItem} />
+              <ClassCard key={classItem.id} classData={classItem} teacherName={teacherName} />
             ))}
           </div>
         )}

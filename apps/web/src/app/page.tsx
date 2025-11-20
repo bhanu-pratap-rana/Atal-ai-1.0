@@ -1,5 +1,93 @@
-import { redirect } from 'next/navigation'
+'use client'
 
-export default function Home() {
-  redirect('/login')
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { AuthCard } from '@/components/auth/AuthCard'
+import { createClient } from '@/lib/supabase-browser'
+
+export default function HomePage() {
+  const router = useRouter()
+  const supabase = createClient()
+  const [hasSession, setHasSession] = useState(false)
+
+  useEffect(() => {
+    async function checkSession() {
+      const { data: { session } } = await supabase.auth.getSession()
+      setHasSession(!!session)
+    }
+    checkSession()
+  }, [supabase])
+
+  async function handleSignOut() {
+    await supabase.auth.signOut()
+    setHasSession(false)
+    router.refresh()
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-surface via-background to-surface flex items-center justify-center p-4">
+      {/* Sign Out Button - Top Right */}
+      {hasSession && (
+        <div className="absolute top-4 right-4">
+          <Button
+            onClick={handleSignOut}
+            variant="outline"
+            className="text-sm border-primary text-primary hover:bg-orange-50"
+          >
+            Sign Out
+          </Button>
+        </div>
+      )}
+
+      <AuthCard
+        title="Welcome to ATAL AI"
+        description="Choose your role to get started"
+      >
+        <div className="space-y-6">
+          {/* Teacher Button */}
+          <Button
+            onClick={() => router.push('/teacher/start')}
+            className="w-full h-16 text-lg shadow-[0_8px_20px_rgba(255,140,66,0.35)] hover:shadow-[0_12px_28px_rgba(255,140,66,0.45)] hover:-translate-y-0.5 transition-all"
+            variant="default"
+          >
+            <span className="text-2xl mr-3">👨‍🏫</span>
+            <div className="text-left">
+              <div className="font-semibold">I'm a Teacher</div>
+              <div className="text-xs font-normal opacity-90">
+                Register with school credentials
+              </div>
+            </div>
+          </Button>
+
+          {/* Student Button */}
+          <Button
+            onClick={() => router.push('/student/start')}
+            className="w-full h-16 text-lg border-2 hover:border-primary hover:shadow-[0_4px_12px_rgba(255,140,66,0.15)] hover:-translate-y-0.5 transition-all"
+            variant="outline"
+          >
+            <span className="text-2xl mr-3">🎓</span>
+            <div className="text-left">
+              <div className="font-semibold">I'm a Student</div>
+              <div className="text-xs font-normal opacity-70">
+                Sign in or create account
+              </div>
+            </div>
+          </Button>
+
+          {/* Info Box */}
+          <div className="bg-gradient-to-r from-orange-50 to-yellow-50 border-l-4 border-primary p-4 rounded-lg">
+            <p className="text-sm text-orange-900">
+              <strong>📌 New here?</strong>
+              <br />
+              <span className="text-xs">
+                Teachers need school verification. Students can join with email,
+                phone, or as a guest.
+              </span>
+            </p>
+          </div>
+        </div>
+      </AuthCard>
+    </div>
+  )
 }

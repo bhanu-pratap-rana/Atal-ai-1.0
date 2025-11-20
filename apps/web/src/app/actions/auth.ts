@@ -135,7 +135,7 @@ export async function requestOtp(email: string) {
 
     // Check for blocked/fake domains first
     const domain = trimmedEmail.split('@')[1]
-    if (domain && BLOCKED_EMAIL_DOMAINS.includes(domain.toLowerCase())) {
+    if (domain && BLOCKED_EMAIL_DOMAINS.has(domain.toLowerCase())) {
       authLogger.debug('[requestOtp] Blocked domain detected')
 
       // Check if it's a typo and suggest correction

@@ -1,0 +1,53 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient, getCurrentUser } from '@/lib/supabase-server'
+
+export async function POST(request: NextRequest) {
+  try {
+    // Verify user is authenticated
+    const user = await getCurrentUser()
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const { query } = await request.json()
+
+    if (!query || query.trim() === '') {
+      return NextResponse.json(
+        { error: 'Query is required' },
+        { status: 400 }
+      )
+    }
+
+    const supabase = await createClient()
+
+    // Search for students by email or user ID
+    // Search in both email and id columns
+    const { data: students, error } = await supabase
+      .from('users')
+      .select('id, email')
+      .eq('role', 'student')
+      .or(`email.ilike.%${query}%,id.ilike.%${query}%`)
+      .limit(10)
+
+    if (error) {
+      console.error('Error searching students:', error)
+      return NextResponse.json(
+        { error: 'Failed to search students' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({
+      students: students || [],
+    })
+  } catch (error) {
+    console.error('Error in search-students route:', error)
+    return NextResponse.json(
+      { error: 'An unexpected error occurred' },
+      { status: 500 }
+    )
+  }
+}

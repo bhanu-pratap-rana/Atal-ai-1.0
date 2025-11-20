@@ -64,8 +64,12 @@ export const VALID_EMAIL_PROVIDERS = [
   'vip.qq.com',
 ]
 
-// Blocked email domains (disposable/fake services)
-export const BLOCKED_EMAIL_DOMAINS = [
+/**
+ * Blocked email domains (disposable/fake services)
+ * Using Set for O(1) lookup performance instead of O(n) array lookup
+ * This eliminates 30+ duplicate entries that were previously scattered
+ */
+export const BLOCKED_EMAIL_DOMAINS = new Set([
   'tempmail.com',
   'guerrillamail.com',
   '10minutemail.com',
@@ -78,31 +82,16 @@ export const BLOCKED_EMAIL_DOMAINS = [
   'trashmail.com',
   'fakeinbox.com',
   'yopmail.com',
-  'maildrop.cc',
   'temp-mail.org',
   'mytrashmail.com',
   'bugmenot.com',
   'disposablemail.com',
   'fakemail.net',
   'spam.la',
-  'maildrop.cc',
-  'mytrashmail.com',
-  'fakeinbox.com',
-  '10minutemail.com',
-  'tempmail.com',
-  'throwaway.email',
-  'trashmail.com',
-  'mailinator.com',
-  'spam4.me',
-  'spamgourmet.com',
-  'maildrop.cc',
-  'fakeinbox.com',
-  'yopmail.com',
   'protonmailrmez3lotccipshtkleegetolb73fuirgj7r4o4vfu7ozyd.onion',
   'thraml.com',
   'vpn.com',
   'vpnmail.com',
-  'fakeinbox.com',
   'dontreplytome.com',
   'nomail.com',
   'anymail.net',
@@ -114,24 +103,10 @@ export const BLOCKED_EMAIL_DOMAINS = [
   'guerrillamail.org',
   'guerrillamail.biz',
   'pokemail.net',
-  'sharklasers.com',
-  'spam4.me',
   'thingymail.com',
   'trashmail.de',
-  'maildrop.cc',
-  'mytrashmail.com',
-  'fakeinbox.com',
-  'tempmail.com',
-  'throwaway.email',
-  'trashmail.com',
-  'mailinator.com',
-  'spam4.me',
   'spamgourmet.com',
-  'maildrop.cc',
-  'fakeinbox.com',
-  'yopmail.com',
-  'thraml.com',
-]
+])
 
 // Auth error messages
 export const AUTH_ERRORS = {

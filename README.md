@@ -2,6 +2,9 @@
 
 A comprehensive digital literacy platform built with Next.js, Supabase, and modern web technologies. ATAL AI provides an interactive learning experience for students and teachers to build essential digital skills.
 
+**🎨 Beautiful orange-yellow gradient theme with smooth animations**
+**📱 Progressive Web App (PWA) ready - installable on all devices**
+
 ## 🌟 Features
 
 ### For Students
@@ -28,11 +31,12 @@ A comprehensive digital literacy platform built with Next.js, Supabase, and mode
 ## 🏗️ Architecture
 
 ### Tech Stack
-- **Frontend**: Next.js 16 (App Router), React 19, TypeScript
-- **Styling**: Tailwind CSS 4, shadcn/ui components
+- **Frontend**: Next.js 16 (App Router with Turbopack), React 19, TypeScript
+- **Styling**: Tailwind CSS 4, shadcn/ui components, Framer Motion 11
 - **Backend**: Supabase (PostgreSQL, Auth, Real-time)
 - **Authentication**: Supabase Auth with OTP
 - **Testing**: Playwright for E2E tests
+- **PWA**: Manifest, maskable icons, offline-ready
 - **Deployment**: Vercel-ready
 
 ### Project Structure
@@ -195,6 +199,50 @@ Custom email templates are located in `apps/db/email-templates/`:
 - ✅ Professional formatting
 - ✅ Action buttons for OTP/magic links
 - ✅ Footer with app information
+
+## 🎨 Design System
+
+### Brand Colors
+- **Primary Orange**: `#FF8C42` - Main brand color
+- **Primary Light (Yellow)**: `#FFD166` - Gradient complement
+- **Background**: `#FFFFFF` - Pure white
+- **Surface**: `#F8F9FA` - Light gray for cards
+- **Text Primary**: `#333333` - Dark text
+- **Text Secondary**: `#666666` - Medium gray
+- **Text Tertiary**: `#999999` - Light gray
+- **Border**: `#E8E8E8` - Default borders
+
+### Gradient System
+- **Primary Gradient**: `linear-gradient(135deg, #FF8C42 0%, #FFD166 100%)`
+- Used on buttons, cards, borders, and accents
+- Orange-tinted shadows for brand consistency
+
+### Animations
+All animations powered by **Framer Motion 11**:
+
+- **Button Interactions**: Scale 1.02 on hover, 0.98 on tap
+- **Card Hover**: Lift -4px with enhanced shadow
+- **Page Transitions**: Smooth fade + slide (<200ms)
+- **Input Focus**: Gradient border animation
+- **Loading States**: Smooth spinner with rotation
+- **Spring Physics**: Natural motion (stiffness: 400, damping: 17)
+
+### Accessibility
+- ✅ `prefers-reduced-motion` support
+- ✅ High contrast text (WCAG AA compliant)
+- ✅ Focus indicators on all interactive elements
+- ✅ Screen reader friendly
+- ✅ Semantic HTML structure
+
+### UI Components
+Enhanced with animations and brand theme:
+
+- **Button** - 8 variants with loading states
+- **Input** - Gradient border on focus
+- **GradientCard** - 3px gradient border with hover lift
+- **PageTransition** - Smooth route changes
+- **AuthCard** - Centered card with logo
+- **Dashboard Cards** - Animated feature cards
 
 ## 🔐 Environment Variables
 
@@ -413,19 +461,30 @@ For issues and questions:
 
 ## 📊 Project Status
 
-- ✅ Core authentication system
-- ✅ Email validation with typo detection
+### ✅ Phase 1 Complete - Brand Theme & Motion Shell
+- ✅ Orange-yellow gradient brand theme (#FF8C42 to #FFD166)
+- ✅ Framer Motion animations (buttons, cards, page transitions)
+- ✅ PWA configuration (manifest, maskable icons, theme color)
+- ✅ Enhanced UI components (Button, Input, GradientCard)
+- ✅ Page transitions with spring physics (<200ms)
+- ✅ Accessibility: reduced motion support
+- ✅ Logo integration across all pages
+
+### Core Features
+- ✅ Core authentication system with OTP
+- ✅ Email validation with typo detection (85+ patterns)
 - ✅ Class management for teachers
-- ✅ Student enrollment system
-- ✅ Assessment system with multi-language support
-- ✅ Analytics dashboard
-- ✅ Responsive UI design
+- ✅ Student enrollment system with QR codes
+- ✅ Assessment system with multi-language support (Hindi, Assamese)
+- ✅ Analytics dashboard with real-time insights
+- ✅ Responsive UI design with gradient borders
+- ✅ Beautiful dashboard with animated cards
 - 🚧 Advanced reporting (in progress)
-- 🚧 Mobile optimization (planned)
+- 🚧 Mobile app (planned)
 
 ---
 
 **Built with ❤️ for digital empowerment in India**
 
-Last updated: 2025-11-11
-Version: 1.0.0
+Last updated: 2025-11-12
+Version: 1.0.0 - Phase 1 Complete

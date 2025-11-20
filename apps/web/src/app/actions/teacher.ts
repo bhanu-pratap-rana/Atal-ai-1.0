@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient, getCurrentUser } from '@/lib/supabase-server'
 
-export async function createClass(name: string) {
+export async function createClass(name: string, subject?: string) {
   try {
     const user = await getCurrentUser()
 
@@ -17,6 +17,7 @@ export async function createClass(name: string) {
       .from('classes')
       .insert({
         name,
+        subject: subject || null,
         teacher_id: user.id,
       })
       .select()
@@ -28,6 +29,91 @@ export async function createClass(name: string) {
 
     revalidatePath('/app/teacher/classes')
     return { success: true, data }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'An unexpected error occurred',
+    }
+  }
+}
+
+export async function updateClass(classId: string, name: string, subject?: string) {
+  try {
+    const user = await getCurrentUser()
+
+    if (!user) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    const supabase = await createClient()
+
+    // Verify the teacher owns this class
+    const { data: classData } = await supabase
+      .from('classes')
+      .select('teacher_id')
+      .eq('id', classId)
+      .single()
+
+    if (classData?.teacher_id !== user.id) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    const { data, error } = await supabase
+      .from('classes')
+      .update({
+        name,
+        subject: subject || null,
+      })
+      .eq('id', classId)
+      .select()
+      .single()
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    revalidatePath('/app/teacher/classes')
+    return { success: true, data }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'An unexpected error occurred',
+    }
+  }
+}
+
+export async function deleteClass(classId: string) {
+  try {
+    const user = await getCurrentUser()
+
+    if (!user) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    const supabase = await createClient()
+
+    // Verify the teacher owns this class
+    const { data: classData } = await supabase
+      .from('classes')
+      .select('teacher_id')
+      .eq('id', classId)
+      .single()
+
+    if (classData?.teacher_id !== user.id) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    const { error } = await supabase
+      .from('classes')
+      .delete()
+      .eq('id', classId)
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    revalidatePath('/app/teacher/classes')
+    return { success: true }
   } catch (error) {
     return {
       success: false,

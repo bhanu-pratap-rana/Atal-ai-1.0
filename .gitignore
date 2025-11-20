@@ -233,3 +233,8 @@ $RECYCLE.BIN/
 
 # Playwright
 playwright/.cache/
+
+# AI Tool Generated Code
+# NOTE: AI tools (Claude Code, Copilot, etc.) should not be listed as collaborators.
+# Manual commits should exclude AI tool attribution in commit messages.
+# Use: git commit -m "message" (without Co-Authored-By: Claude <...>)

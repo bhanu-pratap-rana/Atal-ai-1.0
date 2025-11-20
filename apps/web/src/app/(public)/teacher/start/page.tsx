@@ -19,6 +19,7 @@ import { AuthCard } from '@/components/auth/AuthCard'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { authLogger } from '@/lib/auth-logger'
 import zxcvbn from 'zxcvbn'
 
 type Step = 'choice' | 'login' | 'forgot-password' | 'reset-password' | 'auth' | 'set-password' | 'verify-school' | 'profile' | 'complete'
@@ -99,21 +100,21 @@ export default function TeacherStartPage() {
     setLoginError('')
 
     try {
-      console.log('🔐 [Teacher Login] Starting login with email:', loginEmail.trim())
+      authLogger.debug('[Teacher Login] Attempting login')
 
       const { data, error } = await supabase.auth.signInWithPassword({
         email: loginEmail.trim(),
         password: loginPassword,
       })
 
-      console.log('🔐 [Teacher Login] Auth response:', { hasData: !!data, hasError: !!error })
+      authLogger.debug('[Teacher Login] Auth response received')
 
       if (error) {
-        console.error('🔐 [Teacher Login] Auth error:', error.message)
+        authLogger.error('[Teacher Login] Authentication failed', error)
         setLoginError(error.message || 'Invalid email or password')
         toast.error('Login failed: ' + (error.message || 'Invalid credentials'))
       } else if (data.user) {
-        console.log('🔐 [Teacher Login] User authenticated:', data.user.id)
+        authLogger.debug('[Teacher Login] User authenticated')
 
         // Check if teacher profile exists
         try {
@@ -123,29 +124,29 @@ export default function TeacherStartPage() {
             .eq('user_id', data.user.id)
             .single()
 
-          console.log('🔐 [Teacher Login] Profile fetch result:', { hasProfile: !!profile, hasError: !!profileError })
+          authLogger.debug('[Teacher Login] Profile fetch complete')
 
           if (profileError && profileError.code !== 'PGRST116') {
-            console.error('🔐 [Teacher Login] Profile error:', profileError)
+            authLogger.error('[Teacher Login] Profile fetch error', profileError)
             toast.error('Error checking profile: ' + profileError.message)
             await supabase.auth.signOut()
           } else if (profile) {
-            console.log('🔐 [Teacher Login] Profile found, redirecting...')
+            authLogger.success('[Teacher Login] Profile found, redirecting')
             toast.success('Login successful!')
             router.push('/app/teacher/classes')
           } else {
-            console.warn('🔐 [Teacher Login] Profile not found')
+            authLogger.error('[Teacher Login] Profile not found')
             toast.error('Teacher profile not found. Please complete registration.')
             await supabase.auth.signOut()
           }
         } catch (profileErr) {
-          console.error('🔐 [Teacher Login] Exception checking profile:', profileErr)
+          authLogger.error('[Teacher Login] Exception checking profile', profileErr)
           toast.error('Error checking profile')
           await supabase.auth.signOut()
         }
       }
     } catch (error) {
-      console.error('🔐 [Teacher Login] Unexpected error:', error)
+      authLogger.error('[Teacher Login] Unexpected error', error)
       setLoginError('An unexpected error occurred')
       toast.error('An unexpected error occurred')
     } finally {

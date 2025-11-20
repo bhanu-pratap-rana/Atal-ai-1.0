@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getCurrentUser } from '@/lib/supabase-server'
+import { authLogger } from '@/lib/auth-logger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
       .limit(10)
 
     if (error) {
-      console.error('Error searching students:', error)
+      authLogger.error('[searchStudents] Database query failed', error)
       return NextResponse.json(
         { error: 'Failed to search students' },
         { status: 500 }
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
       students: students || [],
     })
   } catch (error) {
-    console.error('Error in search-students route:', error)
+    authLogger.error('[searchStudents] Unexpected error', error)
     return NextResponse.json(
       { error: 'An unexpected error occurred' },
       { status: 500 }

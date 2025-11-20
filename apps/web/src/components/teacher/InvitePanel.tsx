@@ -5,6 +5,7 @@ import QRCode from 'qrcode'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { authLogger } from '@/lib/auth-logger'
 
 interface InvitePanelProps {
   classCode: string
@@ -36,7 +37,7 @@ export function InvitePanel({ classCode, joinPin, className }: InvitePanelProps)
         },
         (error) => {
           if (error) {
-            console.error('QR Code generation error:', error)
+            authLogger.error('[InvitePanel] QR Code generation error', error)
             toast.error('Failed to generate QR code')
           } else {
             setQrGenerated(true)

@@ -1,11 +1,13 @@
 'use server'
 
 import { createClient, createAdminClient } from '@/lib/supabase-server'
+import { authLogger } from '@/lib/auth-logger'
 
 // Types
 export interface SendEmailOtpResult {
   success: boolean
   error?: string
+  exists?: boolean
 }
 
 export interface VerifyEmailOtpResult {
@@ -47,7 +49,7 @@ export async function checkEmailExists(email: string): Promise<{
     const { data: { users }, error } = await supabase.auth.admin.listUsers()
 
     if (error) {
-      console.error('Error checking email:', error)
+      authLogger.error('[Check Email] Failed to list users', error)
       return { exists: false, hasPassword: false }
     }
 
@@ -62,7 +64,7 @@ export async function checkEmailExists(email: string): Promise<{
 
     return { exists: true, hasPassword }
   } catch (error) {
-    console.error('Unexpected error in checkEmailExists:', error)
+    authLogger.error('[Check Email] Unexpected error', error)
     return { exists: false, hasPassword: false }
   }
 }
@@ -85,7 +87,7 @@ export async function sendEmailOtp(email: string): Promise<SendEmailOtpResult> {
         success: false,
         error: 'This email is already registered. Please login with your email and password.',
         exists: true,
-      } as any
+      }
     }
 
     const { error } = await supabase.auth.signInWithOtp({
@@ -101,7 +103,7 @@ export async function sendEmailOtp(email: string): Promise<SendEmailOtpResult> {
 
     return { success: true }
   } catch (error) {
-    console.error('Unexpected error in sendEmailOtp:', error)
+    authLogger.error('[Send Email OTP] Unexpected error', error)
     return { success: false, error: 'Failed to send OTP. Please try again.' }
   }
 }
@@ -143,7 +145,7 @@ export async function verifyEmailOtp({
 
     return { success: true, userId: data.user.id }
   } catch (error) {
-    console.error('Unexpected error in verifyEmailOtp:', error)
+    authLogger.error('[Verify Email OTP] Unexpected error', error)
     return {
       success: false,
       error: 'Failed to verify OTP. Please try again.',
@@ -189,7 +191,7 @@ export async function setPassword(password: string): Promise<SetPasswordResult> 
 
     return { success: true }
   } catch (error) {
-    console.error('Unexpected error in setPassword:', error)
+    authLogger.error('[Set Password] Unexpected error', error)
     return {
       success: false,
       error: 'Failed to set password. Please try again.',
@@ -247,7 +249,7 @@ export async function saveTeacherProfile({
     })
 
     if (insertError) {
-      console.error('Error creating teacher profile:', insertError)
+      authLogger.error('[Save Profile] Failed to create teacher profile', insertError)
       return {
         success: false,
         error: 'Failed to create teacher profile. Please try again.',
@@ -270,17 +272,17 @@ export async function saveTeacherProfile({
       )
 
       if (updateError) {
-        console.error('Error updating user app_metadata:', updateError)
+        authLogger.error('[Save Profile] Failed to update user metadata', updateError)
         // Don't fail here - profile is already created
       }
     } catch (adminError) {
-      console.error('Error using admin client:', adminError)
+      authLogger.error('[Save Profile] Admin client error', adminError)
       // Don't fail - profile creation succeeded
     }
 
     return { success: true }
   } catch (error) {
-    console.error('Unexpected error in saveTeacherProfile:', error)
+    authLogger.error('[Save Profile] Unexpected error', error)
     return {
       success: false,
       error: 'An unexpected error occurred. Please try again.',

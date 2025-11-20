@@ -11,8 +11,8 @@
  *
  * Storage:
  * - Development: In-memory map (for local testing)
- * - Production: Should use Redis for distributed rate limiting
- * - TODO: Integrate with Redis for production deployments
+ * - Production: For distributed rate limiting, integrate with Redis
+ *   This requires Redis client and distributed coordination
  */
 
 interface RateLimitEntry {

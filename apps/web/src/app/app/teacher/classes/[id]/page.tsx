@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient, getCurrentUser } from '@/lib/supabase-server'
+import { authLogger } from '@/lib/auth-logger'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { InviteStudentDialog } from '@/components/teacher/InviteStudentDialog'
@@ -22,7 +23,7 @@ async function getClassWithRoster(classId: string, userId: string) {
       .single()
 
     if (classError || !classData) {
-      console.error('Error fetching class:', classError)
+      authLogger.error('[getClassWithRoster] Error fetching class', classError)
       return null
     }
 
@@ -33,7 +34,7 @@ async function getClassWithRoster(classId: string, userId: string) {
       .eq('class_id', classId)
 
     if (enrollmentsError) {
-      console.error('Error fetching enrollments:', enrollmentsError)
+      authLogger.error('[getClassWithRoster] Error fetching enrollments', enrollmentsError)
     }
 
     // Fetch student details for each enrollment
@@ -59,7 +60,7 @@ async function getClassWithRoster(classId: string, userId: string) {
       enrollments: enrollmentsWithStudents,
     }
   } catch (error) {
-    console.error('Unexpected error in getClassWithRoster:', error)
+    authLogger.error('[getClassWithRoster] Unexpected error', error)
     return null
   }
 }

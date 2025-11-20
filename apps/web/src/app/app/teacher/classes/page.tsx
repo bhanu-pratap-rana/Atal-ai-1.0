@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient, getCurrentUser } from '@/lib/supabase-server'
+import { authLogger } from '@/lib/auth-logger'
 import { CreateClassDialog } from '@/components/teacher/CreateClassDialog'
 import { ClassCard } from '@/components/teacher/ClassCard'
 import { SignOutButton } from '@/components/teacher/SignOutButton'
@@ -23,7 +24,7 @@ async function getTeacherData(userId: string) {
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('Error fetching classes:', error)
+      authLogger.error('[getTeacherData] Failed to fetch classes', error)
     }
 
     return {
@@ -31,7 +32,7 @@ async function getTeacherData(userId: string) {
       classes: classes || [],
     }
   } catch (error) {
-    console.error('Unexpected error fetching teacher data:', error)
+    authLogger.error('[getTeacherData] Unexpected error', error)
     return {
       teacherName: 'Teacher',
       classes: [],

@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase-browser'
 import { Button } from '@/components/ui/button'
 import { LogOut } from 'lucide-react'
 import { toast } from 'sonner'
+import { authLogger } from '@/lib/auth-logger'
 
 export function SignOutButton() {
   const router = useRouter()
@@ -22,7 +23,7 @@ export function SignOutButton() {
       toast.success('Signed out successfully!')
       router.push('/')
     } catch (error) {
-      console.error('Sign out error:', error)
+      authLogger.error('[SignOutButton] Sign out error', error)
       toast.error('An error occurred while signing out')
     }
   }

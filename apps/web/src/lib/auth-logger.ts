@@ -192,10 +192,9 @@ export const authLogger = {
     // Always log critical errors, but mask sensitive data
     console.error(`[Auth Critical] ${message}`, errorMessage)
 
-    // In production, also send to error tracking service
+    // In production, error tracking integration can be added via monitoring service
     if (isProduction) {
-      // TODO: Integrate with Sentry or similar error tracking
-      // Sentry.captureException(error)
+      // Error tracking service integration point
     }
   },
 

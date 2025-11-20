@@ -29,6 +29,7 @@ import { AuthCard } from '@/components/auth/AuthCard'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { authLogger } from '@/lib/auth-logger'
 
 export default function StudentStartPage() {
   const router = useRouter()
@@ -72,23 +73,23 @@ export default function StudentStartPage() {
     }
 
     try {
-      console.log('🔐 [SignIn Email] Starting with:', state.signinEmailAddress.trim())
+      authLogger.debug('[SignIn Email] Attempting email authentication')
       const { data, error } = await supabase.auth.signInWithPassword({
         email: state.signinEmailAddress.trim(),
         password: state.signinEmailPassword,
       })
 
       if (error) {
-        console.error('🔐 [SignIn Email] Error:', error.message)
+        authLogger.error('[SignIn Email] Authentication failed', error)
         actions.setSigninEmailError(error.message || 'Invalid email or password')
         toast.error('Login failed: ' + (error.message || 'Invalid credentials'))
       } else if (data.user) {
-        console.log('🔐 [SignIn Email] Success')
+        authLogger.success('[SignIn Email] Authentication successful')
         toast.success('Login successful!')
         router.push('/app/dashboard')
       }
     } catch (error) {
-      console.error('🔐 [SignIn Email] Unexpected error:', error)
+      authLogger.error('[SignIn Email] Unexpected error', error)
       actions.setSigninEmailError('An unexpected error occurred')
       toast.error('An unexpected error occurred')
     } finally {
@@ -113,23 +114,23 @@ export default function StudentStartPage() {
     }
 
     try {
-      console.log('📱 [SignIn Phone] Starting with:', signinPhoneInput.fullValue)
+      authLogger.debug('[SignIn Phone] Attempting phone authentication')
       const { data, error } = await supabase.auth.signInWithPassword({
         phone: signinPhoneInput.fullValue,
         password: state.signinPhonePassword,
       })
 
       if (error) {
-        console.error('📱 [SignIn Phone] Error:', error.message)
+        authLogger.error('[SignIn Phone] Authentication failed', error)
         actions.setSigninPhoneError(error.message || 'Invalid phone or password')
         toast.error('Login failed: ' + (error.message || 'Invalid credentials'))
       } else if (data.user) {
-        console.log('📱 [SignIn Phone] Success')
+        authLogger.success('[SignIn Phone] Authentication successful')
         toast.success('Login successful!')
         router.push('/app/dashboard')
       }
     } catch (error) {
-      console.error('📱 [SignIn Phone] Unexpected error:', error)
+      authLogger.error('[SignIn Phone] Unexpected error', error)
       actions.setSigninPhoneError('An unexpected error occurred')
       toast.error('An unexpected error occurred')
     } finally {
@@ -163,7 +164,7 @@ export default function StudentStartPage() {
         actions.setSignupEmailOtpSent(true)
       }
     } catch (error) {
-      console.error('Error sending OTP:', error)
+      authLogger.error('[SignUp Email] Failed to send OTP', error)
       actions.setSignupEmailError('Failed to send OTP')
       toast.error('Failed to send OTP')
     } finally {
@@ -206,7 +207,7 @@ export default function StudentStartPage() {
       })
 
       if (error) {
-        console.error('Email verification error:', error.message)
+        authLogger.error('[SignUp Email] Verification failed', error)
         actions.setSignupEmailError(error.message || 'Failed to verify OTP')
         toast.error(error.message || 'OTP verification failed')
         return
@@ -224,7 +225,7 @@ export default function StudentStartPage() {
       })
 
       if (updateError) {
-        console.error('Password update error:', updateError)
+        authLogger.error('[SignUp Email] Failed to set password', updateError)
         actions.setSignupEmailError('Failed to set password')
         toast.error('Failed to set password')
         return
@@ -234,7 +235,7 @@ export default function StudentStartPage() {
       actions.resetSignupEmail()
       router.push('/app/dashboard')
     } catch (error) {
-      console.error('Unexpected error:', error)
+      authLogger.error('[SignUp Email] Unexpected error', error)
       actions.setSignupEmailError('An unexpected error occurred')
       toast.error('An unexpected error occurred')
     } finally {
@@ -264,7 +265,7 @@ export default function StudentStartPage() {
       })
 
       if (error) {
-        console.error('Phone OTP error:', error.message)
+        authLogger.error('[SignUp Phone] Failed to send OTP', error)
         actions.setSignupPhoneError(error.message || 'Failed to send OTP')
         toast.error(error.message || 'Failed to send OTP')
       } else {
@@ -272,7 +273,7 @@ export default function StudentStartPage() {
         actions.setSignupPhoneOtpStep('verify')
       }
     } catch (error) {
-      console.error('Error sending phone OTP:', error)
+      authLogger.error('[SignUp Phone] Error sending OTP', error)
       actions.setSignupPhoneError('Failed to send OTP')
       toast.error('Failed to send OTP')
     } finally {
@@ -306,7 +307,7 @@ export default function StudentStartPage() {
     actions.setSignupPhoneError(null)
 
     try {
-      console.log('📱 [SignUp Phone Verify] Verifying OTP')
+      authLogger.debug('[SignUp Phone] Verifying OTP')
       const { data, error } = await supabase.auth.verifyOtp({
         phone: signupPhoneInput.fullValue,
         token: signupPhoneOtpInput.value,
@@ -314,34 +315,34 @@ export default function StudentStartPage() {
       })
 
       if (error) {
-        console.error('❌ [SignUp Phone Verify] OTP error:', error.message)
+        authLogger.error('[SignUp Phone] OTP verification failed', error)
         toast.error(error.message)
         return
       }
 
       if (!data.user) {
-        console.error('❌ [SignUp Phone Verify] No user')
+        authLogger.error('[SignUp Phone] No user returned')
         toast.error('Verification failed')
         return
       }
 
-      console.log('🔐 [SignUp Phone Verify] Setting password')
+      authLogger.debug('[SignUp Phone] Setting password')
       const { error: updateError } = await supabase.auth.updateUser({
         password: state.signupPhonePassword,
       })
 
       if (updateError) {
-        console.error('❌ [SignUp Phone Verify] Password error:', updateError)
+        authLogger.error('[SignUp Phone] Failed to set password', updateError)
         toast.error('Failed to set password')
         return
       }
 
-      console.log('✅ [SignUp Phone Verify] Account created')
+      authLogger.success('[SignUp Phone] Account created successfully')
       toast.success('Account created! 🎉')
       actions.resetSignupPhone()
       router.push('/app/dashboard')
     } catch (error) {
-      console.error('❌ [SignUp Phone Verify] Unexpected error:', error)
+      authLogger.error('[SignUp Phone] Unexpected error', error)
       toast.error('Failed to verify OTP')
     } finally {
       actions.setIsLoading(false)
@@ -394,7 +395,7 @@ export default function StudentStartPage() {
         toast.error(result.error || 'Failed to join class')
       }
     } catch (error) {
-      console.error('Error joining class:', error)
+      authLogger.error('[Guest Join] Failed to join class', error)
       actions.setGuestError('An unexpected error occurred')
       toast.error('An unexpected error occurred')
     } finally {
@@ -428,7 +429,7 @@ export default function StudentStartPage() {
         actions.setForgotPasswordStep('reset')
       }
     } catch (error) {
-      console.error('Error sending recovery code:', error)
+      authLogger.error('[Forgot Password] Failed to send recovery code', error)
       actions.setForgotPasswordError('Failed to send recovery code')
       toast.error('Failed to send recovery code')
     } finally {
@@ -477,7 +478,7 @@ export default function StudentStartPage() {
         actions.setMainStep('signin')
       }
     } catch (error) {
-      console.error('Error resetting password:', error)
+      authLogger.error('[Forgot Password] Failed to reset password', error)
       actions.setForgotPasswordError('An unexpected error occurred')
       toast.error('An unexpected error occurred')
     } finally {

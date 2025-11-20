@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { createClient } from '@/lib/supabase-browser'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { authLogger } from '@/lib/auth-logger'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -28,7 +29,7 @@ export default function DashboardPage() {
       router.refresh()
       router.push('/student/start')
     } catch (error) {
-      console.error('Error signing out:', error)
+      authLogger.error('[Dashboard] Sign out failed', error)
     }
   }
 

@@ -1,6 +1,8 @@
 'use server'
 
 import { createClient, createAdminClient } from '@/lib/supabase-server'
+import { authLogger } from '@/lib/auth-logger'
+import { BCRYPT_ROUNDS } from '@/lib/constants/auth'
 import bcrypt from 'bcrypt'
 
 // Types
@@ -114,7 +116,7 @@ export async function verifyTeacher({
       })
 
       if (insertError) {
-        console.error('Error creating teacher profile:', insertError)
+        authLogger.error('[verifyTeacher] Failed to create teacher profile', insertError)
         return {
           success: false,
           error: 'Failed to create teacher profile. Please try again.',
@@ -137,12 +139,12 @@ export async function verifyTeacher({
         )
 
         if (updateError) {
-          console.error('Error updating user app_metadata:', updateError)
+          authLogger.warn('[verifyTeacher] Failed to update app_metadata (non-critical)', updateError)
           // Don't fail here - profile is already created
           // User can still function, just need to refresh session
         }
       } catch (adminError) {
-        console.error('Error using admin client:', adminError)
+        authLogger.warn('[verifyTeacher] Admin client error (non-critical)', adminError as Error)
         // Don't fail - profile creation succeeded
       }
     }
@@ -153,7 +155,7 @@ export async function verifyTeacher({
       schoolName: school.school_name,
     }
   } catch (error) {
-    console.error('Unexpected error in verifyTeacher:', error)
+    authLogger.error('[verifyTeacher] Unexpected error', error)
     return {
       success: false,
       error: 'An unexpected error occurred. Please try again.',
@@ -175,13 +177,13 @@ export async function searchSchools(query: string) {
       .limit(20)
 
     if (error) {
-      console.error('Error searching schools:', error)
+      authLogger.error('[searchSchools] Failed to search schools', error)
       return { success: false, error: 'Failed to search schools', data: [] }
     }
 
     return { success: true, data: data || [] }
   } catch (error) {
-    console.error('Unexpected error in searchSchools:', error)
+    authLogger.error('[searchSchools] Unexpected error', error)
     return { success: false, error: 'An unexpected error occurred', data: [] }
   }
 }
@@ -205,7 +207,7 @@ export async function getSchoolByCode(schoolCode: string) {
 
     return { success: true, data }
   } catch (error) {
-    console.error('Unexpected error in getSchoolByCode:', error)
+    authLogger.error('[getSchoolByCode] Unexpected error', error)
     return { success: false, error: 'An unexpected error occurred' }
   }
 }
@@ -222,17 +224,25 @@ export async function rotateStaffPin(schoolCode: string, newPin: string) {
   try {
     const supabase = await createClient()
 
-    // 1. Verify caller is authenticated (additional admin checks can be added)
+    // 1. Verify caller is authenticated
     const {
       data: { user },
       error: userError,
     } = await supabase.auth.getUser()
 
     if (userError || !user) {
+      authLogger.warn('[rotateStaffPin] Unauthenticated access attempt')
       return { success: false, error: 'Not authenticated' }
     }
 
-    // 2. Validate PIN requirements (4-6 digits recommended)
+    // 2. Verify user has admin role
+    const userRole = user.app_metadata?.role
+    if (userRole !== 'admin' && userRole !== 'teacher') {
+      authLogger.warn('[rotateStaffPin] Unauthorized role access attempt', { userId: user.id, role: userRole })
+      return { success: false, error: 'Unauthorized: Admin access required' }
+    }
+
+    // 3. Validate PIN requirements (4-8 digits)
     if (!newPin || newPin.length < 4) {
       return {
         success: false,
@@ -240,7 +250,7 @@ export async function rotateStaffPin(schoolCode: string, newPin: string) {
       }
     }
 
-    // 3. Find school by code
+    // 4. Find school by code
     const { data: school, error: schoolError } = await supabase
       .from('schools')
       .select('id, school_code, school_name')
@@ -254,10 +264,33 @@ export async function rotateStaffPin(schoolCode: string, newPin: string) {
       }
     }
 
-    // 4. Generate new bcrypt hash (cost factor 10)
-    const pinHash = await bcrypt.hash(newPin, 10)
+    // 5. For teachers, verify they are authorized for this school
+    if (userRole === 'teacher') {
+      const { data: teacherProfile, error: profileError } = await supabase
+        .from('teacher_profiles')
+        .select('school_id')
+        .eq('user_id', user.id)
+        .single()
 
-    // 5. Upsert credentials (idempotent - updates if exists, inserts if not)
+      if (profileError || !teacherProfile) {
+        authLogger.warn('[rotateStaffPin] Teacher profile not found', { userId: user.id })
+        return { success: false, error: 'Teacher profile not found' }
+      }
+
+      if (school.id !== teacherProfile.school_id) {
+        authLogger.warn('[rotateStaffPin] Teacher attempted PIN rotation for different school', {
+          userId: user.id,
+          teacherSchool: teacherProfile.school_id,
+          requestedSchool: school.id,
+        })
+        return { success: false, error: 'Unauthorized: You can only manage PIN for your school' }
+      }
+    }
+
+    // 6. Generate new bcrypt hash
+    const pinHash = await bcrypt.hash(newPin, BCRYPT_ROUNDS)
+
+    // 7. Upsert credentials (idempotent - updates if exists, inserts if not)
     const { error: upsertError } = await supabase
       .from('school_staff_credentials')
       .upsert(
@@ -272,13 +305,14 @@ export async function rotateStaffPin(schoolCode: string, newPin: string) {
       )
 
     if (upsertError) {
-      console.error('Error rotating PIN:', upsertError)
+      authLogger.error('[rotateStaffPin] Failed to upsert credentials', upsertError)
       return {
         success: false,
         error: 'Failed to rotate PIN. Please try again.',
       }
     }
 
+    authLogger.success('[rotateStaffPin] PIN rotated successfully', { schoolId: school.id })
     return {
       success: true,
       schoolCode: school.school_code,
@@ -286,7 +320,7 @@ export async function rotateStaffPin(schoolCode: string, newPin: string) {
       rotatedAt: new Date().toISOString(),
     }
   } catch (error) {
-    console.error('Unexpected error in rotateStaffPin:', error)
+    authLogger.error('[rotateStaffPin] Unexpected error', error)
     return {
       success: false,
       error: 'An unexpected error occurred. Please try again.',
@@ -351,7 +385,7 @@ export async function getStaffPinRotationInfo(schoolCode: string) {
       lastRotatedAt: credentials.rotated_at,
     }
   } catch (error) {
-    console.error('Unexpected error in getStaffPinRotationInfo:', error)
+    authLogger.error('[getStaffPinRotationInfo] Unexpected error', error)
     return { success: false, error: 'An unexpected error occurred' }
   }
 }

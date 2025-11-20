@@ -2,6 +2,11 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient, getCurrentUser } from '@/lib/supabase-server'
+import {
+  ANALYTICS_WINDOW_DAYS,
+  RAPID_RESPONSE_THRESHOLD_MS,
+  AT_RISK_RAPID_PERCENTAGE,
+} from '@/lib/constants/auth'
 
 export async function createClass(name: string, subject?: string) {
   try {
@@ -12,6 +17,17 @@ export async function createClass(name: string, subject?: string) {
     }
 
     const supabase = await createClient()
+
+    // Verify user is a teacher
+    const { data: teacherProfile } = await supabase
+      .from('teacher_profiles')
+      .select('id')
+      .eq('user_id', user.id)
+      .single()
+
+    if (!teacherProfile) {
+      return { success: false, error: 'Only teachers can create classes' }
+    }
 
     const { data, error } = await supabase
       .from('classes')
@@ -46,6 +62,17 @@ export async function updateClass(classId: string, name: string, subject?: strin
     }
 
     const supabase = await createClient()
+
+    // Verify user is a teacher
+    const { data: teacherProfile } = await supabase
+      .from('teacher_profiles')
+      .select('id')
+      .eq('user_id', user.id)
+      .single()
+
+    if (!teacherProfile) {
+      return { success: false, error: 'Only teachers can update classes' }
+    }
 
     // Verify the teacher owns this class
     const { data: classData } = await supabase
@@ -91,6 +118,17 @@ export async function deleteClass(classId: string) {
     }
 
     const supabase = await createClient()
+
+    // Verify user is a teacher
+    const { data: teacherProfile } = await supabase
+      .from('teacher_profiles')
+      .select('id')
+      .eq('user_id', user.id)
+      .single()
+
+    if (!teacherProfile) {
+      return { success: false, error: 'Only teachers can delete classes' }
+    }
 
     // Verify the teacher owns this class
     const { data: classData } = await supabase
@@ -233,7 +271,7 @@ export async function getClassAnalytics(classId: string) {
     }
 
     const sevenDaysAgo = new Date()
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - ANALYTICS_WINDOW_DAYS)
 
     // 1. Active this week: distinct users with a session in last 7 days
     const { data: activeSessions } = await supabase
@@ -252,6 +290,8 @@ export async function getClassAnalytics(classId: string) {
       .gte('started_at', sevenDaysAgo.toISOString())
       .not('submitted_at', 'is', null)
 
+    let avgMinutesPerDay = 0
+
     if (userSessions && userSessions.length > 0) {
       const sessionIds = userSessions.map(s => s.id)
 
@@ -264,7 +304,7 @@ export async function getClassAnalytics(classId: string) {
       const userTimes = new Map<string, number>()
 
       for (const session of userSessions) {
-        const sessionResponses = responses?.filter(r =>
+        const sessionResponses = responses?.filter(() =>
           userSessions.find(s => s.user_id === session.user_id)
         ) || []
 
@@ -276,9 +316,7 @@ export async function getClassAnalytics(classId: string) {
       const totalMinutes = Array.from(userTimes.values())
         .reduce((sum, ms) => sum + ms / 60000, 0)
 
-      var avgMinutesPerDay = userTimes.size > 0 ? totalMinutes / userTimes.size / 7 : 0
-    } else {
-      var avgMinutesPerDay = 0
+      avgMinutesPerDay = userTimes.size > 0 ? totalMinutes / userTimes.size / ANALYTICS_WINDOW_DAYS : 0
     }
 
     // 3. At-risk: users with >30% rapid (rt_ms < 5000) items in last session
@@ -308,10 +346,12 @@ export async function getClassAnalytics(classId: string) {
           .eq('session_id', sessionId)
 
         if (sessionResponses && sessionResponses.length > 0) {
-          const rapidCount = sessionResponses.filter(r => r.rt_ms && r.rt_ms < 5000).length
+          const rapidCount = sessionResponses.filter(
+            r => r.rt_ms && r.rt_ms < RAPID_RESPONSE_THRESHOLD_MS
+          ).length
           const rapidPercentage = (rapidCount / sessionResponses.length) * 100
 
-          if (rapidPercentage > 30) {
+          if (rapidPercentage > AT_RISK_RAPID_PERCENTAGE * 100) {
             atRiskCount++
           }
         }

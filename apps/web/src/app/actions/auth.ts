@@ -124,13 +124,13 @@ export async function requestOtp(email: string) {
     // Check if email already exists in the system
     const emailCheck = await checkEmailExistsInAuth(trimmedEmail)
     if (emailCheck.exists) {
+      // Security: Log role internally for debugging, but don't expose to user (prevents account enumeration)
       authLogger.info('[requestOtp] Email already registered', { role: emailCheck.role })
-      const roleText = emailCheck.role === 'teacher' ? 'teacher' : 'student'
       return {
         success: false,
-        error: `This email is already registered as a ${roleText}. Please login instead.`,
+        error: 'This email is already registered. Please login instead.',
         exists: true,
-      } as any
+      }
     }
 
     // Check for blocked/fake domains first
@@ -286,9 +286,11 @@ export async function requestOtp(email: string) {
     })
 
     if (error) {
+      const errorStatus = (error as { status?: number }).status
+      const errorName = (error as { name?: string }).name
       authLogger.error('[requestOtp] Supabase error', error, {
-        status: (error as any)?.status,
-        name: (error as any)?.name,
+        status: errorStatus,
+        name: errorName,
       })
 
       // Provide more specific error messages

@@ -3,68 +3,8 @@
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-
-// Email validation regex - strict format
-const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
-
-// List of known valid email providers
-const VALID_EMAIL_PROVIDERS = [
-  'gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com',
-  'protonmail.com', 'aol.com', 'mail.com', 'zoho.com', 'yandex.com',
-  'live.com', 'msn.com', 'yahoo.co.in', 'rediffmail.com', 'inbox.com',
-  // Educational domains
-  'edu', 'ac.in', 'edu.in',
-  // Common organizational domains
-  'gov.in', 'nic.in', 'nic.org'
-]
-
-// Common typos and disposable/fake domains to block
-const BLOCKED_DOMAINS = [
-  // Gmail typos
-  'gail.com', 'gamil.com', 'gmial.com', 'gmai.com', 'gmil.com', 'gmaill.com',
-  'gnail.com', 'gmeil.com', 'gmsil.com', 'gimail.com', 'gmaqil.com',
-  'gmaiil.com', 'gmali.com', 'gmal.com', 'gmaio.com', 'gmaul.com',
-
-  // Yahoo typos
-  'yahooo.com', 'yaho.com', 'yhoo.com', 'yahoooo.com', 'yahou.com',
-  'yaboo.com', 'yahho.com', 'yajoo.com', 'yahol.com', 'yaoo.com',
-  'yhaoo.com', 'yahoou.com', 'yahpp.com', 'yahuu.com',
-
-  // Outlook typos
-  'outlok.com', 'outlock.com', 'outloo.com', 'outlookk.com', 'outloook.com',
-  'ooutlook.com', 'putlook.com', 'outlook.co', 'outlool.com', 'outlookl.com',
-  'iutlook.com', 'outtlook.com', 'otlook.com',
-
-  // Hotmail typos
-  'hotmial.com', 'hotmil.com', 'hotmai.com', 'hotmaill.com', 'hotmaii.com',
-  'hotmal.com', 'hotmeil.com', 'htomail.com', 'hotmaol.com', 'hotmsil.com',
-  'hotmaiil.com', 'hotmali.com', 'hotmain.com', 'hptmail.com', 'hotnail.com',
-  'hormail.com', 'hotail.com',
-
-  // iCloud typos
-  'iclou.com', 'icloud.co', 'icloude.com', 'iclaud.com', 'icloyd.com',
-  'iclooud.com', 'iclod.com', 'iclound.com',
-
-  // ProtonMail typos
-  'protonmial.com', 'protonmail.co', 'protonmeil.com', 'protonmal.com',
-  'protonmali.com', 'protomail.com', 'protoonmail.com',
-
-  // AOL typos
-  'aol.co', 'aoll.com', 'ao.com', 'ail.com', 'aol.con',
-
-  // Live.com typos
-  'live.co', 'livee.com', 'liv.com', 'lve.com', 'lice.com',
-
-  // Disposable/temporary email services
-  'mailinator.com', 'guerrillamail.com', 'temp-mail.org', '10minutemail.com',
-  'throwaway.email', 'maildrop.cc', 'tempmail.com', 'fakeinbox.com',
-  'trashmail.com', 'getnada.com', 'emailondeck.com', 'yopmail.com',
-  'disposable.com', 'guerrillamail.info', 'sharklasers.com', 'guerrillamail.net',
-
-  // Fake/test domains
-  'test.com', 'example.com', 'fake.com', 'spam.com', 'temp.com',
-  'testmail.com', 'fakemail.com', 'spamtest.com'
-]
+import { BLOCKED_EMAIL_DOMAINS, VALID_EMAIL_PROVIDERS, EMAIL_REGEX } from '@/lib/auth-constants'
+import { authLogger } from '@/lib/auth-logger'
 
 // Check if email domain is valid
 function isValidEmailDomain(email: string): boolean {
@@ -87,34 +27,106 @@ function isValidEmailDomain(email: string): boolean {
   return validTLDs.includes(tld) && domainParts.every(part => part.length > 0)
 }
 
+/**
+ * Check if email exists in database or Supabase auth
+ * Used to prevent duplicate accounts across teacher and student accounts
+ * Checks both the users table and Supabase auth records
+ */
+export async function checkEmailExistsInAuth(email: string): Promise<{
+  exists: boolean
+  role?: string
+}> {
+  try {
+    const trimmedEmail = email.trim().toLowerCase()
+    const supabase = await createClient()
+
+    // Check if email exists in users table (both teacher and student accounts)
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, email, role')
+      .ilike('email', trimmedEmail)
+      .single()
+
+    if (error) {
+      // PGRST116 = no rows returned (email doesn't exist) - this is expected
+      if (error.code === 'PGRST116') {
+        authLogger.debug('[checkEmailExistsInAuth] Email not found in users table')
+        // Continue to check Supabase auth
+      } else {
+        // Other errors should be logged but not block account creation
+        authLogger.error('[checkEmailExistsInAuth] Error checking email in users table', error)
+      }
+    } else if (data) {
+      // Email found in users table
+      authLogger.warn('[checkEmailExistsInAuth] Email already exists in users', { role: data?.role })
+      return { exists: true, role: data?.role }
+    }
+
+    // Also check in Supabase auth users to catch all duplicate emails
+    // This prevents the same email being used for multiple accounts
+    try {
+      const { data: authData, error: authError } = await supabase.auth.admin.listUsers()
+
+      if (!authError && authData?.users) {
+        const existingUser = authData.users.find(u => u.email?.toLowerCase() === trimmedEmail)
+        if (existingUser) {
+          const userRole = existingUser.user_metadata?.role || 'user'
+          authLogger.warn('[checkEmailExistsInAuth] Email already exists in Supabase auth', { role: userRole })
+          return { exists: true, role: userRole }
+        }
+      }
+    } catch (authCheckError) {
+      // If admin API fails, continue - the OTP request will fail if email doesn't exist
+      authLogger.warn('[checkEmailExistsInAuth] Could not check Supabase auth users', authCheckError as Error)
+    }
+
+    return { exists: false }
+  } catch (error) {
+    authLogger.error('[checkEmailExistsInAuth] Unexpected error', error)
+    return { exists: false }
+  }
+}
+
 export async function requestOtp(email: string) {
   try {
     // Validate email format
     const trimmedEmail = email.trim().toLowerCase()
 
     if (!trimmedEmail) {
-      console.error('❌ [requestOtp] Empty email')
+      authLogger.debug('[requestOtp] Empty email provided')
       return { success: false, error: 'Please enter an email address.' }
     }
 
     if (!EMAIL_REGEX.test(trimmedEmail)) {
-      console.error('❌ [requestOtp] Invalid email format:', trimmedEmail)
+      authLogger.debug('[requestOtp] Invalid email format')
       return { success: false, error: 'Please enter a valid email address.' }
     }
 
     // Validate email domain
     if (!isValidEmailDomain(trimmedEmail)) {
-      console.error('❌ [requestOtp] Invalid email domain:', trimmedEmail)
+      authLogger.debug('[requestOtp] Invalid email domain')
       return {
         success: false,
         error: 'Please enter a valid email address from a recognized email provider.'
       }
     }
 
+    // Check if email already exists in the system
+    const emailCheck = await checkEmailExistsInAuth(trimmedEmail)
+    if (emailCheck.exists) {
+      authLogger.info('[requestOtp] Email already registered', { role: emailCheck.role })
+      const roleText = emailCheck.role === 'teacher' ? 'teacher' : 'student'
+      return {
+        success: false,
+        error: `This email is already registered as a ${roleText}. Please login instead.`,
+        exists: true,
+      } as any
+    }
+
     // Check for blocked/fake domains first
     const domain = trimmedEmail.split('@')[1]
-    if (domain && BLOCKED_DOMAINS.includes(domain.toLowerCase())) {
-      console.error('❌ [requestOtp] Blocked domain:', domain)
+    if (domain && BLOCKED_EMAIL_DOMAINS.includes(domain.toLowerCase())) {
+      authLogger.debug('[requestOtp] Blocked domain detected')
 
       // Check if it's a typo and suggest correction
       const commonTypos: Record<string, string> = {
@@ -222,10 +234,7 @@ export async function requestOtp(email: string) {
 
       if (commonTypos[domain]) {
         const suggestedEmail = trimmedEmail.replace(domain, commonTypos[domain])
-        console.warn('⚠️ [requestOtp] Possible typo detected:', {
-          entered: trimmedEmail,
-          suggested: suggestedEmail,
-        })
+        authLogger.warn('[requestOtp] Possible typo detected in email domain')
         return {
           success: false,
           error: `Did you mean ${suggestedEmail}? Please check your email address.`
@@ -241,7 +250,7 @@ export async function requestOtp(email: string) {
     // Additional check: reject obviously fake emails
     const suspiciousPatterns = ['test@', 'fake@', 'example@', 'spam@', 'temp@', 'disposable@']
     if (suspiciousPatterns.some(pattern => trimmedEmail.startsWith(pattern))) {
-      console.error('❌ [requestOtp] Suspicious email pattern:', trimmedEmail)
+      authLogger.debug('[requestOtp] Suspicious email pattern detected')
       return {
         success: false,
         error: 'Please use a valid email address.'
@@ -250,8 +259,7 @@ export async function requestOtp(email: string) {
 
     const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
-    console.log('🔐 [requestOtp] Starting OTP request:', {
-      email: trimmedEmail,
+    authLogger.debug('[requestOtp] Starting OTP request', {
       origin,
       supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
       hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -268,11 +276,9 @@ export async function requestOtp(email: string) {
     })
 
     if (error) {
-      console.error('❌ [requestOtp] Supabase error:', {
-        message: error.message,
-        status: error.status,
-        name: error.name,
-        fullError: JSON.stringify(error),
+      authLogger.error('[requestOtp] Supabase error', error, {
+        status: (error as any)?.status,
+        name: (error as any)?.name,
       })
 
       // Provide more specific error messages
@@ -288,13 +294,10 @@ export async function requestOtp(email: string) {
       return { success: false, error: userMessage }
     }
 
-    console.log('✅ [requestOtp] OTP sent successfully:', {
-      userId: (data as any)?.user?.id,
-      messageId: (data as any)?.messageId,
-    })
+    authLogger.success('[requestOtp] OTP sent successfully')
     return { success: true, data }
   } catch (error) {
-    console.error('❌ [requestOtp] Unexpected error:', error)
+    authLogger.error('[requestOtp] Unexpected error', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'An unexpected error occurred'
@@ -304,7 +307,7 @@ export async function requestOtp(email: string) {
 
 export async function verifyOtp(email: string, token: string) {
   try {
-    console.log('🔐 [verifyOtp] Starting OTP verification:', { email, tokenLength: token.length })
+    authLogger.debug('[verifyOtp] Starting OTP verification')
 
     const supabase = await createClient()
 
@@ -315,23 +318,18 @@ export async function verifyOtp(email: string, token: string) {
     })
 
     if (error) {
-      console.error('❌ [verifyOtp] Verification failed:', error)
+      authLogger.error('[verifyOtp] Verification failed', error)
       return { success: false, error: error.message }
     }
 
-    console.log('✅ [verifyOtp] OTP verified successfully:', {
-      userId: data.user?.id,
-      email: data.user?.email,
-      role: data.user?.user_metadata?.role,
-    })
+    const role = data.user?.user_metadata?.role || 'student'
+    authLogger.success('[verifyOtp] OTP verified successfully', { role })
 
     // Session is now created - check user role and redirect
-    const role = data.user?.user_metadata?.role || 'student'
-
     // Revalidate the layout to pick up the new session
     revalidatePath('/', 'layout')
 
-    console.log('🔄 [verifyOtp] Redirecting to:', role === 'teacher' ? '/app/teacher/classes' : '/app/dashboard')
+    authLogger.debug('[verifyOtp] Redirecting user', { role })
 
     // Redirect based on role
     if (role === 'teacher') {
@@ -345,7 +343,128 @@ export async function verifyOtp(email: string, token: string) {
       throw error // Re-throw to allow the redirect to happen
     }
 
-    console.error('❌ [verifyOtp] Unexpected error:', error)
+    authLogger.error('[verifyOtp] Unexpected error', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'An unexpected error occurred'
+    }
+  }
+}
+
+/**
+ * Send forgot password OTP
+ * Used for both teacher and student password recovery
+ */
+export async function sendForgotPasswordOtp(email: string) {
+  try {
+    const trimmedEmail = email.trim().toLowerCase()
+
+    // Validate email format
+    if (!trimmedEmail) {
+      return { success: false, error: 'Please enter an email address.' }
+    }
+
+    if (!EMAIL_REGEX.test(trimmedEmail)) {
+      return { success: false, error: 'Please enter a valid email address.' }
+    }
+
+    const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+
+    authLogger.debug('[sendForgotPasswordOtp] Sending recovery OTP')
+
+    const supabase = await createClient()
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email: trimmedEmail,
+      options: {
+        emailRedirectTo: `${origin}/reset-password`,
+        shouldCreateUser: false, // Don't create user if doesn't exist
+      },
+    })
+
+    if (error) {
+      authLogger.error('[sendForgotPasswordOtp] Error', error)
+
+      // If user doesn't exist, inform them
+      if (error.message.includes('not found') || error.message.includes('does not exist')) {
+        return {
+          success: false,
+          error: 'No account found with this email. Please sign up first.'
+        }
+      }
+
+      return { success: false, error: error.message }
+    }
+
+    authLogger.success('[sendForgotPasswordOtp] OTP sent successfully')
+    return { success: true }
+  } catch (error) {
+    authLogger.error('[sendForgotPasswordOtp] Unexpected error', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'An unexpected error occurred'
+    }
+  }
+}
+
+/**
+ * Reset password after OTP verification
+ * Used for both teacher and student password recovery
+ */
+export async function resetPasswordWithOtp(email: string, token: string, newPassword: string) {
+  try {
+    authLogger.debug('[resetPasswordWithOtp] Starting password reset')
+
+    if (!newPassword || newPassword.length < 8) {
+      return {
+        success: false,
+        error: 'Password must be at least 8 characters long.'
+      }
+    }
+
+    const supabase = await createClient()
+
+    // First verify the OTP
+    const { data, error: verifyError } = await supabase.auth.verifyOtp({
+      email: email.trim().toLowerCase(),
+      token: token.trim(),
+      type: 'email',
+    })
+
+    if (verifyError) {
+      authLogger.error('[resetPasswordWithOtp] OTP verification failed', verifyError)
+      return {
+        success: false,
+        error: "Invalid or expired recovery code. Please request a new one."
+      }
+    }
+
+    if (!data.user) {
+      return {
+        success: false,
+        error: 'Verification failed. Please try again.'
+      }
+    }
+
+    // Update password
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: newPassword,
+    })
+
+    if (updateError) {
+      authLogger.error('[resetPasswordWithOtp] Password update failed', updateError)
+      return {
+        success: false,
+        error: updateError.message
+      }
+    }
+
+    authLogger.success('[resetPasswordWithOtp] Password reset successfully')
+    revalidatePath('/', 'layout')
+
+    return { success: true }
+  } catch (error) {
+    authLogger.error('[resetPasswordWithOtp] Unexpected error', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'An unexpected error occurred'

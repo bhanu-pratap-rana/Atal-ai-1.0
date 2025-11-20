@@ -8,6 +8,11 @@ import { usePhoneInput } from '@/hooks/usePhoneInput'
 import { useOTPInput } from '@/hooks/useOTPInput'
 import { validatePhone } from '@/lib/auth-validation'
 import { OTP_LENGTH, PHONE_DIGIT_LENGTH } from '@/lib/auth-constants'
+import {
+  handleSendOTP as sendOTPHandler,
+  handleVerifyOTP as verifyOTPHandler,
+  handleAnonymousSignIn,
+} from '@/lib/auth-handlers'
 import { AuthCard } from '@/components/auth/AuthCard'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -86,25 +91,15 @@ function PhoneOTPStep({
   const phoneInput = usePhoneInput()
   const otpInput = useOTPInput()
 
-  async function handleSendOTP(e: React.FormEvent) {
+  async function handleSendOTPClick(e: React.FormEvent) {
     e.preventDefault()
-
-    // Validate phone
-    const phoneValidation = validatePhone(phoneInput.fullValue)
-    if (!phoneValidation.valid) {
-      toast.error(phoneValidation.error || 'Invalid phone number')
-      return
-    }
-
     setStepLoading(true)
 
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: phoneInput.fullValue,
-      })
+      const result = await sendOTPHandler(supabase, phoneInput.fullValue, 'phone')
 
-      if (error) {
-        toast.error(error.message)
+      if (!result.success) {
+        toast.error(result.error || 'Failed to send OTP')
       } else {
         toast.success('OTP sent to your phone!')
         setStep('verify')
@@ -116,19 +111,20 @@ function PhoneOTPStep({
     }
   }
 
-  async function handleVerifyOTP(e: React.FormEvent) {
+  async function handleVerifyOTPClick(e: React.FormEvent) {
     e.preventDefault()
     setStepLoading(true)
 
     try {
-      const { error } = await supabase.auth.verifyOtp({
-        phone: phoneInput.fullValue,
-        token: otpInput.value,
-        type: 'sms',
-      })
+      const result = await verifyOTPHandler(
+        supabase,
+        { phone: phoneInput.fullValue },
+        otpInput.value,
+        'sms'
+      )
 
-      if (error) {
-        toast.error(error.message)
+      if (!result.success) {
+        toast.error(result.error || 'Failed to verify OTP')
       } else {
         toast.success('Phone verified! 🎉')
         onComplete()
@@ -146,7 +142,7 @@ function PhoneOTPStep({
         title="Verify OTP"
         description={`Enter the 6-digit code sent to ${phoneInput.fullValue}`}
       >
-        <form onSubmit={handleVerifyOTP} className="space-y-4">
+        <form onSubmit={handleVerifyOTPClick} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="otp">OTP Code</Label>
             <Input
@@ -204,7 +200,7 @@ function PhoneOTPStep({
       title="Phone Sign-in"
       description="Enter your phone number to receive an OTP"
     >
-      <form onSubmit={handleSendOTP} className="space-y-4">
+      <form onSubmit={handleSendOTPClick} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="phone">Phone Number</Label>
           <div className="flex items-center border border-input rounded-md">

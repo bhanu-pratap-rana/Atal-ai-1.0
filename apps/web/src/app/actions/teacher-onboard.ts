@@ -2,6 +2,7 @@
 
 import { createClient, createAdminClient } from '@/lib/supabase-server'
 import { authLogger } from '@/lib/auth-logger'
+import { checkEmailExistsInAuth } from '@/app/actions/auth'
 
 // Types
 export interface SendEmailOtpResult {
@@ -114,17 +115,19 @@ export async function checkEmailExists(email: string): Promise<{
 /**
  * Send Email OTP for teacher registration
  * Step 1A: Email field → "Send code"
- * Now includes check if email already exists
+ * Now includes check if email already exists using reliable auth check
  */
 export async function sendEmailOtp(email: string): Promise<SendEmailOtpResult> {
   try {
     const trimmedEmail = email.trim().toLowerCase()
     const supabase = await createClient()
 
-    // First check if email already exists
-    const { exists, hasPassword } = await checkEmailExists(trimmedEmail)
+    // First check if email already exists using the reliable auth check
+    // This works without service role key by checking the users table with RLS
+    const emailCheck = await checkEmailExistsInAuth(trimmedEmail)
 
-    if (exists) {
+    if (emailCheck.exists) {
+      authLogger.info('[sendEmailOtp] Email already registered', { role: emailCheck.role })
       return {
         success: false,
         error: 'This email is already registered. Please login with your email and password.',
@@ -143,9 +146,10 @@ export async function sendEmailOtp(email: string): Promise<SendEmailOtpResult> {
       return { success: false, error: error.message }
     }
 
+    authLogger.success('[sendEmailOtp] OTP sent successfully')
     return { success: true }
   } catch (error) {
-    authLogger.error('[Send Email OTP] Unexpected error', error)
+    authLogger.error('[sendEmailOtp] Unexpected error', error)
     return { success: false, error: 'Failed to send OTP. Please try again.' }
   }
 }

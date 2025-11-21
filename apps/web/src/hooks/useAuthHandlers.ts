@@ -9,7 +9,7 @@ import {
 } from '@/app/actions/auth'
 import { authLogger } from '@/lib/auth-logger'
 import { validateEmail, validatePassword } from '@/lib/auth-validation'
-import { AUTH_MESSAGES } from '@/lib/auth-ui-messages'
+import { AUTH_ERRORS } from '@/lib/auth-constants'
 
 interface UseAuthHandlersParams {
   supabase: SupabaseClient
@@ -41,7 +41,7 @@ export function useAuthHandlers({ supabase }: UseAuthHandlersParams) {
         if (!emailValidation.valid) {
           return {
             success: false,
-            error: emailValidation.error || AUTH_MESSAGES.VALIDATION.INVALID_EMAIL,
+            error: emailValidation.error || AUTH_ERRORS.INVALID_EMAIL,
           }
         }
 
@@ -53,24 +53,24 @@ export function useAuthHandlers({ supabase }: UseAuthHandlersParams) {
 
         if (error) {
           authLogger.error('[Auth] Password sign-in failed', error)
-          toast.error(AUTH_MESSAGES.SIGNIN.FAILED)
-          return { success: false, error: AUTH_MESSAGES.SIGNIN.FAILED }
+          toast.error(AUTH_ERRORS.INVALID_CREDENTIALS)
+          return { success: false, error: AUTH_ERRORS.INVALID_CREDENTIALS }
         }
 
         if (data.user) {
           authLogger.success('[Auth] Password sign-in successful')
-          toast.success(AUTH_MESSAGES.SIGNIN.SUCCESS)
+          toast.success('Signed in successfully!')
           return { success: true, data: data.user }
         }
 
         return {
           success: false,
-          error: AUTH_MESSAGES.SIGNIN.FAILED,
+          error: AUTH_ERRORS.INVALID_CREDENTIALS,
         }
       } catch (error) {
         authLogger.error('[Auth] Unexpected error during sign-in', error)
-        toast.error(AUTH_MESSAGES.SIGNIN.UNEXPECTED_ERROR)
-        return { success: false, error: AUTH_MESSAGES.SIGNIN.UNEXPECTED_ERROR }
+        toast.error(AUTH_ERRORS.UNEXPECTED_ERROR)
+        return { success: false, error: AUTH_ERRORS.UNEXPECTED_ERROR }
       }
     },
     [supabase]
@@ -87,7 +87,7 @@ export function useAuthHandlers({ supabase }: UseAuthHandlersParams) {
         if (!emailValidation.valid) {
           return {
             success: false,
-            error: emailValidation.error || AUTH_MESSAGES.VALIDATION.INVALID_EMAIL,
+            error: emailValidation.error || AUTH_ERRORS.INVALID_EMAIL,
           }
         }
 
@@ -96,17 +96,17 @@ export function useAuthHandlers({ supabase }: UseAuthHandlersParams) {
 
         if (result.success) {
           authLogger.success('[Auth] Email OTP sent')
-          toast.success(AUTH_MESSAGES.SIGNUP.EMAIL_OTP_SENT)
+          toast.success('OTP sent to your email!')
           return { success: true }
         }
 
         authLogger.error('[Auth] Failed to send email OTP', result.error)
-        toast.error(result.error || AUTH_MESSAGES.SIGNUP.OTP_FAILED)
+        toast.error(result.error || 'Failed to send OTP')
         return { success: false, error: result.error }
       } catch (error) {
         authLogger.error('[Auth] Unexpected error sending email OTP', error)
-        toast.error(AUTH_MESSAGES.SIGNUP.OTP_FAILED)
-        return { success: false, error: AUTH_MESSAGES.SIGNUP.OTP_FAILED }
+        toast.error('Failed to send OTP')
+        return { success: false, error: 'Failed to send OTP' }
       }
     },
     []
@@ -122,7 +122,7 @@ export function useAuthHandlers({ supabase }: UseAuthHandlersParams) {
         if (!emailValidation.valid) {
           return {
             success: false,
-            error: emailValidation.error || AUTH_MESSAGES.VALIDATION.INVALID_EMAIL,
+            error: emailValidation.error || AUTH_ERRORS.INVALID_EMAIL,
           }
         }
 
@@ -131,17 +131,17 @@ export function useAuthHandlers({ supabase }: UseAuthHandlersParams) {
 
         if (result.success) {
           authLogger.success('[Auth] Password reset OTP sent')
-          toast.success(AUTH_MESSAGES.PASSWORD_RESET.CODE_SENT)
+          toast.success('Password reset code sent!')
           return { success: true }
         }
 
         authLogger.error('[Auth] Failed to send password reset OTP', result.error)
-        toast.error(result.error || AUTH_MESSAGES.PASSWORD_RESET.FAILED)
+        toast.error(result.error || 'Failed to send reset code')
         return { success: false, error: result.error }
       } catch (error) {
         authLogger.error('[Auth] Unexpected error sending password reset OTP', error)
-        toast.error(AUTH_MESSAGES.PASSWORD_RESET.FAILED)
-        return { success: false, error: AUTH_MESSAGES.PASSWORD_RESET.FAILED }
+        toast.error('Failed to send reset code')
+        return { success: false, error: 'Failed to send reset code' }
       }
     },
     []
@@ -162,14 +162,14 @@ export function useAuthHandlers({ supabase }: UseAuthHandlersParams) {
         if (!passwordValidation.valid) {
           return {
             success: false,
-            error: passwordValidation.error || AUTH_MESSAGES.VALIDATION.MIN_PASSWORD,
+            error: passwordValidation.error || AUTH_ERRORS.INVALID_PASSWORD,
           }
         }
 
         if (!otp || otp.length !== 6) {
           return {
             success: false,
-            error: AUTH_MESSAGES.VALIDATION.INVALID_OTP,
+            error: AUTH_ERRORS.INVALID_OTP,
           }
         }
 
@@ -178,17 +178,17 @@ export function useAuthHandlers({ supabase }: UseAuthHandlersParams) {
 
         if (result.success) {
           authLogger.success('[Auth] Password reset successful')
-          toast.success(AUTH_MESSAGES.PASSWORD_RESET.SUCCESS)
+          toast.success('Password reset successful!')
           return { success: true }
         }
 
         authLogger.error('[Auth] Password reset failed', result.error)
-        toast.error(result.error || AUTH_MESSAGES.PASSWORD_RESET.FAILED)
+        toast.error(result.error || 'Failed to reset password')
         return { success: false, error: result.error }
       } catch (error) {
         authLogger.error('[Auth] Unexpected error during password reset', error)
-        toast.error(AUTH_MESSAGES.PASSWORD_RESET.FAILED)
-        return { success: false, error: AUTH_MESSAGES.PASSWORD_RESET.FAILED }
+        toast.error('Failed to reset password')
+        return { success: false, error: 'Failed to reset password' }
       }
     },
     []

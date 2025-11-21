@@ -62,13 +62,13 @@ export function OTPVerificationForm({
         <Label htmlFor="otp-input">{label}</Label>
         <OTPInput
           id="otp-input"
+          label={label}
           value={otp}
           onChange={onOtpChange}
           disabled={isLoading}
           error={error}
           helperText={helperText}
           autoFocus
-          required
         />
       </div>
 

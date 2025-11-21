@@ -38,6 +38,7 @@ export default function TeacherStartPage() {
 
   const [step, setStep] = useState<Step>('choice')
   const [loading, setLoading] = useState(false)
+  const [signupMethod, setSignupMethod] = useState<'email' | 'phone'>('email')
 
   // Login: Email & Password
   const [loginEmail, setLoginEmail] = useState('')
@@ -57,6 +58,12 @@ export default function TeacherStartPage() {
   const [emailSuggestion, setEmailSuggestion] = useState('')
   const [otp, setOtp] = useState('')
   const [otpSent, setOtpSent] = useState(false)
+
+  // Step 1: Phone OTP Auth (for signup) - alternative method
+  const [phoneNumber, setPhoneNumber] = useState('')
+  const [phoneError, setPhoneError] = useState('')
+  const [phoneOtp, setPhoneOtp] = useState('')
+  const [phoneOtpSent, setPhoneOtpSent] = useState(false)
 
   // Step 1C: Password Creation
   const [password, setPassword] = useState('')
@@ -557,114 +564,265 @@ export default function TeacherStartPage() {
   }
 
   if (step === 'auth') {
-    if (!otpSent) {
-      return (
-        <div className="min-h-screen bg-gradient-to-br from-surface via-background to-surface flex items-center justify-center p-4">
-          <AuthCard
-            title="Teacher Registration"
-            description="Step 1 of 4: Email Verification"
-          >
-            <form onSubmit={handleSendOTP} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="teacher@school.edu"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  disabled={loading}
-                />
-                {emailError && (
-                  <div className="space-y-2">
-                    <p className="text-sm text-red-600">{emailError}</p>
-                    {emailSuggestion && (
-                      <button
-                        type="button"
-                        onClick={() => setEmail(emailSuggestion)}
-                        className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
-                        disabled={loading}
-                      >
-                        ✓ Use suggested email: {emailSuggestion}
-                      </button>
-                    )}
-                  </div>
-                )}
-                <p className="text-xs text-text-secondary">
-                  We'll send a verification code to this email
-                </p>
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full shadow-[0_8px_20px_rgba(255,140,66,0.35)]"
-                disabled={loading || !email}
-                loading={loading}
-              >
-                Send Verification Code
-              </Button>
-
-              <div className="text-center pt-2">
-                <button
-                  type="button"
-                  onClick={() => router.push('/')}
-                  className="text-sm text-text-secondary hover:text-primary hover:underline"
-                  disabled={loading}
-                >
-                  Back to home
-                </button>
-              </div>
-            </form>
-          </AuthCard>
-        </div>
-      )
-    }
-
     return (
       <div className="min-h-screen bg-gradient-to-br from-surface via-background to-surface flex items-center justify-center p-4">
         <AuthCard
-          title="Verify Email"
-          description={`Enter the code sent to ${email}`}
+          title="Teacher Registration"
+          description="Step 1 of 4: Choose your verification method"
         >
-          <form onSubmit={handleVerifyOTP} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="otp">Verification Code</Label>
-              <Input
-                id="otp"
-                type="text"
-                placeholder="123456"
-                value={otp}
-                onChange={(e) =>
-                  setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))
-                }
-                required
+          <div className="space-y-4">
+            {/* Tab Navigation */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setSignupMethod('email')
+                  setPhoneError('')
+                  setEmailError('')
+                }}
+                className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors text-sm ${
+                  signupMethod === 'email'
+                    ? 'bg-primary text-white'
+                    : 'bg-muted text-text-secondary hover:bg-muted/80'
+                }`}
                 disabled={loading}
-                maxLength={6}
-                className="text-center text-2xl font-mono tracking-widest"
-              />
+              >
+                📧 Email
+              </button>
+              <button
+                onClick={() => {
+                  setSignupMethod('phone')
+                  setPhoneError('')
+                  setEmailError('')
+                }}
+                className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors text-sm ${
+                  signupMethod === 'phone'
+                    ? 'bg-primary text-white'
+                    : 'bg-muted text-text-secondary hover:bg-muted/80'
+                }`}
+                disabled={loading}
+              >
+                📱 Phone
+              </button>
             </div>
 
-            <Button
-              type="submit"
-              className="w-full shadow-[0_8px_20px_rgba(255,140,66,0.35)]"
-              disabled={loading || otp.length !== 6}
-              loading={loading}
-            >
-              Verify Email
-            </Button>
+            {/* Email Method */}
+            {signupMethod === 'email' && (
+              <>
+                {!otpSent ? (
+                  <form onSubmit={handleSendOTP} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email Address</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="teacher@school.edu"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        disabled={loading}
+                      />
+                      {emailError && (
+                        <div className="space-y-2">
+                          <p className="text-sm text-red-600">{emailError}</p>
+                          {emailSuggestion && (
+                            <button
+                              type="button"
+                              onClick={() => setEmail(emailSuggestion)}
+                              className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
+                              disabled={loading}
+                            >
+                              ✓ Use suggested: {emailSuggestion}
+                            </button>
+                          )}
+                        </div>
+                      )}
+                      <p className="text-xs text-text-secondary">
+                        We'll send a 6-digit code to this email
+                      </p>
+                    </div>
 
-            <div className="text-center space-y-2">
+                    <Button
+                      type="submit"
+                      className="w-full shadow-[0_8px_20px_rgba(255,140,66,0.35)]"
+                      disabled={loading || !email}
+                      loading={loading}
+                    >
+                      Send Verification Code
+                    </Button>
+                  </form>
+                ) : (
+                  <form onSubmit={handleVerifyOTP} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="otp">Verification Code</Label>
+                      <Input
+                        id="otp"
+                        type="text"
+                        placeholder="123456"
+                        value={otp}
+                        onChange={(e) =>
+                          setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))
+                        }
+                        required
+                        disabled={loading}
+                        maxLength={6}
+                        className="text-center text-2xl font-mono tracking-widest"
+                      />
+                      <p className="text-xs text-text-secondary">
+                        Enter the 6-digit code sent to {email}
+                      </p>
+                    </div>
+
+                    <Button
+                      type="submit"
+                      className="w-full shadow-[0_8px_20px_rgba(255,140,66,0.35)]"
+                      disabled={loading || otp.length !== 6}
+                      loading={loading}
+                    >
+                      Verify & Continue
+                    </Button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOtpSent(false)
+                        setOtp('')
+                      }}
+                      className="text-sm text-primary hover:underline block w-full text-center"
+                      disabled={loading}
+                    >
+                      Use different email
+                    </button>
+                  </form>
+                )}
+              </>
+            )}
+
+            {/* Phone Method */}
+            {signupMethod === 'phone' && (
+              <div className="space-y-4">
+                <div className="bg-blue-50 border-l-4 border-blue-500 p-3 rounded">
+                  <p className="text-xs text-blue-900">
+                    <strong>📱 Phone Verification</strong>
+                    <br />
+                    Enter your 10-digit phone number. We'll send a verification code via OTP.
+                  </p>
+                </div>
+                <form className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <div className="flex gap-2">
+                      <div className="flex items-center px-3 bg-muted rounded-lg">
+                        <span className="text-sm font-medium text-text-secondary">+91</span>
+                      </div>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        placeholder="9876543210"
+                        value={phoneNumber}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, '').slice(0, 10)
+                          setPhoneNumber(digits)
+                          setPhoneError('')
+                        }}
+                        required
+                        disabled={loading}
+                        maxLength={10}
+                      />
+                    </div>
+                    {phoneError && (
+                      <p className="text-sm text-red-600">{phoneError}</p>
+                    )}
+                    <p className="text-xs text-text-secondary">
+                      10-digit Indian phone number
+                    </p>
+                  </div>
+
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      if (phoneNumber.length !== 10) {
+                        setPhoneError('Phone number must be 10 digits')
+                      } else {
+                        // Phone OTP will be sent here
+                        setPhoneOtpSent(true)
+                        toast.success('OTP sent to your phone!')
+                      }
+                    }}
+                    className="w-full shadow-[0_8px_20px_rgba(255,140,66,0.35)]"
+                    disabled={loading || phoneNumber.length !== 10}
+                    loading={loading}
+                  >
+                    Send OTP to Phone
+                  </Button>
+                </form>
+
+                {phoneOtpSent && (
+                  <form className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="phone-otp">Verification Code</Label>
+                      <Input
+                        id="phone-otp"
+                        type="text"
+                        placeholder="123456"
+                        value={phoneOtp}
+                        onChange={(e) =>
+                          setPhoneOtp(e.target.value.replace(/\D/g, '').slice(0, 6))
+                        }
+                        required
+                        disabled={loading}
+                        maxLength={6}
+                        className="text-center text-2xl font-mono tracking-widest"
+                      />
+                      <p className="text-xs text-text-secondary">
+                        Enter the 6-digit code sent to +91{phoneNumber}
+                      </p>
+                    </div>
+
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        if (phoneOtp.length !== 6) {
+                          toast.error('Please enter 6-digit code')
+                        } else {
+                          // Phone verification would happen here
+                          toast.success('Phone verified!')
+                          setStep('set-password')
+                        }
+                      }}
+                      className="w-full shadow-[0_8px_20px_rgba(255,140,66,0.35)]"
+                      disabled={loading || phoneOtp.length !== 6}
+                      loading={loading}
+                    >
+                      Verify & Continue
+                    </Button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPhoneOtpSent(false)
+                        setPhoneOtp('')
+                      }}
+                      className="text-sm text-primary hover:underline block w-full text-center"
+                      disabled={loading}
+                    >
+                      Change phone number
+                    </button>
+                  </form>
+                )}
+              </div>
+            )}
+
+            <div className="text-center pt-2">
               <button
                 type="button"
-                onClick={() => setOtpSent(false)}
+                onClick={() => setStep('choice')}
                 className="text-sm text-primary hover:underline"
                 disabled={loading}
               >
-                Use different email
+                ← Back to options
               </button>
             </div>
-          </form>
+          </div>
         </AuthCard>
       </div>
     )

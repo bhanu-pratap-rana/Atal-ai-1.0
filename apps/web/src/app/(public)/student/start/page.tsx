@@ -155,10 +155,20 @@ export default function StudentStartPage() {
     }
 
     try {
-      const result = await requestOtp(state.signupEmailAddress.trim())
+      const result = await requestOtp(state.signupEmailAddress.trim()) as any
       if (!result.success) {
-        actions.setSignupEmailError(result.error || 'Failed to send OTP')
-        toast.error(result.error || 'Failed to send OTP')
+        // Check if email already exists - redirect to login
+        if (result.exists) {
+          authLogger.debug('[SignUp Email] Email already exists, redirecting to login')
+          toast.error(result.error || 'This email is already registered')
+          // Switch to signin tab with email prefilled
+          actions.setSigninEmailAddress(state.signupEmailAddress)
+          actions.setMainStep('signin')
+          actions.setSigninTab('email')
+        } else {
+          actions.setSignupEmailError(result.error || 'Failed to send OTP')
+          toast.error(result.error || 'Failed to send OTP')
+        }
       } else {
         toast.success('OTP sent to your email!')
         actions.setSignupEmailOtpSent(true)

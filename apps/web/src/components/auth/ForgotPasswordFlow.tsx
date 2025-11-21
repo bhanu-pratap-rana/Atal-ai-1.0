@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -32,11 +32,16 @@ export function ForgotPasswordFlow({ onSuccess, onCancel }: ForgotPasswordFlowPr
   const [password, setPassword] = useState('')
   const [passwordConfirm, setPasswordConfirm] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setErrorState] = useState<string | undefined>(undefined)
+
+  // Wrapper to handle both null and undefined for error clearing
+  const setError = (value: string | null | undefined) => {
+    setErrorState(typeof value === 'string' ? value : undefined)
+  }
 
   const handleEmailSubmit = async () => {
     setIsLoading(true)
-    setError(null)
+    setError(undefined)
 
     try {
       authLogger.debug('[ForgotPasswordFlow] Sending password reset OTP')
@@ -60,7 +65,7 @@ export function ForgotPasswordFlow({ onSuccess, onCancel }: ForgotPasswordFlowPr
 
   const handleOtpSubmit = async (verifyOtp: string) => {
     setIsLoading(true)
-    setError(null)
+    setError(undefined)
 
     try {
       authLogger.debug('[ForgotPasswordFlow] Verifying password reset OTP')
@@ -78,15 +83,11 @@ export function ForgotPasswordFlow({ onSuccess, onCancel }: ForgotPasswordFlowPr
 
   const handlePasswordSubmit = async () => {
     setIsLoading(true)
-    setError(null)
+    setError(undefined)
 
     try {
       authLogger.debug('[ForgotPasswordFlow] Resetting password')
-      const result = await resetPasswordWithOtp({
-        email,
-        token: otp,
-        newPassword: password,
-      })
+      const result = await resetPasswordWithOtp(email, otp, password)
 
       if (!result.success) {
         setError(result.error || 'Failed to reset password')
@@ -111,10 +112,10 @@ export function ForgotPasswordFlow({ onSuccess, onCancel }: ForgotPasswordFlowPr
   const handleBack = () => {
     if (step === 'otp') {
       setStep('email')
-      setError(null)
+      setError(undefined)
     } else if (step === 'password') {
       setStep('otp')
-      setError(null)
+      setError(undefined)
     }
   }
 

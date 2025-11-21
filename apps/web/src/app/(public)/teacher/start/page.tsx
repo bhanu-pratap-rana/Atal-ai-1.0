@@ -417,12 +417,12 @@ export default function TeacherStartPage() {
   // Render based on current step
   if (step === 'choice') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-surface via-background to-surface flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-surface via-background to-surface flex items-center justify-center px-4 py-8 sm:px-6 md:px-8">
         <AuthCard
           title="Teacher Portal"
           description="Are you a new or existing teacher?"
         >
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {/* Create Account Button */}
             <Button
               onClick={() => setStep('auth')}
@@ -481,12 +481,12 @@ export default function TeacherStartPage() {
 
   if (step === 'login') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-surface via-background to-surface flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-surface via-background to-surface flex items-center justify-center px-4 py-8 sm:px-6 md:px-8">
         <AuthCard
           title="Teacher Login"
           description="Sign in with your registered email and password"
         >
-          <form onSubmit={handleTeacherLogin} className="space-y-4">
+          <form onSubmit={handleTeacherLogin} className="space-y-3 sm:space-y-4">
             <div className="space-y-2">
               <Label htmlFor="login-email">Email Address</Label>
               <Input
@@ -565,28 +565,28 @@ export default function TeacherStartPage() {
 
   if (step === 'auth') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-surface via-background to-surface flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-surface via-background to-surface flex items-center justify-center px-4 py-8 sm:px-6 md:px-8">
         <AuthCard
           title="Teacher Registration"
           description="Step 1 of 4: Choose your verification method"
         >
-          <div className="space-y-4">
-            {/* Tab Navigation */}
-            <div className="flex gap-2">
+          <div className="space-y-3 sm:space-y-4">
+            {/* Tab Navigation - Responsive sizing */}
+            <div className="flex gap-2 sm:gap-3">
               <button
                 onClick={() => {
                   setSignupMethod('email')
                   setPhoneError('')
                   setEmailError('')
                 }}
-                className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors text-sm ${
+                className={`flex-1 py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg font-medium transition-colors text-xs sm:text-sm ${
                   signupMethod === 'email'
-                    ? 'bg-primary text-white'
+                    ? 'bg-primary text-white shadow-md'
                     : 'bg-muted text-text-secondary hover:bg-muted/80'
                 }`}
                 disabled={loading}
               >
-                📧 Email
+                <span className="hidden sm:inline">📧 </span>Email
               </button>
               <button
                 onClick={() => {
@@ -594,14 +594,14 @@ export default function TeacherStartPage() {
                   setPhoneError('')
                   setEmailError('')
                 }}
-                className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors text-sm ${
+                className={`flex-1 py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg font-medium transition-colors text-xs sm:text-sm ${
                   signupMethod === 'phone'
-                    ? 'bg-primary text-white'
+                    ? 'bg-primary text-white shadow-md'
                     : 'bg-muted text-text-secondary hover:bg-muted/80'
                 }`}
                 disabled={loading}
               >
-                📱 Phone
+                <span className="hidden sm:inline">📱 </span>Phone
               </button>
             </div>
 
@@ -847,12 +847,12 @@ export default function TeacherStartPage() {
     }
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-surface via-background to-surface flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-surface via-background to-surface flex items-center justify-center px-4 py-8 sm:px-6 md:px-8">
         <AuthCard
           title="Create Password"
           description="Step 2 of 4: Secure your account"
         >
-          <form onSubmit={handleSetPassword} className="space-y-4">
+          <form onSubmit={handleSetPassword} className="space-y-3 sm:space-y-4">
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input
@@ -930,7 +930,7 @@ export default function TeacherStartPage() {
 
   if (step === 'verify-school') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-surface via-background to-surface flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-surface via-background to-surface flex items-center justify-center px-4 py-8 sm:px-6 md:px-8">
         <AuthCard
           title="School Verification"
           description="Step 3 of 4: Verify your school credentials"
@@ -996,7 +996,7 @@ export default function TeacherStartPage() {
 
   if (step === 'profile') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-surface via-background to-surface flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-surface via-background to-surface flex items-center justify-center px-4 py-8 sm:px-6 md:px-8">
         <AuthCard
           title="Teacher Profile"
           description="Step 4 of 4: Complete your profile"
@@ -1069,7 +1069,7 @@ export default function TeacherStartPage() {
   // Forgot Password: Request OTP
   if (step === 'forgot-password' && !forgotOtpSent) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-surface via-background to-surface flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-surface via-background to-surface flex items-center justify-center px-4 py-8 sm:px-6 md:px-8">
         <AuthCard
           title="Reset Password"
           description="Enter your email to receive a recovery code"
@@ -1123,7 +1123,7 @@ export default function TeacherStartPage() {
   // Forgot Password: Verify OTP and Reset
   if (step === 'forgot-password' && forgotOtpSent) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-surface via-background to-surface flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-surface via-background to-surface flex items-center justify-center px-4 py-8 sm:px-6 md:px-8">
         <AuthCard
           title="Reset Password"
           description={`Enter the code sent to ${forgotEmail}`}
@@ -1220,7 +1220,7 @@ export default function TeacherStartPage() {
 
   if (step === 'complete') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-surface via-background to-surface flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-surface via-background to-surface flex items-center justify-center px-4 py-8 sm:px-6 md:px-8">
         <AuthCard title="Registration Complete!" description="Welcome to ATAL AI">
           <div className="text-center space-y-4">
             <div className="text-6xl">🎉</div>

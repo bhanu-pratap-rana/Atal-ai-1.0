@@ -105,17 +105,24 @@ export function validateEmail(email: string): { valid: boolean; error?: string; 
   }
 
   // Extract domain
-  const [, domain] = trimmedEmail.split('@')
+  const [localPart, domain] = trimmedEmail.split('@')
 
   // Check against blocked domains (disposable emails)
   if (BLOCKED_EMAIL_DOMAINS.has(domain)) {
     return { valid: false, error: AUTH_ERRORS.DISPOSABLE_EMAIL }
   }
 
-  // Check for domain typos (e.g., "gmal.com" instead of "gmail.com")
+  // Check if domain is in valid providers list
+  const isValidDomain = VALID_EMAIL_PROVIDERS.includes(domain)
+
+  if (isValidDomain) {
+    // Domain is valid, return success immediately without typo checking
+    return { valid: true }
+  }
+
+  // Domain is NOT in valid providers list - check for typos
   const typoDetection = detectDomainTypo(domain)
   if (typoDetection.hasTypo && typoDetection.suggestion) {
-    const [localPart] = trimmedEmail.split('@')
     const suggestedEmail = `${localPart}@${typoDetection.suggestion}`
     return {
       valid: false,
@@ -124,12 +131,9 @@ export function validateEmail(email: string): { valid: boolean; error?: string; 
     }
   }
 
-  // Optional: Check against whitelist (uncomment if needed)
-  // if (!VALID_EMAIL_PROVIDERS.includes(domain)) {
-  //   return { valid: false, error: AUTH_ERRORS.INVALID_EMAIL }
-  // }
-
-  return { valid: true }
+  // Domain is not in valid providers and no typo suggestion found
+  // Return invalid - unknown domain
+  return { valid: false, error: AUTH_ERRORS.INVALID_EMAIL }
 }
 
 /**

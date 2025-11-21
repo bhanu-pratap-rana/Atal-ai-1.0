@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase-server'
+import { createClient, createAdminClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { BLOCKED_EMAIL_DOMAINS, VALID_EMAIL_PROVIDERS, EMAIL_REGEX } from '@/lib/auth-constants'
@@ -31,6 +31,11 @@ function isValidEmailDomain(email: string): boolean {
 /**
  * Check if email exists in database or Supabase auth
  * Used to prevent duplicate accounts across teacher and student accounts
+ *
+ * CRITICAL: Uses admin client to bypass RLS policies on users table
+ * Regular authenticated users cannot query the users table due to RLS,
+ * so unauthenticated signup requests must use admin client
+ *
  * Checks both the users table and Supabase auth records
  */
 export async function checkEmailExistsInAuth(email: string): Promise<{
@@ -39,9 +44,13 @@ export async function checkEmailExistsInAuth(email: string): Promise<{
 }> {
   try {
     const trimmedEmail = email.trim().toLowerCase()
-    const supabase = await createClient()
+
+    // IMPORTANT: Use admin client to bypass RLS on users table
+    // Regular client cannot read users table during signup (unauthenticated)
+    const supabase = await createAdminClient()
 
     // Check if email exists in users table (both teacher and student accounts)
+    // This query must use admin client because RLS prevents unauthenticated access
     const { data, error } = await supabase
       .from('users')
       .select('id, email, role')
@@ -77,8 +86,9 @@ export async function checkEmailExistsInAuth(email: string): Promise<{
         }
       }
     } catch (authCheckError) {
-      // If admin API fails, continue - the OTP request will fail if email doesn't exist
-      authLogger.warn('[checkEmailExistsInAuth] Could not check Supabase auth users', authCheckError as Error)
+      // If admin API fails, fail securely - don't allow signup
+      authLogger.error('[checkEmailExistsInAuth] Could not check Supabase auth users', authCheckError as Error)
+      return { exists: true } // Fail secure - prevent duplicate account
     }
 
     return { exists: false }

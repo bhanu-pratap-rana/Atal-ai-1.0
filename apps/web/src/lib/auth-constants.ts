@@ -64,6 +64,30 @@ export const VALID_EMAIL_PROVIDERS = [
   'vip.qq.com',
 ]
 
+// Common email domain typos for detection
+// Maps common misspellings to correct domains
+export const COMMON_DOMAIN_TYPOS: Record<string, string> = {
+  'gmai.com': 'gmail.com',
+  'gmal.com': 'gmail.com',
+  'gmial.com': 'gmail.com',
+  'gmali.com': 'gmail.com',
+  'gmil.com': 'gmail.com',
+  'gamail.com': 'gmail.com',
+  'gmain.com': 'gmail.com',
+  'gmaul.com': 'gmail.com',
+  'gail.com': 'gmail.com',
+  'yahooo.com': 'yahoo.com',
+  'yaho.com': 'yahoo.com',
+  'ahoo.com': 'yahoo.com',
+  'outlook.co': 'outlook.com',
+  'outloik.com': 'outlook.com',
+  'hotmial.com': 'hotmail.com',
+  'hotmai.com': 'hotmail.com',
+  'hotmal.com': 'hotmail.com',
+  'icloud.co': 'icloud.com',
+  'icloud.cm': 'icloud.com',
+}
+
 /**
  * Blocked email domains (disposable/fake services)
  * Using Set for O(1) lookup performance instead of O(n) array lookup

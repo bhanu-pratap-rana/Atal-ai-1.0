@@ -20,7 +20,15 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { authLogger } from '@/lib/auth-logger'
+import { validateEmail } from '@/lib/auth-validation'
 import zxcvbn from 'zxcvbn'
+
+// Type for SendEmailOtpResult
+interface SendEmailOtpResult {
+  success: boolean
+  error?: string
+  exists?: boolean
+}
 
 type Step = 'choice' | 'login' | 'forgot-password' | 'reset-password' | 'auth' | 'set-password' | 'verify-school' | 'profile' | 'complete'
 
@@ -45,6 +53,8 @@ export default function TeacherStartPage() {
 
   // Step 1: Email OTP Auth (for signup)
   const [email, setEmail] = useState('')
+  const [emailError, setEmailError] = useState('')
+  const [emailSuggestion, setEmailSuggestion] = useState('')
   const [otp, setOtp] = useState('')
   const [otpSent, setOtpSent] = useState(false)
 
@@ -218,17 +228,37 @@ export default function TeacherStartPage() {
   async function handleSendOTP(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
+    setEmailError('')
+    setEmailSuggestion('')
 
     try {
-      const result = await sendEmailOtp(email)
+      // Validate email format and detect typos
+      const emailValidation = validateEmail(email)
+
+      if (!emailValidation.valid) {
+        // Check if there's a suggestion for a typo
+        if (emailValidation.suggestion) {
+          setEmailError(emailValidation.error || 'Invalid email')
+          setEmailSuggestion(emailValidation.suggestion)
+          toast.error(emailValidation.error || 'Invalid email')
+        } else {
+          setEmailError(emailValidation.error || 'Invalid email')
+          toast.error(emailValidation.error || 'Invalid email')
+        }
+        setLoading(false)
+        return
+      }
+
+      const result = (await sendEmailOtp(email)) as SendEmailOtpResult
 
       if (result.success) {
         toast.success('OTP sent to your email!')
         setOtpSent(true)
       } else {
         // Check if email already exists
-        if ((result as any).exists) {
-          toast.error(result.error)
+        if (result.exists) {
+          toast.error(result.error || 'This email is already registered')
+          authLogger.debug('[Teacher Signup] Email already exists, redirecting to login')
           // Redirect to login with email prefilled
           setLoginEmail(email)
           setEmail('')
@@ -236,10 +266,13 @@ export default function TeacherStartPage() {
           setOtpSent(false)
           setStep('login')
         } else {
+          setEmailError(result.error || 'Failed to send OTP')
           toast.error(result.error || 'Failed to send OTP')
         }
       }
     } catch (error) {
+      authLogger.error('[Teacher Signup] Failed to send OTP', error)
+      setEmailError('An unexpected error occurred')
       toast.error('Failed to send OTP')
     } finally {
       setLoading(false)
@@ -543,6 +576,21 @@ export default function TeacherStartPage() {
                   required
                   disabled={loading}
                 />
+                {emailError && (
+                  <div className="space-y-2">
+                    <p className="text-sm text-red-600">{emailError}</p>
+                    {emailSuggestion && (
+                      <button
+                        type="button"
+                        onClick={() => setEmail(emailSuggestion)}
+                        className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
+                        disabled={loading}
+                      >
+                        ✓ Use suggested email: {emailSuggestion}
+                      </button>
+                    )}
+                  </div>
+                )}
                 <p className="text-xs text-text-secondary">
                   We'll send a verification code to this email
                 </p>
@@ -551,7 +599,7 @@ export default function TeacherStartPage() {
               <Button
                 type="submit"
                 className="w-full shadow-[0_8px_20px_rgba(255,140,66,0.35)]"
-                disabled={loading}
+                disabled={loading || !email}
                 loading={loading}
               >
                 Send Verification Code

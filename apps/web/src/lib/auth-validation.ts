@@ -15,15 +15,79 @@ import {
   CLASS_CODE_LENGTH,
   VALID_EMAIL_PROVIDERS,
   BLOCKED_EMAIL_DOMAINS,
+  COMMON_DOMAIN_TYPOS,
   AUTH_ERRORS,
 } from './auth-constants'
 
 /**
+ * Calculates Levenshtein distance between two strings
+ * Used for detecting email domain typos
+ * @param str1 - First string
+ * @param str2 - Second string
+ * @returns Distance (lower = more similar)
+ */
+function levenshteinDistance(str1: string, str2: string): number {
+  const m = str1.length
+  const n = str2.length
+  const dp: number[][] = Array(m + 1)
+    .fill(null)
+    .map(() => Array(n + 1).fill(0))
+
+  for (let i = 0; i <= m; i++) dp[i][0] = i
+  for (let j = 0; j <= n; j++) dp[0][j] = j
+
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (str1[i - 1] === str2[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1]
+      } else {
+        dp[i][j] = 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1])
+      }
+    }
+  }
+
+  return dp[m][n]
+}
+
+/**
+ * Detects if an email domain has a typo and suggests the correct domain
+ * First checks exact matches in COMMON_DOMAIN_TYPOS, then uses Levenshtein distance
+ * @param domain - Email domain to check
+ * @returns Object with { hasTypo: boolean, suggestion?: string }
+ */
+export function detectDomainTypo(domain: string): { hasTypo: boolean; suggestion?: string } {
+  // Check exact matches first (fast path)
+  if (COMMON_DOMAIN_TYPOS[domain]) {
+    return { hasTypo: true, suggestion: COMMON_DOMAIN_TYPOS[domain] }
+  }
+
+  // Use Levenshtein distance for fuzzy matching
+  const validDomains = VALID_EMAIL_PROVIDERS
+  let closestMatch: { domain: string; distance: number } | null = null
+  const threshold = 2 // Max distance to suggest a typo
+
+  for (const validDomain of validDomains) {
+    const distance = levenshteinDistance(domain, validDomain)
+    if (distance <= threshold) {
+      if (!closestMatch || distance < closestMatch.distance) {
+        closestMatch = { domain: validDomain, distance }
+      }
+    }
+  }
+
+  if (closestMatch) {
+    return { hasTypo: true, suggestion: closestMatch.domain }
+  }
+
+  return { hasTypo: false }
+}
+
+/**
  * Validates email format and provider legitimacy
  * @param email - Email to validate
- * @returns Object with { valid: boolean, error?: string }
+ * @returns Object with { valid: boolean, error?: string, suggestion?: string }
  */
-export function validateEmail(email: string): { valid: boolean; error?: string } {
+export function validateEmail(email: string): { valid: boolean; error?: string; suggestion?: string } {
   if (!email || typeof email !== 'string') {
     return { valid: false, error: AUTH_ERRORS.INVALID_EMAIL }
   }
@@ -46,6 +110,18 @@ export function validateEmail(email: string): { valid: boolean; error?: string }
   // Check against blocked domains (disposable emails)
   if (BLOCKED_EMAIL_DOMAINS.has(domain)) {
     return { valid: false, error: AUTH_ERRORS.DISPOSABLE_EMAIL }
+  }
+
+  // Check for domain typos (e.g., "gmal.com" instead of "gmail.com")
+  const typoDetection = detectDomainTypo(domain)
+  if (typoDetection.hasTypo && typoDetection.suggestion) {
+    const [localPart] = trimmedEmail.split('@')
+    const suggestedEmail = `${localPart}@${typoDetection.suggestion}`
+    return {
+      valid: false,
+      error: `Email domain typo detected. Did you mean ${suggestedEmail}?`,
+      suggestion: suggestedEmail,
+    }
   }
 
   // Optional: Check against whitelist (uncomment if needed)
@@ -151,7 +227,6 @@ export function validatePhone(phone: string): { valid: boolean; error?: string }
   }
 
   const sanitized = sanitizePhone(phone)
-  const expectedFormat = `${PHONE_COUNTRY_CODE}${PHONE_DIGIT_LENGTH}`
 
   if (sanitized.length !== PHONE_COUNTRY_CODE.length + PHONE_DIGIT_LENGTH) {
     return { valid: false, error: `Phone number must be ${PHONE_DIGIT_LENGTH} digits` }

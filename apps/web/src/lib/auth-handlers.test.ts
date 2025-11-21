@@ -29,6 +29,7 @@ const createMockSupabaseClient = () => ({
 })
 
 describe('handleSignIn', () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let mockSupabase: any
 
   beforeEach(() => {
@@ -205,6 +206,7 @@ describe('handleSignIn', () => {
   it('should handle missing email and phone', async () => {
     const result = await handleSignIn(
       mockSupabase,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { password: 'Password123' } as any,
       { validatorFn: () => ({ valid: true }) }
     )
@@ -230,6 +232,7 @@ describe('handleSignIn', () => {
 })
 
 describe('handleSendOTP', () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let mockSupabase: any
 
   beforeEach(() => {
@@ -383,6 +386,7 @@ describe('handleSendOTP', () => {
 })
 
 describe('handleVerifyOTP', () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let mockSupabase: any
 
   beforeEach(() => {
@@ -477,6 +481,7 @@ describe('handleVerifyOTP', () => {
 })
 
 describe('handleSetPassword', () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let mockSupabase: any
 
   beforeEach(() => {
@@ -544,6 +549,7 @@ describe('handleSetPassword', () => {
 })
 
 describe('handleAnonymousSignIn', () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let mockSupabase: any
 
   beforeEach(() => {
@@ -576,6 +582,7 @@ describe('handleAnonymousSignIn', () => {
 })
 
 describe('Error Handling and Edge Cases', () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let mockSupabase: any
 
   beforeEach(() => {
@@ -585,6 +592,7 @@ describe('Error Handling and Edge Cases', () => {
   it('should handle missing credentials gracefully', async () => {
     const result = await handleSignIn(
       mockSupabase,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       {} as any,
       { validatorFn: () => ({ valid: true }) }
     )

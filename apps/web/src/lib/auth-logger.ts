@@ -13,7 +13,7 @@
  */
 
 interface LogContext {
-  [key: string]: any
+  [key: string]: unknown
 }
 
 function maskEmail(email?: string): string {
@@ -47,7 +47,7 @@ function maskToken(token?: string): string {
  * @param depth - Current recursion depth (max 3 to prevent deep recursion)
  * @returns Masked copy of the data
  */
-function maskSensitiveData(data: any, depth = 0): any {
+function maskSensitiveData(data: unknown, depth = 0): unknown {
   if (depth > 3 || !data || typeof data !== 'object') {
     return data
   }

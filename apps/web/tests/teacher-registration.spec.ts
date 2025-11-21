@@ -7,10 +7,6 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Teacher Registration Flow', () => {
   const TEST_EMAIL = `teacher-${Date.now()}@example.com`
-  const TEST_PASSWORD = 'SecurePassword123!'
-  const TEST_SCHOOL_CODE = '14H0001' // Update with valid test school code
-  const TEST_STAFF_PIN = '1234' // Update with valid test PIN
-  const TEST_TEACHER_NAME = 'Test Teacher'
 
   test.beforeEach(async ({ page }) => {
     // Navigate to landing page
@@ -68,38 +64,38 @@ test.describe('Teacher Registration Flow', () => {
     expect(validationMessage).toBeTruthy()
   })
 
-  test('should show password strength meter', async ({ page }) => {
+  test('should show password strength meter', async () => {
     // This test requires navigating to the password step
     // which needs OTP verification
     // TODO: Implement with OTP mock
     test.skip()
   })
 
-  test('should reject weak passwords', async ({ page }) => {
+  test('should reject weak passwords', async () => {
     // This test requires navigating to the password step
     // TODO: Implement with OTP mock
     test.skip()
   })
 
-  test('should validate school code format', async ({ page }) => {
+  test('should validate school code format', async () => {
     // This test requires navigating to school verification step
     // TODO: Implement with OTP + password mock
     test.skip()
   })
 
-  test('should reject invalid school code', async ({ page }) => {
+  test('should reject invalid school code', async () => {
     // This test requires navigating to school verification step
     // TODO: Implement with OTP + password mock
     test.skip()
   })
 
-  test('should reject incorrect staff PIN', async ({ page }) => {
+  test('should reject incorrect staff PIN', async () => {
     // This test requires navigating to school verification step
     // TODO: Implement with OTP + password mock
     test.skip()
   })
 
-  test('should block duplicate teacher registration', async ({ page }) => {
+  test('should block duplicate teacher registration', async () => {
     // This test requires a pre-existing teacher account
     // TODO: Implement with database seeding
     test.skip()
@@ -112,8 +108,10 @@ test.describe('Teacher Registration Flow', () => {
  */
 
 // Mock OTP verification for testing
-async function mockOtpVerification(page: any, email: string) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function _mockOtpVerification(page: any, _email: string) {
   // Intercept Supabase Auth API calls
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await page.route('**/auth/v1/otp', async (route: any) => {
     await route.fulfill({
       status: 200,
@@ -123,19 +121,19 @@ async function mockOtpVerification(page: any, email: string) {
 }
 
 // Get test OTP code (requires test email service integration)
-async function getTestOtpCode(email: string): Promise<string> {
+async function _getTestOtpCode(_email: string): Promise<string> {
   // TODO: Integrate with test email service (e.g., Mailosaur, mailtrap.io)
   // For now, return a mock code
   return '123456'
 }
 
 // Seed test school data
-async function seedTestSchool() {
+async function _seedTestSchool() {
   // TODO: Use Supabase client to insert test school
   // with known school code and PIN
 }
 
 // Clean up test data
-async function cleanupTestData() {
+async function _cleanupTestData() {
   // TODO: Remove test teacher profiles after tests
 }

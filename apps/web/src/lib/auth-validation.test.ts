@@ -15,7 +15,6 @@ import {
   validateOTP,
   validatePIN,
   validateClassCode,
-  validateRollNumber,
   sanitizePhone,
   sanitizeOTP,
   sanitizePIN,
@@ -23,7 +22,6 @@ import {
   validateSignInForm,
   validateSignUpForm,
   validatePhoneSignInForm,
-  validatePhoneSignUpForm,
   validateJoinClassForm,
 } from './auth-validation'
 
@@ -268,11 +266,14 @@ describe('Form Validation', () => {
 
 describe('Edge Cases', () => {
   it('should handle null inputs gracefully', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect(validateEmail(null as any).valid).toBe(false)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect(validatePassword(null as any).valid).toBe(false)
   })
 
   it('should handle undefined inputs gracefully', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect(validatePhone(undefined as any).valid).toBe(false)
   })
 

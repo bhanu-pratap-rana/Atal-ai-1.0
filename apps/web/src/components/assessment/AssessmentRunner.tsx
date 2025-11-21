@@ -32,11 +32,6 @@ interface ResponseData {
   chosenOption: string
 }
 
-interface EnhancedResponseData extends ResponseData {
-  hesitationCount: number
-  firstTimeToSelect: number
-}
-
 export function AssessmentRunner({
   sessionId,
   questions,
@@ -48,11 +43,10 @@ export function AssessmentRunner({
   const [selectedOption, setSelectedOption] = useState<number | null>(null)
   const [shuffledOptions, setShuffledOptions] = useState<string[]>([])
   const [shuffleMap, setShuffleMap] = useState<number[]>([])
-  const [startTime, setStartTime] = useState<number>(Date.now())
+  const [startTime, setStartTime] = useState<number>(0)
   const [focusBlurCount, setFocusBlurCount] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showRapidWarning, setShowRapidWarning] = useState(false)
-  const [selectionHistory, setSelectionHistory] = useState<number[]>([])
   const [firstSelectionTime, setFirstSelectionTime] = useState<number | null>(null)
 
   // Refs for accessibility
@@ -77,13 +71,13 @@ export function AssessmentRunner({
   }, [currentQuestion])
 
   // Update shuffled options when question changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     setShuffledOptions(shuffled)
     setShuffleMap(shuffleMapping)
     setSelectedOption(null)
     setStartTime(Date.now())
     setShowRapidWarning(false)
-    setSelectionHistory([])
     setFirstSelectionTime(null)
 
     // Focus on question for screen readers
@@ -91,6 +85,72 @@ export function AssessmentRunner({
       questionRef.current.focus()
     }
   }, [currentIndex, shuffled, shuffleMapping])
+
+  // Submit assessment data
+  const submitAssessmentData = useCallback(async (finalResponses: ResponseData[]) => {
+    setIsSubmitting(true)
+
+    try {
+      const result = await submitAssessment(sessionId, finalResponses)
+
+      if (result.success) {
+        toast.success('Assessment completed!')
+        router.push(`/app/assessment/summary?session=${sessionId}`)
+      } else {
+        toast.error(result.error || 'Failed to submit assessment')
+        setIsSubmitting(false)
+      }
+    } catch {
+      toast.error('An unexpected error occurred')
+      setIsSubmitting(false)
+    }
+  }, [sessionId, router])
+
+  // Handle option selection
+  const handleOptionSelect = useCallback((optionIndex: number) => {
+    // Track first selection time
+    if (firstSelectionTime === null) {
+      setFirstSelectionTime(Date.now() - startTime)
+    }
+
+    setSelectedOption(optionIndex)
+  }, [firstSelectionTime, startTime])
+
+  const handleNext = useCallback(() => {
+    if (selectedOption === null) {
+      toast.error('Please select an answer')
+      return
+    }
+
+    const rtMs = Date.now() - startTime
+    const originalOptionIndex = shuffleMap[selectedOption]
+    const isCorrect = originalOptionIndex === currentQuestion.correctAnswer
+
+    // Show rapid tap warning if response time < 5 seconds
+    if (rtMs < 5000) {
+      setShowRapidWarning(true)
+      setTimeout(() => setShowRapidWarning(false), 3000)
+    }
+
+    const response: ResponseData = {
+      itemId: currentQuestion.id,
+      module: currentQuestion.module,
+      isCorrect,
+      rtMs,
+      focusBlurCount,
+      chosenOption: shuffledOptions[selectedOption],
+    }
+
+    setResponses([...responses, response])
+    setFocusBlurCount(0)
+
+    if (currentIndex < questions.length - 1) {
+      setCurrentIndex(currentIndex + 1)
+    } else {
+      // Last question - submit
+      submitAssessmentData([...responses, response])
+    }
+  }, [selectedOption, shuffleMap, currentQuestion, startTime, focusBlurCount, setShowRapidWarning, setResponses, setFocusBlurCount, setCurrentIndex, currentIndex, questions.length, responses, submitAssessmentData, shuffledOptions])
 
   // Track focus/blur events
   useEffect(() => {
@@ -133,73 +193,7 @@ export function AssessmentRunner({
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedOption, shuffledOptions.length, isSubmitting])
-
-  const handleOptionSelect = useCallback((optionIndex: number) => {
-    // Track first selection time
-    if (firstSelectionTime === null) {
-      setFirstSelectionTime(Date.now() - startTime)
-    }
-
-    // Track selection history for hesitation analysis
-    setSelectionHistory((prev) => [...prev, optionIndex])
-    setSelectedOption(optionIndex)
-  }, [firstSelectionTime, startTime])
-
-  const handleNext = () => {
-    if (selectedOption === null) {
-      toast.error('Please select an answer')
-      return
-    }
-
-    const rtMs = Date.now() - startTime
-    const originalOptionIndex = shuffleMap[selectedOption]
-    const isCorrect = originalOptionIndex === currentQuestion.correctAnswer
-
-    // Show rapid tap warning if response time < 5 seconds
-    if (rtMs < 5000) {
-      setShowRapidWarning(true)
-      setTimeout(() => setShowRapidWarning(false), 3000)
-    }
-
-    const response: ResponseData = {
-      itemId: currentQuestion.id,
-      module: currentQuestion.module,
-      isCorrect,
-      rtMs,
-      focusBlurCount,
-      chosenOption: shuffledOptions[selectedOption],
-    }
-
-    setResponses([...responses, response])
-    setFocusBlurCount(0)
-
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex(currentIndex + 1)
-    } else {
-      // Last question - submit
-      handleSubmit([...responses, response])
-    }
-  }
-
-  const handleSubmit = async (finalResponses: ResponseData[]) => {
-    setIsSubmitting(true)
-
-    try {
-      const result = await submitAssessment(sessionId, finalResponses)
-
-      if (result.success) {
-        toast.success('Assessment completed!')
-        router.push(`/app/assessment/summary?session=${sessionId}`)
-      } else {
-        toast.error(result.error || 'Failed to submit assessment')
-        setIsSubmitting(false)
-      }
-    } catch (error) {
-      toast.error('An unexpected error occurred')
-      setIsSubmitting(false)
-    }
-  }
+  }, [selectedOption, shuffledOptions.length, isSubmitting, handleOptionSelect, handleNext])
 
   if (!currentQuestion) {
     return (

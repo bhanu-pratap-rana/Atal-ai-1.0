@@ -55,7 +55,7 @@ export function InvitePanel({ classCode, joinPin, className }: InvitePanelProps)
     try {
       await navigator.clipboard.writeText(getInviteLink())
       toast.success('Invite link copied to clipboard!')
-    } catch (error) {
+    } catch {
       toast.error('Failed to copy invite link')
     }
   }
@@ -71,7 +71,7 @@ export function InvitePanel({ classCode, joinPin, className }: InvitePanelProps)
     try {
       await navigator.clipboard.writeText(text)
       toast.success(`${label} copied to clipboard!`)
-    } catch (error) {
+    } catch {
       toast.error('Failed to copy to clipboard')
     }
   }

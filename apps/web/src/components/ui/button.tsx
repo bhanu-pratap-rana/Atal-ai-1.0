@@ -34,10 +34,11 @@ const buttonVariants = cva(
 )
 
 export interface ButtonProps
-  extends Omit<HTMLMotionProps<"button">, "ref">,
+  extends Omit<HTMLMotionProps<"button">, "ref" | "children">,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean
   loading?: boolean
+  children?: React.ReactNode
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -52,7 +53,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         whileTap={{ scale: 0.98 }}
         transition={{ type: "spring", stiffness: 400, damping: 17 }}
         disabled={disabled || loading}
-        {...(props as any)}
+        {...(props as Record<string, unknown>)}
       >
         {loading && (
           <motion.div

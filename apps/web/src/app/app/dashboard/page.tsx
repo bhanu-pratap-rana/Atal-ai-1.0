@@ -7,10 +7,11 @@ import { createClient } from '@/lib/supabase-browser'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { authLogger } from '@/lib/auth-logger'
+import type { User } from '@supabase/supabase-js'
 
 export default function DashboardPage() {
   const router = useRouter()
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
@@ -21,7 +22,7 @@ export default function DashboardPage() {
       setLoading(false)
     }
     getUser()
-  }, [])
+  }, [supabase.auth])
 
   async function handleSignOut() {
     try {
@@ -88,12 +89,12 @@ export default function DashboardPage() {
             <CardHeader>
               <CardTitle className="text-[#333]">Welcome to ATAL AI! 🎉</CardTitle>
               <CardDescription>
-                You're successfully logged in as {user?.email}
+                You&apos;re successfully logged in as {user?.email}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-text-secondary">
-                This is your dashboard. From here, you'll be able to access all the features of the ATAL AI platform.
+                This is your dashboard. From here, you&apos;ll be able to access all the features of the ATAL AI platform.
               </p>
             </CardContent>
           </Card>

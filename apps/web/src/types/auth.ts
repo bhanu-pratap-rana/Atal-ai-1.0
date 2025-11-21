@@ -80,7 +80,7 @@ export interface AuthenticatedUser extends User {
   app_metadata: {
     role?: 'student' | 'teacher' | 'admin'
     onboarded?: boolean
-    [key: string]: any
+    [key: string]: unknown
   }
 }
 
@@ -120,7 +120,7 @@ export interface StudentProfile {
  * Generic API response wrapper
  * Used consistently across all API operations
  */
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean
   data?: T
   error?: string
@@ -166,7 +166,7 @@ export type VerifyTeacherResult =
 /**
  * Generic operation result for class operations
  */
-export interface OperationResult<T = any> {
+export interface OperationResult<T = unknown> {
   success: boolean
   data?: T
   error?: string

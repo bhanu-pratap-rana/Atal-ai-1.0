@@ -5,7 +5,21 @@ import { CreateClassDialog } from '@/components/teacher/CreateClassDialog'
 import { ClassCard } from '@/components/teacher/ClassCard'
 import { SignOutButton } from '@/components/teacher/SignOutButton'
 
-async function getTeacherData(userId: string) {
+interface Class {
+  id: string
+  name: string
+  class_code: string
+  teacher_id: string
+  created_at: string
+  [key: string]: unknown
+}
+
+interface TeacherData {
+  teacherName: string
+  classes: Class[]
+}
+
+async function getTeacherData(userId: string): Promise<TeacherData> {
   try {
     const supabase = await createClient()
 
@@ -83,7 +97,7 @@ export default async function TeacherClassesPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {classes.map((classItem: any) => (
+            {classes.map((classItem: Class) => (
               <ClassCard key={classItem.id} classData={classItem} teacherName={teacherName} />
             ))}
           </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -11,6 +11,14 @@ import { AssessmentSkeleton } from '@/components/assessment/AssessmentSkeleton'
 import { startAssessment } from '@/app/actions/assessment'
 import { getQuestionsByLanguage } from '@/data/assessment-questions'
 
+interface Question {
+  id: string
+  module: string
+  question: string
+  options: string[]
+  correctAnswer: number
+}
+
 function AssessmentStartContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -19,7 +27,7 @@ function AssessmentStartContent() {
   const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'hi' | 'as'>('en')
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [questions, setQuestions] = useState<any[]>([])
+  const [questions, setQuestions] = useState<Question[]>([])
 
   const handleStartAssessment = async () => {
     setLoading(true)

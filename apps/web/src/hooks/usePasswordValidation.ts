@@ -88,7 +88,7 @@ export function usePasswordValidation() {
    */
   const validateAll = useCallback((): PasswordValidationResult => {
     const pwdValidation = validatePasswordField()
-    let result: PasswordValidationResult = {
+    const result: PasswordValidationResult = {
       passwordValid: pwdValidation.valid,
       passwordError: pwdValidation.error,
       matchValid: true,

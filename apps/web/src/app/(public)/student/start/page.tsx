@@ -155,7 +155,7 @@ export default function StudentStartPage() {
     }
 
     try {
-      const result = await requestOtp(state.signupEmailAddress.trim()) as any
+      const result = await requestOtp(state.signupEmailAddress.trim())
       if (!result.success) {
         // Check if email already exists - redirect to login
         if (result.exists) {
@@ -589,7 +589,7 @@ export default function StudentStartPage() {
                   className="text-text-secondary hover:underline block w-full"
                   disabled={state.isLoading}
                 >
-                  Don't have an account? Sign up
+                  Don&apos;t have an account? Sign up
                 </button>
               </div>
             </form>
@@ -660,7 +660,7 @@ export default function StudentStartPage() {
                   className="text-text-secondary hover:underline block w-full"
                   disabled={state.isLoading}
                 >
-                  Don't have an account? Sign up
+                  Don&apos;t have an account? Sign up
                 </button>
               </div>
             </form>
@@ -856,7 +856,7 @@ export default function StudentStartPage() {
 
                   <div className="bg-orange-50 border-l-4 border-primary p-3 rounded">
                     <p className="text-xs text-orange-800">
-                      <strong>📱 SMS Verification:</strong> You'll receive a 6-digit code via SMS. Standard rates may apply.
+                      <strong>📱 SMS Verification:</strong> You&apos;ll receive a 6-digit code via SMS. Standard rates may apply.
                     </p>
                   </div>
 

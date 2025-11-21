@@ -16,7 +16,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { enrollStudent } from '@/app/actions/teacher'
-import { createClient } from '@/lib/supabase-server'
 
 interface InviteStudentDialogProps {
   classId: string
@@ -58,7 +57,7 @@ export function InviteStudentDialog({ classId }: InviteStudentDialogProps) {
       } else {
         toast.error('Failed to search students')
       }
-    } catch (error) {
+    } catch {
       toast.error('An error occurred while searching')
     } finally {
       setSearching(false)
@@ -89,7 +88,7 @@ export function InviteStudentDialog({ classId }: InviteStudentDialogProps) {
       } else {
         toast.error(result.error || 'Failed to enroll student')
       }
-    } catch (error) {
+    } catch {
       toast.error('An unexpected error occurred')
     } finally {
       setLoading(false)

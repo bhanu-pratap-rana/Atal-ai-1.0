@@ -49,7 +49,7 @@ export function RosterTable({ enrollments, classId }: RosterTableProps) {
       } else {
         toast.error(result.error || 'Failed to remove student')
       }
-    } catch (error) {
+    } catch {
       toast.error('An unexpected error occurred')
     } finally {
       setRemovingId(null)

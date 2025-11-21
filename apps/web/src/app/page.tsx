@@ -53,7 +53,7 @@ export default function HomePage() {
           >
             <span className="text-2xl mr-3">👨‍🏫</span>
             <div className="text-left">
-              <div className="font-semibold">I'm a Teacher</div>
+              <div className="font-semibold">I&apos;m a Teacher</div>
               <div className="text-xs font-normal opacity-90">
                 Register with school credentials
               </div>
@@ -68,7 +68,7 @@ export default function HomePage() {
           >
             <span className="text-2xl mr-3">🎓</span>
             <div className="text-left">
-              <div className="font-semibold">I'm a Student</div>
+              <div className="font-semibold">I&apos;m a Student</div>
               <div className="text-xs font-normal opacity-70">
                 Sign in or create account
               </div>

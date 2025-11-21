@@ -637,7 +637,7 @@ export default function TeacherStartPage() {
                         </div>
                       )}
                       <p className="text-xs text-text-secondary">
-                        We'll send a 6-digit code to this email
+                        We&apos;ll send a 6-digit code to this email
                       </p>
                     </div>
 
@@ -704,7 +704,7 @@ export default function TeacherStartPage() {
                   <p className="text-xs text-blue-900">
                     <strong>📱 Phone Verification</strong>
                     <br />
-                    Enter your 10-digit phone number. We'll send a verification code via OTP.
+                    Enter your 10-digit phone number. We&apos;ll send a verification code via OTP.
                   </p>
                 </div>
                 <form className="space-y-4">
@@ -1087,7 +1087,7 @@ export default function TeacherStartPage() {
                 disabled={loading}
               />
               <p className="text-xs text-text-secondary">
-                We'll send a recovery code to this email
+                We&apos;ll send a recovery code to this email
               </p>
             </div>
 
@@ -1224,7 +1224,7 @@ export default function TeacherStartPage() {
         <AuthCard title="Registration Complete!" description="Welcome to ATAL AI">
           <div className="text-center space-y-4">
             <div className="text-6xl">🎉</div>
-            <p className="text-lg font-semibold">You're all set!</p>
+            <p className="text-lg font-semibold">You&apos;re all set!</p>
             <p className="text-sm text-text-secondary">
               Redirecting to your teacher dashboard...
             </p>

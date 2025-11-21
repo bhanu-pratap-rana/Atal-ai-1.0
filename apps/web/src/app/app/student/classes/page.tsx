@@ -4,7 +4,22 @@ import { getCurrentUser } from '@/lib/supabase-server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
-async function getStudentClasses(userId: string) {
+interface ClassInfo {
+  id: string
+  name: string
+  class_code: string
+  teacher: {
+    email: string
+  }
+}
+
+interface Enrollment {
+  id: string
+  created_at: string
+  class: ClassInfo
+}
+
+async function getStudentClasses(userId: string): Promise<Enrollment[]> {
   const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
   const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
@@ -43,7 +58,7 @@ export default async function StudentClassesPage() {
             My Classes
           </h1>
           <p className="text-gray-600 mt-2">
-            Classes you're enrolled in
+            Classes you&apos;re enrolled in
           </p>
         </div>
 
@@ -66,7 +81,7 @@ export default async function StudentClassesPage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {enrollments.map((enrollment: any) => (
+            {enrollments.map((enrollment: Enrollment) => (
               <Card key={enrollment.id} className="hover:shadow-lg transition">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">

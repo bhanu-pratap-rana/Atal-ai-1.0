@@ -45,7 +45,7 @@ export function CreateClassDialog() {
       } else {
         toast.error(result.error || 'Failed to create class')
       }
-    } catch (error) {
+    } catch {
       toast.error('An unexpected error occurred')
     } finally {
       setLoading(false)

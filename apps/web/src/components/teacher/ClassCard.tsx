@@ -29,7 +29,7 @@ interface ClassCardProps {
   teacherName?: string
 }
 
-export function ClassCard({ classData, teacherName }: ClassCardProps) {
+export function ClassCard({ classData, teacherName: _teacherName }: ClassCardProps) {
   const router = useRouter()
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [editName, setEditName] = useState(classData.name)
@@ -152,7 +152,7 @@ export function ClassCard({ classData, teacherName }: ClassCardProps) {
                       } else {
                         toast.error(result.error || 'Failed to update class')
                       }
-                    } catch (error) {
+                    } catch {
                       toast.error('An unexpected error occurred')
                     } finally {
                       setIsUpdating(false)
@@ -189,7 +189,7 @@ export function ClassCard({ classData, teacherName }: ClassCardProps) {
                       } else {
                         toast.error(result.error || 'Failed to delete class')
                       }
-                    } catch (error) {
+                    } catch {
                       toast.error('An unexpected error occurred')
                     } finally {
                       setIsDeleting(false)

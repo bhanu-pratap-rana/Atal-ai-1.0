@@ -15,7 +15,7 @@
 
 import { SupabaseClient } from '@supabase/supabase-js'
 import { validateEmail, validatePhone, validatePassword } from './auth-validation'
-import { checkOtpRateLimit, checkPasswordResetRateLimit } from './rate-limiter'
+import { checkOtpRateLimit } from './rate-limiter'
 import { authLogger } from './auth-logger'
 
 /**
@@ -24,6 +24,7 @@ import { authLogger } from './auth-logger'
 export interface SignInResult {
   success: boolean
   error?: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   user?: any
   requiresProfileCheck?: boolean
 }
@@ -34,6 +35,7 @@ export interface SignInResult {
 export interface OTPResult {
   success: boolean
   error?: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   user?: any
   token?: string
 }
@@ -80,7 +82,9 @@ export async function handleSignIn(
     })
 
     // Call Supabase signin
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let data: any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let error: any
 
     if (credentials.email) {
@@ -221,6 +225,7 @@ export async function handleSendOTP(
     }
 
     // Call Supabase OTP send
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let error: any
 
     if (channel === 'email') {
@@ -296,7 +301,9 @@ export async function handleVerifyOTP(
     authLogger.debug('[handleVerifyOTP] Verifying OTP', { channel })
 
     // Call Supabase OTP verification
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let data: any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let error: any
 
     if (identifier.email) {

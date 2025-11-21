@@ -12,6 +12,25 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Calendar, Shield, RefreshCw, Search } from 'lucide-react'
 
+// Type definitions
+interface School {
+  school_code: string
+  school_name: string
+  id?: string
+  address?: string
+  district?: string
+}
+
+interface RotationInfoResult {
+  success: boolean
+  error?: string
+  schoolCode?: string
+  schoolName?: string
+  hasCredentials?: boolean
+  createdAt?: string
+  lastRotatedAt?: string
+}
+
 // Simple card component without logo
 function Card({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
   return (
@@ -29,7 +48,7 @@ export default function AdminSchoolsPage() {
   const [activeStep, setActiveStep] = useState<'search' | 'history' | 'rotate'>('search')
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [searchResults, setSearchResults] = useState<School[]>([])
   const [selectedSchool, setSelectedSchool] = useState<{
     code: string
     name: string
@@ -41,7 +60,7 @@ export default function AdminSchoolsPage() {
   const [confirmPin, setConfirmPin] = useState('')
 
   // Rotation info
-  const [rotationInfo, setRotationInfo] = useState<any>(null)
+  const [rotationInfo, setRotationInfo] = useState<RotationInfoResult | null>(null)
 
   // Search schools
   async function handleSearch() {
@@ -69,7 +88,7 @@ export default function AdminSchoolsPage() {
   }
 
   // Select a school from search results
-  function selectSchool(school: any) {
+  function selectSchool(school: School) {
     setSelectedSchool({
       code: school.school_code,
       name: school.school_name,
@@ -301,7 +320,7 @@ export default function AdminSchoolsPage() {
                     {rotationInfo.hasCredentials ? (
                       <div className="space-y-1">
                         <p><strong>{rotationInfo.schoolName}</strong></p>
-                        <p>Created: {new Date(rotationInfo.createdAt).toLocaleDateString()}</p>
+                        <p>Created: {rotationInfo.createdAt ? new Date(rotationInfo.createdAt).toLocaleDateString() : 'N/A'}</p>
                         {rotationInfo.lastRotatedAt && (
                           <p>Last Rotated: {new Date(rotationInfo.lastRotatedAt).toLocaleDateString()}</p>
                         )}

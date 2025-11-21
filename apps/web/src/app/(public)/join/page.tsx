@@ -6,12 +6,10 @@ import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase-browser'
 import { usePhoneInput } from '@/hooks/usePhoneInput'
 import { useOTPInput } from '@/hooks/useOTPInput'
-import { validatePhone } from '@/lib/auth-validation'
 import { OTP_LENGTH, PHONE_DIGIT_LENGTH } from '@/lib/auth-constants'
 import {
   handleSendOTP as sendOTPHandler,
   handleVerifyOTP as verifyOTPHandler,
-  handleAnonymousSignIn,
 } from '@/lib/auth-handlers'
 import { AuthCard } from '@/components/auth/AuthCard'
 import { Button } from '@/components/ui/button'

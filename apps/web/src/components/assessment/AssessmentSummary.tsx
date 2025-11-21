@@ -153,10 +153,10 @@ export function AssessmentSummary({
         {/* Next Steps */}
         <Card className="p-6 md:p-8 shadow-lg">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            What's Next?
+            What&apos;s Next?
           </h2>
           <p className="text-gray-600 mb-6">
-            Based on your assessment, we've identified learning modules that will help you
+            Based on your assessment, we&apos;ve identified learning modules that will help you
             grow your digital literacy skills. Start your learning journey now!
           </p>
           <div className="flex flex-col sm:flex-row gap-4">

@@ -10,7 +10,36 @@ import { InvitePanel } from '@/components/teacher/InvitePanel'
 import { AnalyticsTiles } from '@/components/teacher/AnalyticsTiles'
 import { getClassAnalytics } from '@/app/actions/teacher'
 
-async function getClassWithRoster(classId: string, userId: string) {
+interface User {
+  id: string
+  email: string
+  role: string
+}
+
+interface EnrollmentRow {
+  id: string
+  created_at: string
+  student_id: string
+}
+
+interface Enrollment extends EnrollmentRow {
+  student: User
+}
+
+interface ClassWithRoster {
+  class: {
+    id: string
+    name: string
+    class_code: string
+    teacher_id: string
+    created_at: string
+    join_pin?: string
+    [key: string]: unknown
+  }
+  enrollments: Enrollment[]
+}
+
+async function getClassWithRoster(classId: string, userId: string): Promise<ClassWithRoster | null> {
   try {
     const supabase = await createClient()
 
@@ -38,19 +67,19 @@ async function getClassWithRoster(classId: string, userId: string) {
     }
 
     // Fetch student details for each enrollment
-    let enrollmentsWithStudents: any[] = []
+    let enrollmentsWithStudents: Enrollment[] = []
     if (enrollmentsData && enrollmentsData.length > 0) {
-      const studentIds = enrollmentsData.map((e: any) => e.student_id)
+      const studentIds = enrollmentsData.map((e: EnrollmentRow) => e.student_id)
       const { data: students } = await supabase
         .from('users')
         .select('id, email, role')
         .in('id', studentIds)
 
       if (students) {
-        const studentMap = new Map(students.map((s: any) => [s.id, s]))
-        enrollmentsWithStudents = enrollmentsData.map((enrollment: any) => ({
+        const studentMap = new Map(students.map((s: User) => [s.id, s]))
+        enrollmentsWithStudents = enrollmentsData.map((enrollment) => ({
           ...enrollment,
-          student: studentMap.get(enrollment.student_id),
+          student: studentMap.get(enrollment.student_id) as User,
         }))
       }
     }
@@ -139,7 +168,7 @@ export default async function ClassDetailPage({
         <div className="mb-8">
           <InvitePanel
             classCode={classData.class_code}
-            joinPin={classData.join_pin}
+            joinPin={classData.join_pin || ''}
             className={classData.name}
           />
         </div>

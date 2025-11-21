@@ -139,7 +139,7 @@ test.describe('Student Authentication', () => {
     }
   })
 
-  test('phone OTP: should send SMS code if enabled', async ({ page }) => {
+  test('phone OTP: should send SMS code if enabled', async () => {
     // This test only runs if phone provider is enabled
     test.skip()
     // TODO: Implement when phone provider is configured

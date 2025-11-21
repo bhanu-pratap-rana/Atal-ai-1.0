@@ -18,7 +18,7 @@ interface UseAuthHandlersParams {
 interface AuthHandlerResult {
   success: boolean
   error?: string
-  data?: any
+  data?: unknown
 }
 
 /**

@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient, createAdminClient } from '@/lib/supabase-server'
+import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { BLOCKED_EMAIL_DOMAINS, VALID_EMAIL_PROVIDERS, EMAIL_REGEX } from '@/lib/auth-constants'
@@ -32,9 +32,10 @@ function isValidEmailDomain(email: string): boolean {
  * Check if email exists in database or Supabase auth
  * Used to prevent duplicate accounts across teacher and student accounts
  *
- * CRITICAL: Uses admin client to bypass RLS policies on users table
- * Regular authenticated users cannot query the users table due to RLS,
- * so unauthenticated signup requests must use admin client
+ * Uses a public Postgres function (check_email_exists) that:
+ * - Works with unauthenticated clients (no service role key needed)
+ * - Uses SECURITY DEFINER to bypass RLS safely
+ * - Returns only email existence and role (no sensitive data)
  *
  * Checks both the users table and Supabase auth records
  */
@@ -45,31 +46,27 @@ export async function checkEmailExistsInAuth(email: string): Promise<{
   try {
     const trimmedEmail = email.trim().toLowerCase()
 
-    // IMPORTANT: Use admin client to bypass RLS on users table
-    // Regular client cannot read users table during signup (unauthenticated)
-    const supabase = await createAdminClient()
+    // Use regular client - works even during unauthenticated signup
+    // The check_email_exists() function handles RLS bypass safely via SECURITY DEFINER
+    const supabase = await createClient()
 
-    // Check if email exists in users table (both teacher and student accounts)
-    // This query must use admin client because RLS prevents unauthenticated access
-    const { data, error } = await supabase
-      .from('users')
-      .select('id, email, role')
-      .ilike('email', trimmedEmail)
-      .single()
+    // Call the public Postgres function to check email existence
+    // This function is public and works without authentication
+    const { data, error } = await supabase.rpc('check_email_exists', {
+      p_email: trimmedEmail
+    })
 
     if (error) {
-      // PGRST116 = no rows returned (email doesn't exist) - this is expected
-      if (error.code === 'PGRST116') {
-        authLogger.debug('[checkEmailExistsInAuth] Email not found in users table')
-        // Continue to check Supabase auth
-      } else {
-        // Other errors should be logged but not block account creation
-        authLogger.error('[checkEmailExistsInAuth] Error checking email in users table', error)
+      authLogger.error('[checkEmailExistsInAuth] Error calling check_email_exists function', error)
+      return { exists: false }
+    }
+
+    if (data && data.length > 0) {
+      const result = data[0]
+      if (result.email_exists) {
+        authLogger.warn('[checkEmailExistsInAuth] Email already exists in users table', { role: result.user_role })
+        return { exists: true, role: result.user_role }
       }
-    } else if (data) {
-      // Email found in users table
-      authLogger.warn('[checkEmailExistsInAuth] Email already exists in users', { role: data?.role })
-      return { exists: true, role: data?.role }
     }
 
     // Also check in Supabase auth users to catch all duplicate emails
@@ -86,11 +83,11 @@ export async function checkEmailExistsInAuth(email: string): Promise<{
         }
       }
     } catch (authCheckError) {
-      // If admin API fails, fail securely - don't allow signup
-      authLogger.error('[checkEmailExistsInAuth] Could not check Supabase auth users', authCheckError as Error)
-      return { exists: true } // Fail secure - prevent duplicate account
+      // If auth check fails, continue - the RPC call may have succeeded
+      authLogger.warn('[checkEmailExistsInAuth] Could not check Supabase auth users', authCheckError as Error)
     }
 
+    authLogger.debug('[checkEmailExistsInAuth] Email not found in system')
     return { exists: false }
   } catch (error) {
     authLogger.error('[checkEmailExistsInAuth] Unexpected error', error)

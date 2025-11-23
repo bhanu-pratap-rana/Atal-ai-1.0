@@ -120,14 +120,170 @@ These extend the general super-agent rules above and tailor them to the ATAL AI 
 
 # Sequential Thinking Checklist (Pre-change)
 
-Before making any change that touches auth, DB, or RLS:
+**REQUIRED BEFORE EVERY COMMIT** - Expected time: 10-15 minutes
 
-1. `git log --oneline` — find the commit that last changed related files.
-2. `filesystem` search for existing helpers/components to reuse.
-3. `supabase` MCP: list table schema and RLS policies relevant to the change.
-4. `memory` MCP: check if a previous pattern exists and follow it.
-5. Draft a Playwright smoke test that will validate post-change.
-6. Run `npm run lint` and `npm run test` locally.
+## Phase 1: Understand the Problem (Root Cause)
+
+Before writing ANY code:
+
+1. **Root Cause Analysis** - Use this template for EVERY change:
+   ```
+   ERROR: [What went wrong?]
+   SYMPTOM: [What does user observe?]
+   DATA FLOW TRACE:
+     1. User action: [What did they do?]
+     2. Code path: [src/file.ts → Function → Line #]
+     3. External dependency: [API call/DB query/etc]
+     4. Response: [What was returned?]
+     5. Where it failed: [Exact location]
+   ROOT CAUSE: [Why it actually happened - NOT just what]
+   FIX: [Solution addressing root cause, not symptom]
+   TEST: [How to verify fix works]
+   ```
+
+2. **Problem Verification**
+   - [ ] Reproduced the issue locally
+   - [ ] Traced the data flow end-to-end
+   - [ ] Identified exact line of code causing issue
+   - [ ] Confirmed this is ROOT CAUSE, not a symptom
+   - [ ] Checked if similar issues exist elsewhere
+
+## Phase 2: Code Review Before Writing
+
+3. **Similarity Check**
+   ```bash
+   grep -r "similar_pattern" src/ --include="*.ts" --include="*.tsx"
+   ```
+   - [ ] Searched for existing logic
+   - [ ] Found existing patterns to follow
+   - [ ] Confirmed can't reuse existing code
+   - [ ] Documented why reuse wouldn't work
+
+4. **Architecture Check**
+   - [ ] Does this fit existing architecture?
+   - [ ] Are there existing utilities I should use?
+   - [ ] Does this require changes to multiple files?
+   - [ ] Am I following established patterns?
+
+5. **For Auth/RLS Changes - SPECIAL REQUIREMENTS**
+   - [ ] `git log --oneline -- src/lib/auth* src/app/actions/auth* | head -10`
+   - [ ] Check Supabase dashboard for current RLS policies
+   - [ ] Review auth-constants.ts for all constants
+   - [ ] Draft Playwright test BEFORE writing code
+   - [ ] Verify backward compatibility
+   - [ ] Test with Supabase (not mocks)
+
+6. **For Database Changes - MIGRATIONS REQUIRED**
+   - [ ] Created migration file (NOT ad-hoc SQL)
+   - [ ] Migration includes UP and DOWN (rollback)
+   - [ ] Tested migration rollback locally: `supabase db reset`
+   - [ ] No data loss from migration
+   - [ ] Indexed new filter columns
+   - [ ] RLS policies exist on new tables
+
+## Phase 3: Validation & Error Handling
+
+7. **Input Validation**
+   - [ ] All user inputs validated
+   - [ ] Email: format + domain + typo detection + disposable check
+   - [ ] Password: length + character variety + no patterns
+   - [ ] Phone: format + country code validation
+   - [ ] Used validation functions (not inline checks)
+
+8. **Error Handling**
+   - [ ] No bare try/catch blocks
+   - [ ] All errors logged with context
+   - [ ] User-facing errors are friendly
+   - [ ] Error messages are actionable (tell user what to do)
+
+## Phase 4: Testing Requirements
+
+9. **Unit Tests**
+   ```bash
+   npm run test
+   ```
+   - [ ] Tests for happy path
+   - [ ] Tests for edge cases (null, undefined, empty, 0, false)
+   - [ ] Tests for errors and boundary values
+   - [ ] Min coverage: normal + error + edge case
+
+10. **Integration/E2E Tests**
+    - [ ] For critical flows (signup, login, join class): Playwright test
+    - [ ] Test full user journey
+    - [ ] Test error scenarios
+    - [ ] Test mobile viewport
+
+11. **Manual Testing**
+    - [ ] Tested in browser (Chrome, Firefox, Safari)
+    - [ ] Tested on mobile (iOS + Android)
+    - [ ] Tested with real Supabase (not mocks)
+
+## Phase 5: Security Checklist
+
+12. **Authentication & Authorization**
+    - [ ] No passwords logged/exposed
+    - [ ] No sensitive data in URL
+    - [ ] Session tokens refreshed properly
+    - [ ] RLS policies match auth flow
+    - [ ] Users can't access others' data
+
+13. **Secrets & Env**
+    - [ ] No secrets in code
+    - [ ] No secrets in git history
+    - [ ] `.env` file in `.gitignore`
+    - [ ] Service role key only in Vercel (not .env)
+
+## Phase 6: Code Quality
+
+14. **Linting & Types**
+    ```bash
+    npm run lint          # 0 errors
+    npm run type-check    # 0 errors
+    npm run test          # All pass
+    npm run build         # 0 errors
+    ```
+    - [ ] No ESLint errors
+    - [ ] No implicit `any` types
+    - [ ] No unused imports
+    - [ ] No console.log in production
+
+15. **Code Style**
+    - [ ] Follows existing patterns
+    - [ ] Clear variable names
+    - [ ] Comments explain WHY not WHAT
+    - [ ] Functions < 50 lines
+    - [ ] Files < 500 lines
+
+## Phase 7: Git & Deployment
+
+16. **Pre-push Verification**
+    ```bash
+    git status
+    git diff --cached
+    npm run lint && npm run test && npm run build
+    ```
+    - [ ] Only intended files staged
+    - [ ] No debug code committed
+    - [ ] No .env files committed
+    - [ ] Commit message clear and descriptive
+
+17. **Commit Message Format**
+    ```
+    [type]: [description]
+
+    [detailed explanation]
+
+    Fixes: #[issue-number]
+    Testing: [how to test]
+    ```
+    Types: feat, fix, refactor, test, docs, chore, perf
+
+18. **Core MCPs Required Before Commit**
+    - [ ] `git log --oneline` — find related commits
+    - [ ] `filesystem` search for existing utilities to reuse
+    - [ ] `supabase` MCP: verify schema and RLS policies
+    - [ ] `memory` MCP: check established patterns
+    - [ ] Draft Playwright smoke test for critical paths
 
 # Example Agent Prompt Template (for Cursor)
 

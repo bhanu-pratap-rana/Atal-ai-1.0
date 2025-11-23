@@ -43,7 +43,7 @@ export function AssessmentRunner({
   const [selectedOption, setSelectedOption] = useState<number | null>(null)
   const [shuffledOptions, setShuffledOptions] = useState<string[]>([])
   const [shuffleMap, setShuffleMap] = useState<number[]>([])
-  const [startTime, setStartTime] = useState<number>(0)
+  const [startTime, setStartTime] = useState<number>(Date.now())
   const [focusBlurCount, setFocusBlurCount] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showRapidWarning, setShowRapidWarning] = useState(false)

@@ -65,12 +65,12 @@ function SchoolFinderModal({
     }
   }, [selectedDistrict])
 
-  // Load schools when block changes
+  // Load schools when district OR block changes
   useEffect(() => {
     if (selectedDistrict) {
       loadSchools()
     }
-  }, [selectedBlock])
+  }, [selectedDistrict, selectedBlock])
 
   async function loadDistricts() {
     setLoading(true)

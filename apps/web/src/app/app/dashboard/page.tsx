@@ -22,7 +22,7 @@ export default function DashboardPage() {
       setLoading(false)
     }
     getUser()
-  }, [supabase.auth])
+  }, []) // Only run once on mount
 
   async function handleSignOut() {
     try {

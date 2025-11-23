@@ -56,7 +56,12 @@ export function usePasswordValidation() {
       if (!pwd) {
         return { valid: false, error: 'Password is required' }
       }
-      return validatePassword(pwd)
+      const result = validatePassword(pwd)
+      // Convert errors array to single error string for this hook's interface
+      return {
+        valid: result.valid,
+        error: result.errors.length > 0 ? result.errors[0] : undefined,
+      }
     },
     [password]
   )

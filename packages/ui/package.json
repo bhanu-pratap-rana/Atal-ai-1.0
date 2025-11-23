@@ -1,0 +1,39 @@
+{
+  "name": "@atal-ai/ui",
+  "version": "1.0.0",
+  "description": "ATAL AI Design System - Centralized design tokens and utilities",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./theme": {
+      "import": "./dist/theme.js",
+      "types": "./dist/theme.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "theme.ts",
+    "index.ts"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "keywords": [
+    "design-system",
+    "tokens",
+    "colors",
+    "gradients",
+    "typography",
+    "ui"
+  ],
+  "author": "ATAL AI",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

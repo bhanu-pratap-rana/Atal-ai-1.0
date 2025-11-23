@@ -20,17 +20,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Calendar, Shield, RefreshCw, Search, Copy, Check, MapPin } from 'lucide-react'
 
-// Type definitions
-interface RotationInfoResult {
-  success: boolean
-  error?: string
-  schoolCode?: string
-  schoolName?: string
-  hasCredentials?: boolean
-  createdAt?: string
-  lastRotatedAt?: string
-}
-
 // School Finder Modal Component
 function SchoolFinderModal({
   isOpen,
@@ -252,7 +241,7 @@ function CopyButton({ text }: { text: string }) {
 export default function AdminSchoolsPage() {
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [searchResults, setSearchResults] = useState<SchoolData[]>([])
   const [finderModalOpen, setFinderModalOpen] = useState(false)
 
   // Selected school data
@@ -300,7 +289,7 @@ export default function AdminSchoolsPage() {
   }
 
   // Handle school selection from search or finder
-  async function handleSelectSchool(school: any) {
+  async function handleSelectSchool(school: SchoolData) {
     setSelectedSchool({
       id: school.id,
       code: school.school_code,
@@ -532,7 +521,7 @@ export default function AdminSchoolsPage() {
                 <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
                   <p className="text-xs text-yellow-900 font-semibold">⚠ No PIN Found</p>
                   <p className="text-sm text-yellow-900 mt-2">
-                    This school doesn't have a PIN yet. Create one in Step 3.
+                    This school doesn&apos;t have a PIN yet. Create one in Step 3.
                   </p>
                   <p className="text-xs text-yellow-700 mt-3 font-semibold">
                     👇 Scroll down to Step 3 to create the PIN

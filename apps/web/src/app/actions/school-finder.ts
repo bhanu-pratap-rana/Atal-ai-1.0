@@ -52,6 +52,7 @@ export async function getDistricts() {
 
 /**
  * Get all unique blocks for a specific district
+ * Includes "Unassigned Block" option for schools without block assignment
  */
 export async function getBlocksByDistrict(district: string) {
   try {
@@ -68,7 +69,10 @@ export async function getBlocksByDistrict(district: string) {
       return { success: false, error: 'Failed to fetch blocks', data: [] }
     }
 
-    // Get unique blocks (filter out nulls)
+    // Check if there are schools with NULL blocks
+    const hasUnassignedSchools = (data || []).some(s => s.block === null)
+
+    // Get unique blocks (excluding nulls)
     const uniqueBlocks = Array.from(
       new Set(
         (data || [])
@@ -76,6 +80,11 @@ export async function getBlocksByDistrict(district: string) {
           .filter(Boolean)
       )
     ).map(block => ({ name: block || '', district }))
+
+    // Add "Unassigned Block" option if there are schools without block assignment
+    if (hasUnassignedSchools) {
+      uniqueBlocks.push({ name: '-- Unassigned Block --', district })
+    }
 
     return { success: true, data: uniqueBlocks }
   } catch (error) {
@@ -86,6 +95,7 @@ export async function getBlocksByDistrict(district: string) {
 
 /**
  * Get all schools for a district and optional block
+ * If block is "-- Unassigned Block --", returns schools with NULL block
  */
 export async function getSchoolsByDistrictAndBlock(
   district: string,
@@ -101,7 +111,12 @@ export async function getSchoolsByDistrictAndBlock(
       .order('school_name')
 
     if (block) {
-      query = query.eq('block', block)
+      // Handle "Unassigned Block" selection - returns schools with NULL block
+      if (block === '-- Unassigned Block --') {
+        query = query.is('block', null)
+      } else {
+        query = query.eq('block', block)
+      }
     }
 
     const { data, error } = await query

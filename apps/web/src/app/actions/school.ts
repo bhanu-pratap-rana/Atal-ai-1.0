@@ -235,11 +235,27 @@ export async function rotateStaffPin(schoolCode: string, newPin: string) {
       return { success: false, error: 'Not authenticated' }
     }
 
-    // 2. Verify user has admin role
+    // 2. Verify user has admin or teacher role
+    // If no explicit role is set, check if user has teacher profile
     const userRole = user.app_metadata?.role
-    if (userRole !== 'admin' && userRole !== 'teacher') {
+
+    // Determine if user is authorized
+    let isAuthorized = userRole === 'admin' || userRole === 'teacher'
+
+    // If no role metadata, check if user has a teacher profile
+    if (!isAuthorized && !userRole) {
+      const { data: teacherProfile } = await supabase
+        .from('teacher_profiles')
+        .select('id, school_id')
+        .eq('user_id', user.id)
+        .single()
+
+      isAuthorized = !!teacherProfile
+    }
+
+    if (!isAuthorized) {
       authLogger.warn('[rotateStaffPin] Unauthorized role access attempt', { userId: user.id, role: userRole })
-      return { success: false, error: 'Unauthorized: Admin access required' }
+      return { success: false, error: 'Unauthorized: Teacher or Admin access required' }
     }
 
     // 3. Validate PIN requirements (4-8 digits)
@@ -264,8 +280,8 @@ export async function rotateStaffPin(schoolCode: string, newPin: string) {
       }
     }
 
-    // 5. For teachers, verify they are authorized for this school
-    if (userRole === 'teacher') {
+    // 5. For non-admin users, verify they are authorized for this school
+    if (userRole !== 'admin') {
       const { data: teacherProfile, error: profileError } = await supabase
         .from('teacher_profiles')
         .select('school_id')

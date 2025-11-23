@@ -136,8 +136,6 @@ export function maskEmail(email: string): string {
   return `${local[0]}***@${domain}`
 }
 
----
-
 /**
  * Password Validation
  */
@@ -240,8 +238,6 @@ export function getPasswordStrengthLabel(score: number): string {
   return 'Strong'
 }
 
----
-
 /**
  * Code Validation (School Code, Class Code)
  */
@@ -307,8 +303,6 @@ export function validatePin(pin: string): {
   return { valid: true }
 }
 
----
-
 /**
  * Phone Number Validation
  */
@@ -358,8 +352,6 @@ export function maskPhoneNumber(phone: string): string {
   const cleaned = phone.replace(/\D/g, '')
   return `***${cleaned.slice(-4)}`
 }
-
----
 
 /**
  * Name Validation
@@ -429,8 +421,6 @@ export function validateRollNumber(rollNumber: string): {
 
   return { valid: true }
 }
-
----
 
 /**
  * Combined Form Validation
@@ -509,8 +499,6 @@ export function validateSignInForm(data: SignInFormData): {
     errors,
   }
 }
-
----
 
 /**
  * Utility Functions

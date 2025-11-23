@@ -53,7 +53,7 @@ test.describe('Admin PIN Management System', () => {
       }
     } catch (error) {
       // Page might be protected - that's expected
-      console.log('Page is protected or not yet loaded')
+      // Debug: Catch block handled
     }
   })
 
@@ -67,7 +67,7 @@ test.describe('Admin PIN Management System', () => {
         await expect(browseButton).toBeVisible()
       }
     } catch (error) {
-      console.log('Browse button not yet visible')
+      // Debug: Catch block handled
     }
   })
 
@@ -84,7 +84,7 @@ test.describe('Admin PIN Management System', () => {
         expect(count).toBeGreaterThanOrEqual(2)
       }
     } catch (error) {
-      console.log('PIN form not yet visible')
+      // Debug: Catch block handled
     }
   })
 
@@ -103,7 +103,7 @@ test.describe('Admin PIN Management System', () => {
         })
       }
     } catch (error) {
-      console.log('Modal interaction failed - authentication may be required')
+      // Debug: Catch block handled
     }
   })
 
@@ -120,7 +120,7 @@ test.describe('Admin PIN Management System', () => {
         expect(count).toBeGreaterThan(0)
       }
     } catch (error) {
-      console.log('District select not accessible')
+      // Debug: Catch block handled
     }
   })
 
@@ -140,7 +140,7 @@ test.describe('Admin PIN Management System', () => {
         expect(step1Visible || step2Visible || step3Visible).toBeTruthy()
       }
     } catch (error) {
-      console.log('Page structure check skipped - page not accessible')
+      // Debug: Catch block handled
     }
   })
 
@@ -155,7 +155,7 @@ test.describe('Admin PIN Management System', () => {
         await expect(copyButton).toBeVisible()
       }
     } catch (error) {
-      console.log('Copy button not accessible until school is selected')
+      // Debug: Catch block handled
     }
   })
 
@@ -173,7 +173,7 @@ test.describe('Admin PIN Management System', () => {
         expect(pinExistsVisible || noPinVisible).toBeTruthy()
       }
     } catch (error) {
-      console.log('PIN status markers not yet visible')
+      // Debug: Catch block handled
     }
   })
 
@@ -191,7 +191,7 @@ test.describe('Admin PIN Management System', () => {
         expect(createVisible || rotateVisible).toBeTruthy()
       }
     } catch (error) {
-      console.log('PIN action buttons not yet visible')
+      // Debug: Catch block handled
     }
   })
 })

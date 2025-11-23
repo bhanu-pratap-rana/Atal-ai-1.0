@@ -44,8 +44,7 @@ test.describe('Teacher Registration Flow', () => {
     // 3. Or implement a test-only bypass for OTP verification
 
     // For now, we'll test up to this point and mark the rest as TODO
-    console.log('✅ Email OTP send successful')
-    console.log('⏳ TODO: Implement OTP verification mock or test email service')
+    // TODO: Implement OTP verification mock or test email service
   })
 
   test('should validate email format', async ({ page }) => {
@@ -293,7 +292,6 @@ async function _getTestOtpCode(email: string): Promise<string> {
    *
    * For now, returns mock code that should be used in conjunction with mockOtpVerification
    */
-  console.log(`[Test] Getting OTP code for: ${email}`)
   // Return a consistent test OTP for reproducible tests
   return '123456'
 }
@@ -313,7 +311,6 @@ async function _seedTestSchool(): Promise<string> {
    * - Set up proper credentials
    * - Return school ID for cleanup
    */
-  console.log('[Test] Seeding test school data...')
   return 'test-school-id'
 }
 
@@ -328,9 +325,8 @@ async function _cleanupTestData(schoolId?: string): Promise<void> {
    * - Test email entries
    *
    * Called in test.afterEach hook
+   *
+   * TODO: Implement actual cleanup using Supabase client
    */
-  if (schoolId) {
-    console.log(`[Test] Cleaning up test school: ${schoolId}`)
-  }
-  console.log('[Test] Cleanup completed')
+  // Placeholder for cleanup logic
 }

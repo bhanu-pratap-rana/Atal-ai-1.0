@@ -28,7 +28,7 @@ function SchoolFinderModal({
 }: {
   isOpen: boolean
   onClose: () => void
-  onSelectSchool: (school: SchoolData) => void
+  onSelectSchool: (school: SchoolData) => Promise<void>
 }) {
   const [districts, setDistricts] = useState<District[]>([])
   const [blocks, setBlocks] = useState<Block[]>([])
@@ -170,11 +170,15 @@ function SchoolFinderModal({
             {schools.map((school) => (
               <button
                 key={school.id}
-                onClick={() => {
-                  onSelectSchool(school)
-                  onClose()
+                onClick={async () => {
+                  try {
+                    await onSelectSchool(school)
+                  } finally {
+                    onClose()
+                  }
                 }}
                 className="w-full text-left p-3 hover:bg-gray-50 transition-colors"
+                disabled={loading}
               >
                 <div className="font-semibold text-sm text-foreground">
                   {school.school_name}

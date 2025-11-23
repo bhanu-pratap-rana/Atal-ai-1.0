@@ -43,11 +43,10 @@ export function AssessmentRunner({
   const [selectedOption, setSelectedOption] = useState<number | null>(null)
   const [shuffledOptions, setShuffledOptions] = useState<string[]>([])
   const [shuffleMap, setShuffleMap] = useState<number[]>([])
-  const [startTime, setStartTime] = useState<number>(Date.now())
+  const [startTime, setStartTime] = useState<number | null>(null)
   const [focusBlurCount, setFocusBlurCount] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showRapidWarning, setShowRapidWarning] = useState(false)
-  const [firstSelectionTime, setFirstSelectionTime] = useState<number | null>(null)
 
   // Refs for accessibility
   const questionRef = useRef<HTMLHeadingElement>(null)
@@ -71,14 +70,13 @@ export function AssessmentRunner({
   }, [currentQuestion])
 
   // Update shuffled options when question changes
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Note: Multiple setState calls in one effect is intentional for coordinated state updates
   useEffect(() => {
     setShuffledOptions(shuffled)
     setShuffleMap(shuffleMapping)
     setSelectedOption(null)
     setStartTime(Date.now())
     setShowRapidWarning(false)
-    setFirstSelectionTime(null)
 
     // Focus on question for screen readers
     if (questionRef.current) {
@@ -108,13 +106,8 @@ export function AssessmentRunner({
 
   // Handle option selection
   const handleOptionSelect = useCallback((optionIndex: number) => {
-    // Track first selection time
-    if (firstSelectionTime === null) {
-      setFirstSelectionTime(Date.now() - startTime)
-    }
-
     setSelectedOption(optionIndex)
-  }, [firstSelectionTime, startTime])
+  }, [])
 
   const handleNext = useCallback(() => {
     if (selectedOption === null) {
@@ -122,7 +115,7 @@ export function AssessmentRunner({
       return
     }
 
-    const rtMs = Date.now() - startTime
+    const rtMs = startTime ? Date.now() - startTime : 0
     const originalOptionIndex = shuffleMap[selectedOption]
     const isCorrect = originalOptionIndex === currentQuestion.correctAnswer
 

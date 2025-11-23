@@ -100,7 +100,7 @@ export function PasswordValidationForm({
         </div>
         {showValidation && (
           <p className="text-xs text-gray-600">
-            Minimum 8 characters, must include uppercase, lowercase, and number
+            Minimum 8 characters, must include uppercase, lowercase, number, and special character (!@#$%^&*)
           </p>
         )}
       </div>

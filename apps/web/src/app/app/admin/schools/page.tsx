@@ -1,26 +1,26 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import {
   rotateStaffPin,
-  getStaffPinRotationInfo,
   searchSchools,
 } from '@/app/actions/school'
+import {
+  getDistricts,
+  getBlocksByDistrict,
+  getSchoolsByDistrictAndBlock,
+  getSchoolPinStatus,
+  type District,
+  type Block,
+  type SchoolData,
+} from '@/app/actions/school-finder'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Calendar, Shield, RefreshCw, Search } from 'lucide-react'
+import { Calendar, Shield, RefreshCw, Search, Copy, Check, MapPin } from 'lucide-react'
 
 // Type definitions
-interface School {
-  school_code: string
-  school_name: string
-  id?: string
-  address?: string
-  district?: string
-}
-
 interface RotationInfoResult {
   success: boolean
   error?: string
@@ -31,25 +31,233 @@ interface RotationInfoResult {
   lastRotatedAt?: string
 }
 
-// Simple card component without logo
-function Card({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
+// School Finder Modal Component
+function SchoolFinderModal({
+  isOpen,
+  onClose,
+  onSelectSchool,
+}: {
+  isOpen: boolean
+  onClose: () => void
+  onSelectSchool: (school: SchoolData) => void
+}) {
+  const [districts, setDistricts] = useState<District[]>([])
+  const [blocks, setBlocks] = useState<Block[]>([])
+  const [schools, setSchools] = useState<SchoolData[]>([])
+  const [selectedDistrict, setSelectedDistrict] = useState<string>('')
+  const [selectedBlock, setSelectedBlock] = useState<string>('')
+  const [loading, setLoading] = useState(false)
+
+  // Load districts on mount
+  useEffect(() => {
+    if (isOpen) {
+      loadDistricts()
+    }
+  }, [isOpen])
+
+  // Load blocks when district changes
+  useEffect(() => {
+    if (selectedDistrict) {
+      loadBlocks()
+      setBlocks([])
+      setSchools([])
+      setSelectedBlock('')
+    }
+  }, [selectedDistrict])
+
+  // Load schools when block changes
+  useEffect(() => {
+    if (selectedDistrict) {
+      loadSchools()
+    }
+  }, [selectedBlock])
+
+  async function loadDistricts() {
+    setLoading(true)
+    try {
+      const result = await getDistricts()
+      if (result.success) {
+        setDistricts(result.data)
+      } else {
+        toast.error(result.error || 'Failed to load districts')
+      }
+    } catch (error) {
+      toast.error('An error occurred')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function loadBlocks() {
+    if (!selectedDistrict) return
+
+    setLoading(true)
+    try {
+      const result = await getBlocksByDistrict(selectedDistrict)
+      if (result.success) {
+        setBlocks(result.data)
+      } else {
+        toast.error(result.error || 'Failed to load blocks')
+      }
+    } catch (error) {
+      toast.error('An error occurred')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function loadSchools() {
+    if (!selectedDistrict) return
+
+    setLoading(true)
+    try {
+      const result = await getSchoolsByDistrictAndBlock(
+        selectedDistrict,
+        selectedBlock || undefined
+      )
+      if (result.success) {
+        setSchools(result.data)
+      } else {
+        toast.error(result.error || 'Failed to load schools')
+      }
+    } catch (error) {
+      toast.error('An error occurred')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (!isOpen) return null
+
   return (
-    <div className="p-[3px] rounded-xl bg-gradient-to-br from-primary to-primary-light shadow-md">
-      <div className="bg-background rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-foreground mb-1">{title}</h3>
-        <p className="text-sm text-text-secondary mb-4">{description}</p>
-        {children}
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-96 overflow-auto">
+        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <MapPin className="h-5 w-5" />
+          Find School by Location
+        </h2>
+
+        {/* District Selection */}
+        <div className="mb-4">
+          <Label className="text-sm font-semibold mb-2 block">District</Label>
+          <select
+            value={selectedDistrict}
+            onChange={(e) => setSelectedDistrict(e.target.value)}
+            className="w-full border border-gray-300 rounded-lg p-2 text-sm"
+            disabled={loading}
+          >
+            <option value="">-- Select District --</option>
+            {districts.map((d) => (
+              <option key={d.name} value={d.name}>
+                {d.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Block Selection */}
+        {selectedDistrict && (
+          <div className="mb-4">
+            <Label className="text-sm font-semibold mb-2 block">Block (Optional)</Label>
+            <select
+              value={selectedBlock}
+              onChange={(e) => setSelectedBlock(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg p-2 text-sm"
+              disabled={loading}
+            >
+              <option value="">-- All Blocks --</option>
+              {blocks.map((b) => (
+                <option key={b.name} value={b.name}>
+                  {b.name || 'Not Specified'}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Schools List */}
+        {schools.length > 0 && (
+          <div className="border border-gray-300 rounded-lg divide-y max-h-64 overflow-y-auto">
+            {schools.map((school) => (
+              <button
+                key={school.id}
+                onClick={() => {
+                  onSelectSchool(school)
+                  onClose()
+                }}
+                className="w-full text-left p-3 hover:bg-gray-50 transition-colors"
+              >
+                <div className="font-semibold text-sm text-foreground">
+                  {school.school_name}
+                </div>
+                <div className="text-xs text-gray-600 mt-1">
+                  <strong>Code:</strong> {school.school_code} • <strong>Block:</strong>{' '}
+                  {school.block || 'N/A'}
+                </div>
+                {school.address && (
+                  <div className="text-xs text-gray-500 mt-1">{school.address}</div>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {selectedDistrict && schools.length === 0 && !loading && (
+          <div className="text-center py-4 text-gray-500 text-sm">
+            No schools found in {selectedBlock ? `${selectedBlock} block` : 'this district'}
+          </div>
+        )}
+
+        {/* Close Button */}
+        <Button
+          onClick={onClose}
+          variant="outline"
+          size="sm"
+          className="mt-4 w-full"
+        >
+          Close
+        </Button>
       </div>
     </div>
   )
 }
 
+// Copy to Clipboard Component
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false)
+
+  function handleCopy() {
+    navigator.clipboard.writeText(text)
+    setCopied(true)
+    toast.success('Code copied to clipboard')
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <button
+      onClick={handleCopy}
+      className={`p-2 rounded transition-all ${
+        copied
+          ? 'bg-green-100 text-green-700'
+          : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+      }`}
+      title="Copy to clipboard"
+    >
+      {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+    </button>
+  )
+}
+
+// Main Admin Panel
 export default function AdminSchoolsPage() {
-  const [activeStep, setActiveStep] = useState<'search' | 'history' | 'rotate'>('search')
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<School[]>([])
+  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [finderModalOpen, setFinderModalOpen] = useState(false)
+
+  // Selected school data
   const [selectedSchool, setSelectedSchool] = useState<{
+    id: string
     code: string
     name: string
   } | null>(null)
@@ -59,10 +267,14 @@ export default function AdminSchoolsPage() {
   const [newPin, setNewPin] = useState('')
   const [confirmPin, setConfirmPin] = useState('')
 
-  // Rotation info
-  const [rotationInfo, setRotationInfo] = useState<RotationInfoResult | null>(null)
+  // PIN status
+  const [pinStatus, setPinStatus] = useState<{
+    exists: boolean
+    createdAt?: string
+    lastRotatedAt?: string
+  } | null>(null)
 
-  // Search schools
+  // Search schools by code or name
   async function handleSearch() {
     if (!searchQuery.trim()) {
       toast.error('Please enter a school code or name')
@@ -87,34 +299,40 @@ export default function AdminSchoolsPage() {
     }
   }
 
-  // Select a school from search results
-  function selectSchool(school: School) {
+  // Handle school selection from search or finder
+  async function handleSelectSchool(school: any) {
     setSelectedSchool({
+      id: school.id,
       code: school.school_code,
       name: school.school_name,
     })
     setSchoolCode(school.school_code)
     setSearchResults([])
     setSearchQuery('')
+
+    // Auto-fetch PIN status
+    await handleGetPinStatus(school.school_code)
   }
 
-  // Get rotation info
-  async function handleGetRotationInfo() {
-    if (!schoolCode.trim()) {
+  // Get PIN status
+  async function handleGetPinStatus(code: string) {
+    const codeToCheck = code || schoolCode
+    if (!codeToCheck.trim()) {
       toast.error('Please enter a school code')
       return
     }
 
     setLoading(true)
     try {
-      const result = await getStaffPinRotationInfo(schoolCode.toUpperCase().trim())
+      const result = await getSchoolPinStatus(codeToCheck.toUpperCase().trim())
       if (result.success) {
-        setRotationInfo(result)
-        if (!result.hasCredentials) {
-          toast.info('No credentials found for this school')
-        }
+        setPinStatus({
+          exists: result.exists,
+          createdAt: result.createdAt,
+          lastRotatedAt: result.lastRotatedAt,
+        })
       } else {
-        toast.error(result.error || 'Failed to fetch rotation info')
+        toast.error(result.error || 'Failed to fetch PIN status')
       }
     } catch (error) {
       toast.error('An error occurred')
@@ -123,7 +341,7 @@ export default function AdminSchoolsPage() {
     }
   }
 
-  // Rotate PIN
+  // Rotate or create PIN
   async function handleRotatePin(e: React.FormEvent) {
     e.preventDefault()
 
@@ -147,13 +365,13 @@ export default function AdminSchoolsPage() {
       const result = await rotateStaffPin(schoolCode.toUpperCase().trim(), newPin)
 
       if (result.success) {
-        toast.success(
-          `PIN rotated successfully for ${result.schoolName} (${result.schoolCode})`
-        )
+        const action = pinStatus?.exists ? 'rotated' : 'created'
+        toast.success(`PIN ${action} successfully for ${result.schoolName}`)
         setNewPin('')
         setConfirmPin('')
-        // Refresh rotation info
-        handleGetRotationInfo()
+
+        // Refresh PIN status
+        await handleGetPinStatus(schoolCode)
       } else {
         toast.error(result.error || 'Failed to rotate PIN')
       }
@@ -166,8 +384,8 @@ export default function AdminSchoolsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-surface via-background to-surface p-6">
-      <div className="max-w-2xl mx-auto">
-        {/* Header - Single Logo */}
+      <div className="max-w-3xl mx-auto">
+        {/* Header */}
         <div className="flex items-center justify-center gap-3 mb-8">
           <Shield className="h-8 w-8 text-primary" />
           <div className="text-center">
@@ -180,251 +398,255 @@ export default function AdminSchoolsPage() {
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex gap-2 mb-6 bg-background/50 p-1 rounded-lg border border-border">
-          <button
-            onClick={() => setActiveStep('search')}
-            className={`flex-1 py-2 px-4 rounded font-medium text-sm transition-all ${
-              activeStep === 'search'
-                ? 'bg-primary text-white shadow-md'
-                : 'text-text-secondary hover:text-foreground'
-            }`}
-          >
-            <Search className="h-4 w-4 inline mr-2" />
-            Step 1: Search
-          </button>
-          <button
-            onClick={() => setActiveStep('history')}
-            className={`flex-1 py-2 px-4 rounded font-medium text-sm transition-all ${
-              activeStep === 'history'
-                ? 'bg-primary text-white shadow-md'
-                : 'text-text-secondary hover:text-foreground'
-            }`}
-          >
-            <Calendar className="h-4 w-4 inline mr-2" />
-            Step 2: History
-          </button>
-          <button
-            onClick={() => setActiveStep('rotate')}
-            className={`flex-1 py-2 px-4 rounded font-medium text-sm transition-all ${
-              activeStep === 'rotate'
-                ? 'bg-primary text-white shadow-md'
-                : 'text-text-secondary hover:text-foreground'
-            }`}
-          >
-            <RefreshCw className="h-4 w-4 inline mr-2" />
-            Step 3: Rotate
-          </button>
-        </div>
+        {/* School Finder Modal */}
+        <SchoolFinderModal
+          isOpen={finderModalOpen}
+          onClose={() => setFinderModalOpen(false)}
+          onSelectSchool={handleSelectSchool}
+        />
 
-        {/* Content Area - Only Show Active Step */}
-        <div className="space-y-6">
-          {/* Step 1: School Search */}
-          {activeStep === 'search' && (
-            <Card
-              title="Step 1: Search Schools"
-              description="Find a school by code or name"
-            >
-              <div className="space-y-4">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="e.g., 14H0001 or School Name"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                    disabled={loading}
-                    className="flex-1"
-                  />
-                  <Button
-                    onClick={handleSearch}
-                    disabled={loading}
-                    loading={loading}
-                    size="sm"
-                    className="shadow-[0_4px_12px_rgba(255,140,66,0.25)]"
-                  >
-                    <Search className="h-4 w-4" />
-                  </Button>
-                </div>
+        {/* Step 1: Find School */}
+        <div className="mb-6 p-6 bg-white border border-primary/20 rounded-lg">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <Search className="h-5 w-5 text-primary" />
+            Step 1: Find School
+          </h2>
 
-                {/* Search Results */}
-                {searchResults.length > 0 && (
-                  <div className="border border-border rounded-lg divide-y divide-border max-h-48 overflow-y-auto">
-                    {searchResults.map((school) => (
-                      <button
-                        key={school.id}
-                        onClick={() => selectSchool(school)}
-                        className="w-full text-left p-3 hover:bg-surface transition-colors"
-                      >
-                        <div className="font-semibold text-sm text-foreground">
-                          {school.school_name}
-                        </div>
-                        <div className="text-xs text-text-secondary">
-                          {school.school_code} • {school.district}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Selected School Display */}
-                {selectedSchool && (
-                  <div className="bg-green-50 border-l-4 border-green-500 p-3 rounded">
-                    <p className="text-xs text-green-900 font-semibold">
-                      ✓ Selected
-                    </p>
-                    <p className="text-xs text-green-900 mt-1">
-                      {selectedSchool.name}
-                    </p>
-                    <p className="text-xs text-green-700 font-mono">
-                      {selectedSchool.code}
-                    </p>
-                  </div>
-                )}
+          <div className="space-y-4">
+            {/* Quick Search */}
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Quick Search by Code or Name</Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="e.g., 14H0182 or School Name"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  disabled={loading}
+                  className="flex-1"
+                />
+                <Button
+                  onClick={handleSearch}
+                  disabled={loading}
+                  loading={loading}
+                  size="sm"
+                  className="shadow-[0_4px_12px_rgba(255,140,66,0.25)]"
+                >
+                  <Search className="h-4 w-4" />
+                </Button>
               </div>
-            </Card>
-          )}
+            </div>
 
-          {/* Step 2: Check History */}
-          {activeStep === 'history' && (
-            <Card
-              title="Step 2: Check PIN History"
-              description="View rotation history for selected school"
-            >
-              <div className="space-y-4">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="School Code"
-                    value={schoolCode}
-                    onChange={(e) => setSchoolCode(e.target.value.toUpperCase())}
-                    disabled={loading}
-                    maxLength={10}
-                    className="flex-1 uppercase font-mono text-sm"
-                  />
-                  <Button
-                    onClick={handleGetRotationInfo}
-                    disabled={loading}
-                    loading={loading}
-                    size="sm"
-                    variant="outline"
+            {/* Search Results */}
+            {searchResults.length > 0 && (
+              <div className="border border-border rounded-lg divide-y max-h-48 overflow-y-auto">
+                {searchResults.map((school) => (
+                  <button
+                    key={school.id}
+                    onClick={() => handleSelectSchool(school)}
+                    className="w-full text-left p-3 hover:bg-surface transition-colors flex justify-between items-center"
                   >
-                    <Calendar className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                {rotationInfo && (
-                  <div className={`border-l-4 p-3 rounded text-xs ${
-                    rotationInfo.hasCredentials
-                      ? 'bg-blue-50 border-blue-500 text-blue-900'
-                      : 'bg-yellow-50 border-yellow-500 text-yellow-900'
-                  }`}>
-                    {rotationInfo.hasCredentials ? (
-                      <div className="space-y-1">
-                        <p><strong>{rotationInfo.schoolName}</strong></p>
-                        <p>Created: {rotationInfo.createdAt ? new Date(rotationInfo.createdAt).toLocaleDateString() : 'N/A'}</p>
-                        {rotationInfo.lastRotatedAt && (
-                          <p>Last Rotated: {new Date(rotationInfo.lastRotatedAt).toLocaleDateString()}</p>
-                        )}
+                    <div>
+                      <div className="font-semibold text-sm text-foreground">
+                        {school.school_name}
                       </div>
-                    ) : (
-                      <p>No PIN credentials found - create one in Step 3</p>
-                    )}
-                  </div>
-                )}
+                      <div className="text-xs text-text-secondary mt-1">
+                        {school.school_code} • {school.district}
+                      </div>
+                    </div>
+                    <Copy className="h-4 w-4 text-gray-400" />
+                  </button>
+                ))}
               </div>
-            </Card>
-          )}
+            )}
 
-          {/* Step 3: Rotate PIN */}
-          {activeStep === 'rotate' && (
-            <Card
-              title="Step 3: Rotate PIN"
-              description="Set or update the staff PIN"
+            {/* Hierarchical Finder Button */}
+            <Button
+              onClick={() => setFinderModalOpen(true)}
+              variant="outline"
+              size="sm"
+              className="w-full"
             >
-              <form onSubmit={handleRotatePin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="school-code-rotate" className="text-sm">
-                    School Code
-                  </Label>
-                  <Input
-                    id="school-code-rotate"
-                    type="text"
-                    placeholder="14H0182"
-                    value={schoolCode}
-                    onChange={(e) => setSchoolCode(e.target.value.toUpperCase())}
-                    required
-                    disabled={loading}
-                    maxLength={10}
-                    className="uppercase font-mono text-sm"
-                  />
-                </div>
+              <MapPin className="h-4 w-4 mr-2" />
+              Or Browse by District &amp; Block
+            </Button>
+          </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="new-pin" className="text-sm">
-                    New Staff PIN
-                  </Label>
-                  <Input
-                    id="new-pin"
-                    type="password"
-                    placeholder="e.g., 1234"
-                    value={newPin}
-                    onChange={(e) => setNewPin(e.target.value)}
-                    required
-                    disabled={loading}
-                    minLength={4}
-                    className="font-mono text-sm"
-                  />
-                  <p className="text-xs text-text-secondary">
-                    Min 4 characters (numeric recommended)
+          {/* Selected School Display */}
+          {selectedSchool && (
+            <div className="mt-4 bg-green-50 border-l-4 border-green-500 p-4 rounded">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-xs text-green-900 font-semibold">✓ Selected School</p>
+                  <p className="text-sm text-green-900 font-semibold mt-1">
+                    {selectedSchool.name}
+                  </p>
+                  <p className="text-xs text-green-700 font-mono mt-1">
+                    Code: {selectedSchool.code}
                   </p>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="confirm-pin" className="text-sm">
-                    Confirm PIN
-                  </Label>
-                  <Input
-                    id="confirm-pin"
-                    type="password"
-                    placeholder="Re-enter PIN"
-                    value={confirmPin}
-                    onChange={(e) => setConfirmPin(e.target.value)}
-                    required
-                    disabled={loading}
-                    minLength={4}
-                    className="font-mono text-sm"
-                  />
-                </div>
-
-                <div className="bg-orange-50 border-l-4 border-primary p-3 rounded text-xs text-orange-900">
-                  <p><strong>⚠️ Security Notice</strong></p>
-                  <p className="mt-1">PIN will be bcrypt hashed. Old PIN becomes invalid immediately.</p>
-                </div>
-
-                <Button
-                  type="submit"
-                  className="w-full shadow-[0_8px_20px_rgba(255,140,66,0.35)]"
-                  disabled={loading || newPin !== confirmPin || newPin.length < 4}
-                  loading={loading}
-                  size="lg"
-                >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Rotate PIN
-                </Button>
-              </form>
-            </Card>
+                <CopyButton text={selectedSchool.code} />
+              </div>
+            </div>
           )}
-
-          {/* Quick Help - Always Show */}
-          <div className="mt-8 bg-gradient-to-r from-orange-50 to-yellow-50 border border-primary/20 p-4 rounded-lg">
-            <h3 className="font-semibold text-foreground text-sm mb-2">📋 Quick Guide</h3>
-            <ul className="text-sm text-text-secondary space-y-2">
-              <li><strong>Step 1:</strong> Search for a school by code or name</li>
-              <li><strong>Step 2:</strong> Check when the PIN was last rotated</li>
-              <li><strong>Step 3:</strong> Set or update the staff PIN for teachers</li>
-              <li><strong>Result:</strong> Teachers use the new PIN for registration</li>
-            </ul>
-          </div>
         </div>
+
+        {/* Step 2: Check/Create PIN */}
+        {selectedSchool && (
+          <div className="mb-6 p-6 bg-white border border-primary/20 rounded-lg">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-primary" />
+              Step 2: PIN Status
+            </h2>
+
+            <div className="space-y-4">
+              {!pinStatus ? (
+                <Button
+                  onClick={() => handleGetPinStatus(schoolCode)}
+                  variant="outline"
+                  size="sm"
+                  loading={loading}
+                >
+                  Check PIN Status
+                </Button>
+              ) : pinStatus.exists ? (
+                <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+                  <p className="text-xs text-blue-900 font-semibold">✓ PIN Exists</p>
+                  <p className="text-sm text-blue-900 mt-2">
+                    <strong>Created:</strong>{' '}
+                    {pinStatus.createdAt
+                      ? new Date(pinStatus.createdAt).toLocaleDateString()
+                      : 'N/A'}
+                  </p>
+                  {pinStatus.lastRotatedAt && (
+                    <p className="text-sm text-blue-900">
+                      <strong>Last Rotated:</strong>{' '}
+                      {new Date(pinStatus.lastRotatedAt).toLocaleDateString()}
+                    </p>
+                  )}
+                  <p className="text-xs text-blue-700 mt-3 font-semibold">
+                    👇 Scroll down to Step 3 to rotate the PIN
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
+                  <p className="text-xs text-yellow-900 font-semibold">⚠ No PIN Found</p>
+                  <p className="text-sm text-yellow-900 mt-2">
+                    This school doesn't have a PIN yet. Create one in Step 3.
+                  </p>
+                  <p className="text-xs text-yellow-700 mt-3 font-semibold">
+                    👇 Scroll down to Step 3 to create the PIN
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Rotate/Create PIN */}
+        {selectedSchool && (
+          <div className="p-6 bg-white border border-primary/20 rounded-lg">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <RefreshCw className="h-5 w-5 text-primary" />
+              Step 3: {pinStatus?.exists ? 'Rotate' : 'Create'} PIN
+            </h2>
+
+            <form onSubmit={handleRotatePin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="school-code-rotate" className="text-sm">
+                  School Code
+                </Label>
+                <Input
+                  id="school-code-rotate"
+                  type="text"
+                  value={schoolCode}
+                  disabled
+                  className="bg-gray-50 uppercase font-mono text-sm"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="new-pin" className="text-sm">
+                  {pinStatus?.exists ? 'New' : ''} Staff PIN
+                </Label>
+                <Input
+                  id="new-pin"
+                  type="password"
+                  placeholder="e.g., 1234"
+                  value={newPin}
+                  onChange={(e) => setNewPin(e.target.value)}
+                  required
+                  disabled={loading}
+                  minLength={4}
+                  className="font-mono text-sm"
+                />
+                <p className="text-xs text-text-secondary">
+                  Min 4 characters (numeric recommended)
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirm-pin" className="text-sm">
+                  Confirm PIN
+                </Label>
+                <Input
+                  id="confirm-pin"
+                  type="password"
+                  placeholder="Re-enter PIN"
+                  value={confirmPin}
+                  onChange={(e) => setConfirmPin(e.target.value)}
+                  required
+                  disabled={loading}
+                  minLength={4}
+                  className="font-mono text-sm"
+                />
+              </div>
+
+              <div className="bg-orange-50 border-l-4 border-primary p-3 rounded text-xs text-orange-900">
+                <p>
+                  <strong>⚠️ Security Notice</strong>
+                </p>
+                <p className="mt-1">
+                  PIN will be bcrypt hashed.{' '}
+                  {pinStatus?.exists
+                    ? 'Old PIN becomes invalid immediately.'
+                    : 'Teachers can use this PIN for registration.'}
+                </p>
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full shadow-[0_8px_20px_rgba(255,140,66,0.35)]"
+                disabled={loading || newPin !== confirmPin || newPin.length < 4}
+                loading={loading}
+                size="lg"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                {pinStatus?.exists ? 'Rotate' : 'Create'} PIN
+              </Button>
+            </form>
+
+            {/* Help */}
+            <div className="mt-6 bg-gradient-to-r from-orange-50 to-yellow-50 border border-primary/20 p-4 rounded-lg">
+              <h3 className="font-semibold text-foreground text-sm mb-2">📋 Quick Guide</h3>
+              <ul className="text-sm text-text-secondary space-y-2">
+                <li>
+                  <strong>Step 1:</strong> Search schools or browse by district/block
+                </li>
+                <li>
+                  <strong>Step 2:</strong> Click school → Code auto-fills → Check PIN status
+                </li>
+                <li>
+                  <strong>Step 3:</strong> {pinStatus?.exists ? 'Rotate' : 'Create'} PIN for
+                  teachers
+                </li>
+                <li>
+                  <strong>Result:</strong> Teachers use code + PIN for registration
+                </li>
+              </ul>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

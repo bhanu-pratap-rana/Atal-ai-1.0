@@ -27,6 +27,10 @@ interface RateLimitEntry {
   lastRefill: number
 }
 
+// Redis client type - supports redis, ioredis, and other clients
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type RedisClient = any
+
 interface RateLimitConfig {
   maxTokens: number // Maximum tokens in bucket
   refillRate: number // Tokens per second (e.g., 1 token per 600 seconds = 6 per hour)
@@ -125,11 +129,11 @@ class InMemoryRateLimiter implements IRateLimiter {
  * Supports distributed rate limiting across multiple server instances
  */
 class RedisRateLimiter implements IRateLimiter {
-  private redisClient: any // Redis client type
+  private redisClient: RedisClient
   private config: RateLimitConfig
   private prefix: string
 
-  constructor(config: RateLimitConfig, redisClient: any, prefix: string = 'ratelimit:') {
+  constructor(config: RateLimitConfig, redisClient: RedisClient, prefix: string = 'ratelimit:') {
     this.config = config
     this.redisClient = redisClient
     this.prefix = prefix
@@ -265,7 +269,7 @@ class RedisRateLimiter implements IRateLimiter {
  */
 export function createRateLimiter(
   config: RateLimitConfig,
-  redisClient?: any
+  redisClient?: RedisClient
 ): IRateLimiter {
   if (redisClient) {
     return new RedisRateLimiter(config, redisClient)
@@ -279,9 +283,9 @@ export function createRateLimiter(
  */
 export class RateLimitManager {
   private limiters: Map<string, IRateLimiter> = new Map()
-  private redisClient?: any
+  private redisClient?: RedisClient
 
-  constructor(redisClient?: any) {
+  constructor(redisClient?: RedisClient) {
     this.redisClient = redisClient
   }
 
@@ -334,8 +338,8 @@ export class RateLimitManager {
   /**
    * Get detailed status for debugging
    */
-  async getStats(): Promise<Record<string, any>> {
-    const stats: Record<string, any> = {}
+  async getStats(): Promise<Record<string, { entries: number; limiter: string }>> {
+    const stats: Record<string, { entries: number; limiter: string }> = {}
 
     for (const [name, limiter] of this.limiters) {
       stats[name] = {

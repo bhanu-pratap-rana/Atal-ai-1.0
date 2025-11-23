@@ -9,7 +9,7 @@
  */
 
 import { useState, useCallback } from 'react'
-import { validatePassword, validatePasswordMatch } from '@/lib/auth-validation'
+import { validatePassword, validatePasswordMatch } from '@/lib/validation-utils'
 
 export interface PasswordValidationResult {
   passwordValid: boolean

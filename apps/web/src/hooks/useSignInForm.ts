@@ -82,7 +82,7 @@ const initialState: SignInFormState = {
  * // In email signin handler:
  * const validation = validateEmail(state.emailAddress)
  * if (!validation.valid) {
- *   actions.setEmailError(validation.error)
+ *   actions.setEmailError(validation.errors.join(', '))
  *   return
  * }
  *

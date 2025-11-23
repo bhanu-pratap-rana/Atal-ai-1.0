@@ -8,7 +8,7 @@ import {
   resetPasswordWithOtp,
 } from '@/app/actions/auth'
 import { authLogger } from '@/lib/auth-logger'
-import { validateEmail, validatePassword } from '@/lib/auth-validation'
+import { validateEmail, validatePassword } from '@/lib/validation-utils'
 import { AUTH_ERRORS } from '@/lib/auth-constants'
 
 interface UseAuthHandlersParams {
@@ -162,7 +162,7 @@ export function useAuthHandlers({ supabase }: UseAuthHandlersParams) {
         if (!passwordValidation.valid) {
           return {
             success: false,
-            error: passwordValidation.error || AUTH_ERRORS.INVALID_PASSWORD,
+            error: passwordValidation.errors.join(', ') || AUTH_ERRORS.INVALID_PASSWORD,
           }
         }
 

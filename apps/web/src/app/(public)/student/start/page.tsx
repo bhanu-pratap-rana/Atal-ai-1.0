@@ -18,7 +18,7 @@ import {
   validatePhone,
   validatePIN,
   validateClassCode,
-} from '@/lib/auth-validation'
+} from '@/lib/validation-utils'
 import {
   PHONE_DIGIT_LENGTH,
   OTP_LENGTH,
@@ -193,7 +193,7 @@ export default function StudentStartPage() {
     // Validate inputs
     const passwordValidation = validatePassword(state.signupEmailPassword)
     if (!passwordValidation.valid) {
-      actions.setSignupEmailError(passwordValidation.error || 'Invalid password')
+      actions.setSignupEmailError(passwordValidation.errors.join(', ') || 'Invalid password')
       actions.setIsLoading(false)
       return
     }
@@ -300,7 +300,7 @@ export default function StudentStartPage() {
     // Validate password
     const passwordValidation = validatePassword(state.signupPhonePassword)
     if (!passwordValidation.valid) {
-      actions.setSignupPhoneError(passwordValidation.error || 'Invalid password')
+      actions.setSignupPhoneError(passwordValidation.errors.join(', ') || 'Invalid password')
       return
     }
 
@@ -456,7 +456,7 @@ export default function StudentStartPage() {
     // Validate password
     const passwordValidation = validatePassword(state.forgotPasswordNewPassword)
     if (!passwordValidation.valid) {
-      actions.setForgotPasswordError(passwordValidation.error || 'Invalid password')
+      actions.setForgotPasswordError(passwordValidation.errors.join(', ') || 'Invalid password')
       return
     }
 

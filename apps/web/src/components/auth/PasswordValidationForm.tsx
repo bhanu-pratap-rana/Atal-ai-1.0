@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { validatePassword, validatePasswordMatch } from '@/lib/auth-validation'
+import { validatePassword, validatePasswordMatch } from '@/lib/validation-utils'
 import { authLogger } from '@/lib/auth-logger'
 import { Eye, EyeOff } from 'lucide-react'
 
@@ -48,7 +48,7 @@ export function PasswordValidationForm({
     // Validate password
     const passwordValidation = validatePassword(password)
     if (!passwordValidation.valid) {
-      onErrorChange(passwordValidation.error || 'Invalid password')
+      onErrorChange(passwordValidation.errors.join(', ') || 'Invalid password')
       return
     }
 

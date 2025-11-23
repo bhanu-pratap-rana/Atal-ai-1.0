@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { validateEmail } from '@/lib/auth-validation'
+import { validateEmail } from '@/lib/validation-utils'
 import { requestOtp } from '@/app/actions/auth'
 import { authLogger } from '@/lib/auth-logger'
 

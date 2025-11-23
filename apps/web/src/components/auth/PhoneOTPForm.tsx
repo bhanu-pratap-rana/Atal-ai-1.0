@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { PhoneInputWithPrefix } from '@/components/auth/PhoneInputWithPrefix'
-import { validatePhone } from '@/lib/auth-validation'
+import { validatePhone } from '@/lib/validation-utils'
 import { requestOtp } from '@/app/actions/auth'
 import { authLogger } from '@/lib/auth-logger'
 

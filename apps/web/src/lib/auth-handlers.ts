@@ -14,7 +14,7 @@
  */
 
 import { SupabaseClient } from '@supabase/supabase-js'
-import { validateEmail, validatePhone, validatePassword } from './auth-validation'
+import { validateEmail, validatePhone, validatePassword } from './validation-utils'
 import { checkOtpRateLimit } from './rate-limiter'
 import { authLogger } from './auth-logger'
 
@@ -399,7 +399,7 @@ export async function handleSetPassword(
       if (!validation.valid) {
         return {
           success: false,
-          error: validation.error || 'Invalid password',
+          error: validation.errors.join(', ') || 'Invalid password',
         }
       }
     }

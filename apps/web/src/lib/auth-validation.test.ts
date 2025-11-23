@@ -23,7 +23,7 @@ import {
   validateSignUpForm,
   validatePhoneSignInForm,
   validateJoinClassForm,
-} from './auth-validation'
+} from './validation-utils'
 
 describe('Email Validation', () => {
   it('should validate correct email', () => {

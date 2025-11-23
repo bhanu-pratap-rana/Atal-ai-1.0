@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react'
-import { sanitizePhone, validatePhone } from '@/lib/auth-validation'
+import { sanitizePhone, validatePhone } from '@/lib/validation-utils'
 import { PHONE_COUNTRY_CODE, PHONE_DIGIT_LENGTH } from '@/lib/auth-constants'
 
 export interface UsePhoneInputReturn {

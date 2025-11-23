@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react'
-import { sanitizeOTP, validateOTP } from '@/lib/auth-validation'
+import { sanitizeOTP, validateOTP } from '@/lib/validation-utils'
 import { OTP_LENGTH } from '@/lib/auth-constants'
 
 export interface UseOTPInputReturn {

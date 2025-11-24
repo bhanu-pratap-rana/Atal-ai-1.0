@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import {
   rotateStaffPin,
   searchSchools,
+  checkAdminAuth,
 } from '@/app/actions/school'
 import {
   getDistricts,
@@ -247,6 +248,28 @@ export default function AdminSchoolsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SchoolData[]>([])
   const [finderModalOpen, setFinderModalOpen] = useState(false)
+  const [authorized, setAuthorized] = useState<boolean | null>(null)
+  const [authError, setAuthError] = useState<string | null>(null)
+
+  // Check admin authorization on mount
+  useEffect(() => {
+    async function verifyAuth() {
+      try {
+        const result = await checkAdminAuth()
+        if (result.authorized) {
+          setAuthorized(true)
+        } else {
+          setAuthorized(false)
+          setAuthError(result.error || 'Unauthorized')
+        }
+      } catch (error) {
+        setAuthorized(false)
+        setAuthError('Failed to verify authorization')
+      }
+    }
+
+    verifyAuth()
+  }, [])
 
   // Selected school data
   const [selectedSchool, setSelectedSchool] = useState<{
@@ -373,6 +396,38 @@ export default function AdminSchoolsPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Show loading state
+  if (authorized === null) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-surface via-background to-surface p-6 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Verifying authorization...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show authorization error
+  if (!authorized || authError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-surface via-background to-surface p-6 flex items-center justify-center">
+        <div className="max-w-md mx-auto text-center">
+          <Shield className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-foreground mb-2">Access Denied</h1>
+          <p className="text-text-secondary mb-4">
+            {authError || 'You do not have permission to access this page. Admin access required.'}
+          </p>
+          <Button
+            onClick={() => (window.location.href = '/app/dashboard')}
+            variant="outline"
+          >
+            Go to Dashboard
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   return (

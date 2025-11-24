@@ -45,6 +45,30 @@ export interface VerifyTeacherResult {
 }
 
 /**
+ * Check if current user has admin access
+ * Used for authorization on admin pages
+ */
+export async function checkAdminAuth() {
+  try {
+    const user = await getCurrentUser()
+
+    if (!user) {
+      return { authorized: false, error: 'Not authenticated' }
+    }
+
+    const isAdmin = user.app_metadata?.role === 'admin'
+    if (!isAdmin) {
+      return { authorized: false, error: 'Admin access required' }
+    }
+
+    return { authorized: true }
+  } catch (error) {
+    authLogger.error('[checkAdminAuth] Unexpected error', error)
+    return { authorized: false, error: 'Failed to verify authorization' }
+  }
+}
+
+/**
  * Verify teacher credentials using School Code + Staff PIN
  * This elevates the authenticated user's role to 'teacher'
  */

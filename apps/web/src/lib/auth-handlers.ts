@@ -13,7 +13,7 @@
  * Follows rule.md: NO DUPLICATION, ARCHITECTURAL CONSISTENCY
  */
 
-import { SupabaseClient } from '@supabase/supabase-js'
+import { SupabaseClient, User } from '@supabase/supabase-js'
 import { validateEmail, validatePhone, validatePassword } from './validation-utils'
 import { checkOtpRateLimit } from './rate-limiter'
 import { authLogger } from './auth-logger'
@@ -24,8 +24,7 @@ import { authLogger } from './auth-logger'
 export interface SignInResult {
   success: boolean
   error?: string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  user?: any
+  user?: User
   requiresProfileCheck?: boolean
 }
 
@@ -35,8 +34,7 @@ export interface SignInResult {
 export interface OTPResult {
   success: boolean
   error?: string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  user?: any
+  user?: User
   token?: string
 }
 
@@ -82,28 +80,23 @@ export async function handleSignIn(
     })
 
     // Call Supabase signin
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let data: any
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let error: any
+    const result = credentials.email
+      ? await supabase.auth.signInWithPassword({
+          email: credentials.email.trim(),
+          password: credentials.password,
+        })
+      : credentials.phone
+        ? await supabase.auth.signInWithPassword({
+            phone: credentials.phone,
+            password: credentials.password,
+          })
+        : null
 
-    if (credentials.email) {
-      const result = await supabase.auth.signInWithPassword({
-        email: credentials.email.trim(),
-        password: credentials.password,
-      })
-      data = result.data
-      error = result.error
-    } else if (credentials.phone) {
-      const result = await supabase.auth.signInWithPassword({
-        phone: credentials.phone,
-        password: credentials.password,
-      })
-      data = result.data
-      error = result.error
-    } else {
+    if (!result) {
       return { success: false, error: 'Email or phone is required' }
     }
+
+    const { data, error } = result
 
     if (error) {
       authLogger.warn('[handleSignIn] Authentication failed', error)

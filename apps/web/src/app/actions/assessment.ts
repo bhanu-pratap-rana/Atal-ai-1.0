@@ -59,13 +59,17 @@ export async function submitAssessment(
     const supabase = await createClient()
 
     // Verify session belongs to user
-    const { data: session } = await supabase
+    const { data: session, error: sessionError } = await supabase
       .from('assessment_sessions')
       .select('user_id')
       .eq('id', sessionId)
       .single()
 
-    if (session?.user_id !== user.id) {
+    if (sessionError || !session) {
+      return { success: false, error: 'Session not found' }
+    }
+
+    if (session.user_id !== user.id) {
       return { success: false, error: 'Unauthorized' }
     }
 

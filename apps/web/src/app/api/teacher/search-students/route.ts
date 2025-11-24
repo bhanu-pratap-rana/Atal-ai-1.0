@@ -15,9 +15,18 @@ export async function POST(request: NextRequest) {
 
     const { query } = await request.json()
 
-    if (!query || query.trim() === '') {
+    if (!query || typeof query !== 'string') {
       return NextResponse.json(
-        { error: 'Query is required' },
+        { error: 'Invalid query parameter' },
+        { status: 400 }
+      )
+    }
+
+    const sanitizedQuery = query.trim().slice(0, 50) // Max 50 characters
+
+    if (sanitizedQuery.length === 0) {
+      return NextResponse.json(
+        { error: 'Query is required and must not be empty' },
         { status: 400 }
       )
     }
@@ -30,7 +39,7 @@ export async function POST(request: NextRequest) {
       .from('users')
       .select('id, email')
       .eq('role', 'student')
-      .or(`email.ilike.%${query}%,id.ilike.%${query}%`)
+      .or(`email.ilike.%${sanitizedQuery}%,id.ilike.%${sanitizedQuery}%`)
       .limit(10)
 
     if (error) {

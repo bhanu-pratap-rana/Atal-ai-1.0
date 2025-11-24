@@ -304,8 +304,9 @@ export async function getClassAnalytics(classId: string) {
       const userTimes = new Map<string, number>()
 
       for (const session of userSessions) {
-        const sessionResponses = responses?.filter(() =>
-          userSessions.find(s => s.user_id === session.user_id)
+        // Filter responses that belong to this specific session's user
+        const sessionResponses = responses?.filter(r =>
+          r.session_id === session.id
         ) || []
 
         const totalMs = sessionResponses.reduce((sum, r) => sum + (r.rt_ms || 0), 0)

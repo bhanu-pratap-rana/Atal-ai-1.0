@@ -276,11 +276,7 @@ export async function requestOtp(email: string) {
 
     const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
-    authLogger.debug('[requestOtp] Starting OTP request', {
-      origin,
-      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
-      hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    })
+    authLogger.debug('[requestOtp] Starting OTP request')
 
     const supabase = await createClient()
 

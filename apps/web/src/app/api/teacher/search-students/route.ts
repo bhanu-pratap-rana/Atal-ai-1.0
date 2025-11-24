@@ -3,6 +3,22 @@ import { createClient, getCurrentUser } from '@/lib/supabase-server'
 import { authLogger } from '@/lib/auth-logger'
 import { checkRateLimit } from '@/lib/rate-limiter-distributed'
 
+// Type definitions for API responses
+export interface Student {
+  id: string
+  email: string
+}
+
+export interface SearchStudentsSuccessResponse {
+  students: Student[]
+}
+
+export interface ErrorResponse {
+  error: string
+}
+
+export type SearchStudentsResponse = SearchStudentsSuccessResponse | ErrorResponse
+
 const SEARCH_RATE_LIMIT = {
   maxTokens: 30,
   refillRate: 30 / 3600, // 30 requests per hour

@@ -281,8 +281,9 @@ export async function getClassAnalytics(classId: string) {
       return { success: false, error: 'Unauthorized' }
     }
 
+    // Use UTC for consistent timezone handling across all regions
     const sevenDaysAgo = new Date()
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - ANALYTICS_WINDOW_DAYS)
+    sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - ANALYTICS_WINDOW_DAYS)
 
     // 1. Active this week: distinct users with a session in last 7 days
     const { data: activeSessions } = await supabase

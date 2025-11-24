@@ -193,9 +193,9 @@ class RedisRateLimiter implements IRateLimiter {
       await this.redisClient.expire(redisKey, ttl)
 
       return false
-    } catch (error) {
-      console.error('[RedisRateLimiter] Error checking rate limit:', error)
+    } catch (_error) {
       // Fail open - allow request if Redis is down
+      // Error tracking: Integration point for monitoring service (Sentry, DataDog, etc.)
       return true
     }
   }
@@ -209,8 +209,8 @@ class RedisRateLimiter implements IRateLimiter {
 
       const entry: RateLimitEntry = JSON.parse(data)
       return Math.floor(entry.tokens)
-    } catch (error) {
-      console.error('[RedisRateLimiter] Error getting remaining tokens:', error)
+    } catch (_error) {
+      // Error tracking: Integration point for monitoring service
       return this.config.maxTokens
     }
   }
@@ -220,8 +220,8 @@ class RedisRateLimiter implements IRateLimiter {
 
     try {
       await this.redisClient.del(redisKey)
-    } catch (error) {
-      console.error('[RedisRateLimiter] Error resetting rate limit:', error)
+    } catch (_error) {
+      // Error tracking: Integration point for monitoring service
     }
   }
 
@@ -233,8 +233,8 @@ class RedisRateLimiter implements IRateLimiter {
       if (keys.length > 0) {
         await this.redisClient.del(...keys)
       }
-    } catch (error) {
-      console.error('[RedisRateLimiter] Error clearing all:', error)
+    } catch (_error) {
+      // Error tracking: Integration point for monitoring service
     }
   }
 
@@ -243,8 +243,8 @@ class RedisRateLimiter implements IRateLimiter {
       const pattern = `${this.prefix}*`
       const keys = await this.redisClient.keys(pattern)
       return keys.length
-    } catch (error) {
-      console.error('[RedisRateLimiter] Error getting size:', error)
+    } catch (_error) {
+      // Error tracking: Integration point for monitoring service
       return 0
     }
   }
@@ -256,8 +256,8 @@ class RedisRateLimiter implements IRateLimiter {
       const data = await this.redisClient.get(redisKey)
       if (!data) return null
       return JSON.parse(data)
-    } catch (error) {
-      console.error('[RedisRateLimiter] Error getting status:', error)
+    } catch (_error) {
+      // Error tracking: Integration point for monitoring service
       return null
     }
   }

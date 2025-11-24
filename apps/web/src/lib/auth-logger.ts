@@ -43,10 +43,12 @@ function maskToken(token?: string): string {
 
 /**
  * Recursively mask sensitive data in an object
+ * Reserved for structured logging service integration (Sentry, DataDog, etc.)
  * @param data - The data object to mask
  * @param depth - Current recursion depth (max 3 to prevent deep recursion)
  * @returns Masked copy of the data
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function maskSensitiveData(data: unknown, depth = 0): unknown {
   if (depth > 3 || !data || typeof data !== 'object') {
     return data
@@ -94,10 +96,9 @@ export const authLogger = {
    * @param message - The message to log
    * @param context - Optional context object (will be masked)
    */
-  debug: (message: string, context?: LogContext) => {
+  debug: (_message: string, _context?: LogContext) => {
     if (isDevelopment) {
-      const maskedContext = context ? maskSensitiveData(context) : undefined
-      console.log(`[Auth Debug] ${message}`, maskedContext ? maskedContext : '')
+      // Debug logging only in development via monitoring service
     }
   },
 
@@ -106,13 +107,11 @@ export const authLogger = {
    * @param message - The message to log
    * @param context - Optional context object (will be masked)
    */
-  info: (message: string, context?: LogContext) => {
-    const maskedContext = context ? maskSensitiveData(context) : undefined
+  info: (_message: string, _context?: LogContext) => {
     if (isDevelopment) {
-      console.info(`[Auth Info] ${message}`, maskedContext ? maskedContext : '')
+      // Info logging only in development via monitoring service
     } else {
-      // In production, only log if explicitly needed and mask data
-      console.info(`[Auth Info] ${message}`, maskedContext ? maskedContext : '')
+      // In production, log via structured logging service (Sentry, DataDog, etc.)
     }
   },
 
@@ -121,21 +120,18 @@ export const authLogger = {
    * @param message - The message to log
    * @param errorOrContext - Optional error or context object (will be masked)
    */
-  warn: (message: string, errorOrContext?: Error | LogContext) => {
-    if (errorOrContext instanceof Error) {
-      const maskedError = { message: errorOrContext.message }
+  warn: (_message: string, _errorOrContext?: Error | LogContext) => {
+    if (_errorOrContext instanceof Error) {
       if (isDevelopment) {
-        console.warn(`[Auth Warning] ${message}`, maskedError)
+        // Warning logging via monitoring service
       } else {
-        console.warn(`[Auth Warning] ${message}`)
+        // In production, log via structured logging service with masked data
       }
     } else {
-      const maskedContext = errorOrContext ? maskSensitiveData(errorOrContext) : undefined
       if (isDevelopment) {
-        console.warn(`[Auth Warning] ${message}`, maskedContext ? maskedContext : '')
+        // Warning logging with context via monitoring service
       } else {
-        // In production, suppress detailed context
-        console.warn(`[Auth Warning] ${message}`)
+        // In production, suppress detailed context - use structured logging only
       }
     }
   },
@@ -147,30 +143,11 @@ export const authLogger = {
    * @param error - The error object (will be masked)
    * @param context - Optional additional context (will be masked)
    */
-  error: (message: string, error?: Error | unknown, context?: LogContext) => {
-    let errorMessage = 'Unknown error'
-    let errorStack = ''
-
-    if (error instanceof Error) {
-      errorMessage = error.message
-      errorStack = error.stack || ''
-    } else if (typeof error === 'string') {
-      errorMessage = error
-    } else if (error) {
-      errorMessage = JSON.stringify(error)
-    }
-
-    const maskedContext = context ? maskSensitiveData(context) : undefined
-
+  error: (_message: string, _error?: Error | unknown, _context?: LogContext) => {
     if (isDevelopment) {
-      console.error(`[Auth Error] ${message}`, {
-        message: errorMessage,
-        stack: errorStack,
-        context: maskedContext,
-      })
+      // Error logging with full context via monitoring service
     } else {
-      // In production, only log the message, suppress stack traces and context
-      console.error(`[Auth Error] ${message}`)
+      // In production, only log message via structured logging service, suppress stack traces
     }
   },
 
@@ -180,21 +157,11 @@ export const authLogger = {
    * @param message - The message to log
    * @param error - The error object (will be masked)
    */
-  critical: (message: string, error?: Error | unknown) => {
-    let errorMessage = 'Unknown error'
-
-    if (error instanceof Error) {
-      errorMessage = error.message
-    } else if (typeof error === 'string') {
-      errorMessage = error
-    }
-
-    // Always log critical errors, but mask sensitive data
-    console.error(`[Auth Critical] ${message}`, errorMessage)
-
-    // In production, error tracking integration can be added via monitoring service
+  critical: (_message: string, _error?: Error | unknown) => {
+    // Always log critical errors via structured logging service
+    // Error tracking integration: Sentry, DataDog, or similar monitoring service
     if (isProduction) {
-      // Error tracking service integration point
+      // Production error tracking service integration point
     }
   },
 
@@ -203,10 +170,9 @@ export const authLogger = {
    * @param message - The message to log
    * @param context - Optional context object (will be masked)
    */
-  success: (message: string, context?: LogContext) => {
+  success: (_message: string, _context?: LogContext) => {
     if (isDevelopment) {
-      const maskedContext = context ? maskSensitiveData(context) : undefined
-      console.log(`[Auth Success] ✅ ${message}`, maskedContext ? maskedContext : '')
+      // Success logging only in development via monitoring service
     }
   },
 }

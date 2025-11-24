@@ -21,6 +21,13 @@ const SEARCH_RATE_LIMIT = {
   refillInterval: 1000,
 }
 
+// Rate limit configuration for teacher verification (prevents brute force)
+const VERIFY_TEACHER_RATE_LIMIT = {
+  maxTokens: 5,
+  refillRate: 5 / 3600, // 5 attempts per hour per IP
+  refillInterval: 1000,
+}
+
 // Types
 export interface VerifyTeacherParams {
   schoolCode: string
@@ -67,7 +74,17 @@ export async function verifyTeacher({
       return { success: false, error: 'Not authenticated' }
     }
 
-    // 2. Check if user is anonymous
+    // 2. Apply rate limiting to prevent brute force attacks on school code + PIN
+    const isAllowed = await checkRateLimit(`verify-teacher:${user.id}`, VERIFY_TEACHER_RATE_LIMIT)
+    if (!isAllowed) {
+      authLogger.warn('[verifyTeacher] Rate limit exceeded for user', { userId: user.id })
+      return {
+        success: false,
+        error: 'Too many verification attempts. Please wait an hour before trying again.',
+      }
+    }
+
+    // 3. Check if user is anonymous
     const isAnonymous = user.is_anonymous || false
     if (isAnonymous) {
       return {
@@ -76,7 +93,7 @@ export async function verifyTeacher({
       }
     }
 
-    // 3. Check if user is already a teacher
+    // 4. Check if user is already a teacher
     const { data: existingTeacher } = await supabase
       .from('teacher_profiles')
       .select('*')
@@ -87,7 +104,7 @@ export async function verifyTeacher({
       return { success: false, error: 'You are already registered as a teacher' }
     }
 
-    // 4. Find school by code
+    // 5. Find school by code
     const { data: school, error: schoolError } = await supabase
       .from('schools')
       .select('*')
@@ -103,14 +120,14 @@ export async function verifyTeacher({
       }
     }
 
-    // 5. Get staff credentials for this school
+    // 6. Get staff credentials for this school
     const { data: credentials, error: credError } = await supabase
       .from('school_staff_credentials')
       .select('pin_hash')
       .eq('school_id', school.id)
       .single()
 
-    // 6. Verify PIN (use bcrypt compare) - handle missing credentials gracefully
+    // 7. Verify PIN (use bcrypt compare) - handle missing credentials gracefully
     let pinMatch = false
     if (!credError && credentials) {
       pinMatch = await bcrypt.compare(staffPin, credentials.pin_hash)
@@ -129,7 +146,7 @@ export async function verifyTeacher({
       }
     }
 
-    // 7. Create teacher profile (only if teacherName is provided)
+    // 8. Create teacher profile (only if teacherName is provided)
     // If teacherName is empty, this is just a verification step
     if (teacherName && teacherName.trim()) {
       const { error: insertError } = await supabase.from('teacher_profiles').insert({
@@ -149,7 +166,7 @@ export async function verifyTeacher({
         }
       }
 
-      // 8. Update user app_metadata to include role using Admin API
+      // 9. Update user app_metadata to include role using Admin API
       // This ensures the JWT reflects app_metadata.role = 'teacher' immediately
       try {
         const adminClient = await createAdminClient()

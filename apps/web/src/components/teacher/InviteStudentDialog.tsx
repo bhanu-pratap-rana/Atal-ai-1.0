@@ -149,25 +149,32 @@ export function InviteStudentDialog({ classId }: InviteStudentDialogProps) {
             {/* Search Results */}
             {searchResults.length > 0 && (
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Select Student</Label>
-                <div className="border rounded-lg space-y-1 max-h-48 overflow-y-auto">
+                <Label htmlFor="student-list" className="text-sm font-medium">Select Student</Label>
+                <ul
+                  id="student-list"
+                  className="border rounded-lg space-y-1 max-h-48 overflow-y-auto"
+                  role="listbox"
+                  aria-label="Student search results"
+                >
                   {searchResults.map((student) => (
-                    <button
-                      key={student.id}
-                      type="button"
-                      onClick={() => {
-                        setStudentId(student.id)
-                        setSelectedStudent(student)
-                        setSearchResults([])
-                        setSearchInput('')
-                      }}
-                      className="w-full text-left px-3 py-2 hover:bg-orange-50 border-b last:border-b-0 transition-colors"
-                    >
-                      <p className="font-medium text-sm">{student.email}</p>
-                      <p className="text-xs text-gray-500">{student.id}</p>
-                    </button>
+                    <li key={student.id} role="option">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStudentId(student.id)
+                          setSelectedStudent(student)
+                          setSearchResults([])
+                          setSearchInput('')
+                        }}
+                        className="w-full text-left px-3 py-2 hover:bg-orange-50 border-b last:border-b-0 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-400"
+                        aria-label={`Select student: ${student.email} (ID: ${student.id})`}
+                      >
+                        <p className="font-medium text-sm">{student.email}</p>
+                        <p className="text-xs text-gray-500">{student.id}</p>
+                      </button>
+                    </li>
                   ))}
-                </div>
+                </ul>
               </div>
             )}
 

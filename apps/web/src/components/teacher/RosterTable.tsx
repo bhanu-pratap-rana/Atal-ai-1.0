@@ -58,13 +58,13 @@ export function RosterTable({ enrollments, classId }: RosterTableProps) {
 
   return (
     <div className="overflow-hidden rounded-md border">
-      <Table>
+      <Table role="table" aria-label="Class roster with student enrollment information">
         <TableHeader>
           <TableRow>
-            <TableHead>Student</TableHead>
-            <TableHead className="hidden md:table-cell">Email</TableHead>
-            <TableHead className="hidden lg:table-cell">Enrolled</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead scope="col">Student</TableHead>
+            <TableHead scope="col" className="hidden md:table-cell">Email</TableHead>
+            <TableHead scope="col" className="hidden lg:table-cell">Enrolled</TableHead>
+            <TableHead scope="col" className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -109,7 +109,8 @@ export function RosterTable({ enrollments, classId }: RosterTableProps) {
                     size="sm"
                     onClick={() => handleRemove(enrollment.student.id, enrollment.student.email)}
                     disabled={removingId === enrollment.student.id}
-                    className="h-9 px-3" // Touch-friendly size
+                    className="h-9 px-3"
+                    aria-label={`Remove ${enrollment.student.email} from class`}
                   >
                     {removingId === enrollment.student.id ? 'Removing...' : 'Remove'}
                   </Button>

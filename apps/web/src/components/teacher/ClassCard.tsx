@@ -32,6 +32,7 @@ interface ClassCardProps {
 export function ClassCard({ classData, teacherName: _teacherName }: ClassCardProps) {
   const router = useRouter()
   const [showEditDialog, setShowEditDialog] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [editName, setEditName] = useState(classData.name)
   const [editSubject, setEditSubject] = useState(classData.subject || '')
   const [isDeleting, setIsDeleting] = useState(false)
@@ -78,7 +79,7 @@ export function ClassCard({ classData, teacherName: _teacherName }: ClassCardPro
           )}
 
           <div className="flex gap-2">
-            <Link href={`/app/teacher/classes/${classData.id}`} className="flex-1">
+            <Link href={`/app/teacher/classes/${classData.id}`} className="flex-1" aria-label={`View roster for class ${classData.name}`}>
               <Button className="w-full" variant="outline" size="sm">
                 View Roster
               </Button>
@@ -92,6 +93,7 @@ export function ClassCard({ classData, teacherName: _teacherName }: ClassCardPro
                 onClick={() => setShowEditDialog(true)}
                 className="w-full"
                 disabled={isUpdating || isDeleting}
+                aria-label={`Manage class ${classData.name}`}
               >
                 Manage Class
               </Button>
@@ -161,8 +163,9 @@ export function ClassCard({ classData, teacherName: _teacherName }: ClassCardPro
                   disabled={isUpdating || isDeleting || !editName}
                   className="w-full text-sm"
                   size="sm"
+                  aria-label={`Update class ${classData.name} with new details`}
                 >
-                  {isUpdating ? 'Updating...' : '✏️ Update Class'}
+                  {isUpdating ? 'Updating...' : 'Update Class'}
                 </Button>
               </div>
             </div>
@@ -174,34 +177,14 @@ export function ClassCard({ classData, teacherName: _teacherName }: ClassCardPro
                 This action cannot be undone. All class data will be permanently deleted.
               </p>
               <Button
-                onClick={async () => {
-                  const confirmDelete = window.confirm(
-                    `Are you sure you want to delete "${classData.name}"? This cannot be undone.`
-                  )
-                  if (confirmDelete) {
-                    setIsDeleting(true)
-                    try {
-                      const result = await deleteClass(classData.id)
-                      if (result.success) {
-                        toast.success('Class deleted successfully!')
-                        setShowEditDialog(false)
-                        router.refresh()
-                      } else {
-                        toast.error(result.error || 'Failed to delete class')
-                      }
-                    } catch {
-                      toast.error('An unexpected error occurred')
-                    } finally {
-                      setIsDeleting(false)
-                    }
-                  }
-                }}
+                onClick={() => setShowDeleteConfirm(true)}
                 disabled={isUpdating || isDeleting}
                 variant="destructive"
                 className="w-full text-sm"
                 size="sm"
+                aria-label={`Delete class ${classData.name}`}
               >
-                {isDeleting ? '⏳ Deleting...' : '🗑️ Delete Class'}
+                {isDeleting ? 'Deleting...' : 'Delete Class'}
               </Button>
             </div>
           </div>
@@ -215,6 +198,56 @@ export function ClassCard({ classData, teacherName: _teacherName }: ClassCardPro
               size="sm"
             >
               Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete Class</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{classData.name}"? This action cannot be undone. All class data will be permanently deleted.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex justify-end gap-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowDeleteConfirm(false)}
+              disabled={isDeleting}
+              size="sm"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={async () => {
+                setIsDeleting(true)
+                try {
+                  const result = await deleteClass(classData.id)
+                  if (result.success) {
+                    toast.success('Class deleted successfully!')
+                    setShowDeleteConfirm(false)
+                    setShowEditDialog(false)
+                    router.refresh()
+                  } else {
+                    toast.error(result.error || 'Failed to delete class')
+                  }
+                } catch {
+                  toast.error('An unexpected error occurred')
+                } finally {
+                  setIsDeleting(false)
+                }
+              }}
+              disabled={isDeleting}
+              variant="destructive"
+              size="sm"
+              aria-label={`Confirm deletion of class ${classData.name}`}
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
             </Button>
           </div>
         </DialogContent>

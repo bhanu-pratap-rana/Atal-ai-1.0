@@ -81,9 +81,11 @@ export async function verifyTeacher({
       .single()
 
     if (schoolError || !school) {
+      // Generic error - don't reveal if school exists
+      authLogger.debug('[verifyTeacher] School code not found', { schoolCode })
       return {
         success: false,
-        error: 'Invalid school code. Please check and try again.',
+        error: 'Invalid school code or PIN. Please verify and try again.',
       }
     }
 
@@ -94,20 +96,22 @@ export async function verifyTeacher({
       .eq('school_id', school.id)
       .single()
 
-    if (credError || !credentials) {
-      return {
-        success: false,
-        error: 'School credentials not found. Please contact your school administrator.',
-      }
+    // 6. Verify PIN (use bcrypt compare) - handle missing credentials gracefully
+    let pinMatch = false
+    if (!credError && credentials) {
+      pinMatch = await bcrypt.compare(staffPin, credentials.pin_hash)
+    } else {
+      // Even if credentials not found, use bcrypt compare with dummy hash to prevent timing attacks
+      // This prevents attackers from knowing whether credentials exist
+      await bcrypt.compare(staffPin, '$2b$10$fake.hash.to.prevent.timing.attack..........................')
     }
 
-    // 6. Verify PIN (use bcrypt compare)
-    const pinMatch = await bcrypt.compare(staffPin, credentials.pin_hash)
-
     if (!pinMatch) {
+      // Generic error - don't reveal whether school exists or credentials were found
+      authLogger.warn('[verifyTeacher] Invalid credentials attempt', { schoolCode })
       return {
         success: false,
-        error: 'Invalid staff PIN. Please check and try again.',
+        error: 'Invalid school code or PIN. Please verify and try again.',
       }
     }
 
@@ -222,7 +226,9 @@ export async function getSchoolByCode(schoolCode: string) {
       .single()
 
     if (error || !data) {
-      return { success: false, error: 'School not found' }
+      // Generic error - don't expose whether school exists
+      authLogger.debug('[getSchoolByCode] School lookup failed', { schoolCode })
+      return { success: false, error: 'Unable to find school. Please verify your school code and try again.' }
     }
 
     return { success: true, data }
@@ -286,40 +292,45 @@ export async function rotateStaffPin(schoolCode: string, newPin: string) {
       }
     }
 
-    // 4. Find school by code
-    const { data: school, error: schoolError } = await supabase
+    // 4. Find school by code and verify authorization in one check
+    let school = null
+    let isAuthorizedForSchool = false
+
+    const { data: schoolData, error: schoolError } = await supabase
       .from('schools')
       .select('id, school_code, school_name')
       .eq('school_code', schoolCode.toUpperCase().trim())
       .single()
 
-    if (schoolError || !school) {
-      return {
-        success: false,
-        error: 'Invalid school code. School not found.',
+    if (!schoolError && schoolData) {
+      school = schoolData
+
+      // 5. For non-admin users, verify they are authorized for this school
+      if (userRole !== 'admin') {
+        const { data: teacherProfile } = await supabase
+          .from('teacher_profiles')
+          .select('school_id')
+          .eq('user_id', user.id)
+          .single()
+
+        isAuthorizedForSchool = !!(teacherProfile && school.id === teacherProfile.school_id)
+      } else {
+        // Admins are always authorized
+        isAuthorizedForSchool = true
       }
     }
 
-    // 5. For non-admin users, verify they are authorized for this school
-    if (userRole !== 'admin') {
-      const { data: teacherProfile, error: profileError } = await supabase
-        .from('teacher_profiles')
-        .select('school_id')
-        .eq('user_id', user.id)
-        .single()
-
-      if (profileError || !teacherProfile) {
-        authLogger.warn('[rotateStaffPin] Teacher profile not found', { userId: user.id })
-        return { success: false, error: 'Teacher profile not found' }
+    // Return same generic error regardless of reason (school not found, not authorized, etc.)
+    if (!school || !isAuthorizedForSchool) {
+      if (!school) {
+        authLogger.warn('[rotateStaffPin] School code not found or not provided', { schoolCode })
+      } else {
+        authLogger.warn('[rotateStaffPin] User not authorized for school', { userId: user.id, schoolId: school.id })
       }
-
-      if (school.id !== teacherProfile.school_id) {
-        authLogger.warn('[rotateStaffPin] Teacher attempted PIN rotation for different school', {
-          userId: user.id,
-          teacherSchool: teacherProfile.school_id,
-          requestedSchool: school.id,
-        })
-        return { success: false, error: 'Unauthorized: You can only manage PIN for your school' }
+      // Generic error message - don't reveal whether school exists or user is authorized
+      return {
+        success: false,
+        error: 'Unable to rotate PIN. Please verify your school code and try again.',
       }
     }
 

@@ -339,21 +339,36 @@ export async function getClassAnalytics(classId: string) {
         }
       }
 
-      // Check rapid responses for each user's latest session
-      for (const sessionId of latestSessionPerUser.values()) {
-        const { data: sessionResponses } = await supabase
+      // Batch query: Get all responses for all latest sessions at once
+      const sessionIds = Array.from(latestSessionPerUser.values())
+      if (sessionIds.length > 0) {
+        const { data: allSessionResponses } = await supabase
           .from('assessment_responses')
-          .select('rt_ms')
-          .eq('session_id', sessionId)
+          .select('session_id, rt_ms')
+          .in('session_id', sessionIds)
 
-        if (sessionResponses && sessionResponses.length > 0) {
-          const rapidCount = sessionResponses.filter(
-            r => r.rt_ms && r.rt_ms < RAPID_RESPONSE_THRESHOLD_MS
-          ).length
-          const rapidPercentage = (rapidCount / sessionResponses.length) * 100
+        // Group responses by session_id
+        const responsesBySession = new Map<string, Array<{ rt_ms: number | null }>>()
+        for (const response of allSessionResponses || []) {
+          if (!responsesBySession.has(response.session_id)) {
+            responsesBySession.set(response.session_id, [])
+          }
+          responsesBySession.get(response.session_id)!.push(response)
+        }
 
-          if (rapidPercentage > AT_RISK_RAPID_PERCENTAGE * 100) {
-            atRiskCount++
+        // Check rapid responses for each user's latest session
+        for (const sessionId of sessionIds) {
+          const sessionResponses = responsesBySession.get(sessionId) || []
+
+          if (sessionResponses.length > 0) {
+            const rapidCount = sessionResponses.filter(
+              r => r.rt_ms && r.rt_ms < RAPID_RESPONSE_THRESHOLD_MS
+            ).length
+            const rapidPercentage = (rapidCount / sessionResponses.length) * 100
+
+            if (rapidPercentage > AT_RISK_RAPID_PERCENTAGE * 100) {
+              atRiskCount++
+            }
           }
         }
       }

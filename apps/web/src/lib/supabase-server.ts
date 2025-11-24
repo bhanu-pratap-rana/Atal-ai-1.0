@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { authLogger } from './auth-logger'
 
 /**
  * Validate that required environment variables are set
@@ -42,10 +43,14 @@ export async function createClient() {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
             )
-          } catch {
+          } catch (error) {
             // The `setAll` method was called from a Server Component.
             // This can be ignored if you have middleware refreshing
-            // user sessions.
+            // user sessions. Log for debugging cookie sync issues.
+            authLogger.debug(
+              '[createClient] Cookie setAll called from Server Component',
+              { error: error instanceof Error ? error.message : String(error) }
+            )
           }
         },
       },
@@ -102,8 +107,13 @@ export async function createAdminClient() {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
             )
-          } catch {
-            // Ignore errors from Server Components
+          } catch (error) {
+            // Errors from Server Components are expected.
+            // Log for debugging cookie sync issues in admin operations.
+            authLogger.debug(
+              '[createAdminClient] Cookie setAll called from Server Component',
+              { error: error instanceof Error ? error.message : String(error) }
+            )
           }
         },
       },

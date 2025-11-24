@@ -1,10 +1,18 @@
 'use server'
 
+import { z } from 'zod'
 import { createClient, createAdminClient, getCurrentUser } from '@/lib/supabase-server'
 import { authLogger } from '@/lib/auth-logger'
 import { BCRYPT_ROUNDS } from '@/lib/constants/auth'
 import { checkRateLimit } from '@/lib/rate-limiter-distributed'
 import bcrypt from 'bcrypt'
+
+// Validation schemas
+const SearchQuerySchema = z.string().min(1, 'Search query required').max(100, 'Search query too long')
+const SchoolCodeSchema = z.string().min(1, 'School code required').max(20, 'Invalid school code format')
+const StaffPinSchema = z.string().regex(/^\d{4,8}$/, 'PIN must be 4-8 digits')
+const TeacherNameSchema = z.string().min(1, 'Name required').max(100, 'Name too long').regex(/^[a-zA-Z\s'-]+$/, 'Name contains invalid characters')
+const PhoneSchema = z.string().regex(/^\+?[0-9\-\s()]{10,}$/, 'Invalid phone number format').optional()
 
 // Rate limit configuration for search endpoints
 const SEARCH_RATE_LIMIT = {
@@ -41,6 +49,12 @@ export async function verifyTeacher({
   subject,
 }: VerifyTeacherParams): Promise<VerifyTeacherResult> {
   try {
+    // Validate inputs
+    schoolCode = SchoolCodeSchema.parse(schoolCode)
+    staffPin = StaffPinSchema.parse(staffPin)
+    teacherName = TeacherNameSchema.parse(teacherName)
+    if (phone) phone = PhoneSchema.parse(phone)
+
     const supabase = await createClient()
 
     // 1. Get current user
@@ -180,6 +194,9 @@ export async function verifyTeacher({
  */
 export async function searchSchools(query: string) {
   try {
+    // Validate input
+    const validatedQuery = SearchQuerySchema.parse(query)
+
     // Get current user for rate limiting
     const user = await getCurrentUser()
     if (!user) {
@@ -197,7 +214,7 @@ export async function searchSchools(query: string) {
     const { data, error } = await supabase
       .from('schools')
       .select('id, school_code, school_name, district')
-      .or(`school_code.ilike.%${query}%,school_name.ilike.%${query}%`)
+      .or(`school_code.ilike.%${validatedQuery}%,school_name.ilike.%${validatedQuery}%`)
       .limit(20)
 
     if (error) {
@@ -248,6 +265,10 @@ export async function getSchoolByCode(schoolCode: string) {
  */
 export async function rotateStaffPin(schoolCode: string, newPin: string) {
   try {
+    // Validate inputs
+    schoolCode = SchoolCodeSchema.parse(schoolCode)
+    newPin = StaffPinSchema.parse(newPin)
+
     const supabase = await createClient()
 
     // 1. Verify caller is authenticated

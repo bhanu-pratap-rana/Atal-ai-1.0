@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { z } from 'zod'
 import { createClient, getCurrentUser } from '@/lib/supabase-server'
 import {
   ANALYTICS_WINDOW_DAYS,
@@ -8,7 +9,17 @@ import {
   AT_RISK_RAPID_PERCENTAGE,
 } from '@/lib/constants/auth'
 
+// Validation schemas
+const CreateClassSchema = z.object({
+  name: z.string().min(1, 'Class name is required').max(100, 'Class name must be 100 characters or less'),
+  subject: z.string().max(100, 'Subject must be 100 characters or less').optional(),
+})
+
 export async function createClass(name: string, subject?: string) {
+  // Validate input
+  const validatedInput = CreateClassSchema.parse({ name, subject })
+  name = validatedInput.name
+  subject = validatedInput.subject
   try {
     const user = await getCurrentUser()
 

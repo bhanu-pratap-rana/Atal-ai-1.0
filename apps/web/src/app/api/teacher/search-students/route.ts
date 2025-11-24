@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getCurrentUser } from '@/lib/supabase-server'
 import { authLogger } from '@/lib/auth-logger'
+import { checkRateLimit } from '@/lib/rate-limiter-distributed'
+
+const SEARCH_RATE_LIMIT = {
+  maxTokens: 30,
+  refillRate: 30 / 3600, // 30 requests per hour
+  refillInterval: 1000,
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,6 +17,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
+      )
+    }
+
+    // Apply rate limiting per user
+    const isAllowed = await checkRateLimit(`search-students:${user.id}`, SEARCH_RATE_LIMIT)
+    if (!isAllowed) {
+      return NextResponse.json(
+        { error: 'Too many search requests. Please wait a moment before trying again.' },
+        { status: 429 }
       )
     }
 

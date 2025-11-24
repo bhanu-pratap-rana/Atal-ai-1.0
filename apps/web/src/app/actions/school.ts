@@ -1,9 +1,17 @@
 'use server'
 
-import { createClient, createAdminClient } from '@/lib/supabase-server'
+import { createClient, createAdminClient, getCurrentUser } from '@/lib/supabase-server'
 import { authLogger } from '@/lib/auth-logger'
 import { BCRYPT_ROUNDS } from '@/lib/constants/auth'
+import { checkRateLimit } from '@/lib/rate-limiter-distributed'
 import bcrypt from 'bcrypt'
+
+// Rate limit configuration for search endpoints
+const SEARCH_RATE_LIMIT = {
+  maxTokens: 30,
+  refillRate: 30 / 3600, // 30 requests per hour
+  refillInterval: 1000,
+}
 
 // Types
 export interface VerifyTeacherParams {
@@ -168,6 +176,18 @@ export async function verifyTeacher({
  */
 export async function searchSchools(query: string) {
   try {
+    // Get current user for rate limiting
+    const user = await getCurrentUser()
+    if (!user) {
+      return { success: false, error: 'Unauthorized', data: [] }
+    }
+
+    // Apply rate limiting per user
+    const isAllowed = await checkRateLimit(`search-schools:${user.id}`, SEARCH_RATE_LIMIT)
+    if (!isAllowed) {
+      return { success: false, error: 'Too many search requests. Please wait a moment before trying again.', data: [] }
+    }
+
     const supabase = await createClient()
 
     const { data, error } = await supabase

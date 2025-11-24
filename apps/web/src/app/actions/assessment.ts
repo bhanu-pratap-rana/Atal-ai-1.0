@@ -1,7 +1,23 @@
 'use server'
 
+import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
 import { createClient, getCurrentUser } from '@/lib/supabase-server'
+
+// Validation schemas
+const AssessmentResponseSchema = z.object({
+  itemId: z.string().min(1, 'Item ID required').max(100, 'Item ID too long'),
+  module: z.string().min(1, 'Module required').max(100, 'Module name too long'),
+  isCorrect: z.boolean(),
+  rtMs: z.number().min(0, 'Response time cannot be negative').max(999999, 'Response time too long'),
+  focusBlurCount: z.number().min(0, 'Focus blur count cannot be negative').max(10000, 'Focus blur count too high'),
+  chosenOption: z.string().min(1, 'Chosen option required').max(100, 'Option ID too long'),
+})
+
+const AssessmentSubmitSchema = z.object({
+  sessionId: z.string().min(1, 'Session ID required').uuid(),
+  responses: z.array(AssessmentResponseSchema).min(1, 'At least one response required').max(1000, 'Too many responses'),
+})
 
 export async function startAssessment(classId?: string) {
   try {
@@ -50,6 +66,12 @@ export async function submitAssessment(
   responses: AssessmentResponse[]
 ) {
   try {
+    // Validate inputs according to assessment constraints
+    const validatedData = AssessmentSubmitSchema.parse({
+      sessionId,
+      responses,
+    })
+
     const user = await getCurrentUser()
 
     if (!user) {
@@ -62,7 +84,7 @@ export async function submitAssessment(
     const { data: session, error: sessionError } = await supabase
       .from('assessment_sessions')
       .select('user_id')
-      .eq('id', sessionId)
+      .eq('id', validatedData.sessionId)
       .single()
 
     if (sessionError || !session) {
@@ -73,9 +95,9 @@ export async function submitAssessment(
       return { success: false, error: 'Unauthorized' }
     }
 
-    // Batch insert responses
-    const responsesToInsert = responses.map((r) => ({
-      session_id: sessionId,
+    // Batch insert responses using validated data
+    const responsesToInsert = validatedData.responses.map((r) => ({
+      session_id: validatedData.sessionId,
       item_id: r.itemId,
       module: r.module,
       is_correct: r.isCorrect,
@@ -96,19 +118,19 @@ export async function submitAssessment(
     const { error: updateError } = await supabase
       .from('assessment_sessions')
       .update({ submitted_at: new Date().toISOString() })
-      .eq('id', sessionId)
+      .eq('id', validatedData.sessionId)
 
     if (updateError) {
       return { success: false, error: updateError.message }
     }
 
-    // Calculate score and module breakdown
-    const totalQuestions = responses.length
-    const correctAnswers = responses.filter((r) => r.isCorrect).length
+    // Calculate score and module breakdown from validated responses
+    const totalQuestions = validatedData.responses.length
+    const correctAnswers = validatedData.responses.filter((r) => r.isCorrect).length
     const score = Math.round((correctAnswers / totalQuestions) * 100)
 
     // Group by module
-    const moduleBreakdown = responses.reduce((acc, r) => {
+    const moduleBreakdown = validatedData.responses.reduce((acc, r) => {
       if (!acc[r.module]) {
         acc[r.module] = { total: 0, correct: 0 }
       }

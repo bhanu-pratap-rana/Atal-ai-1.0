@@ -16,11 +16,12 @@ const CreateClassSchema = z.object({
 })
 
 export async function createClass(name: string, subject?: string) {
-  // Validate input
-  const validatedInput = CreateClassSchema.parse({ name, subject })
-  name = validatedInput.name
-  subject = validatedInput.subject
   try {
+    // Validate input
+    const validatedInput = CreateClassSchema.parse({ name, subject })
+    name = validatedInput.name
+    subject = validatedInput.subject
+
     const user = await getCurrentUser()
 
     if (!user) {

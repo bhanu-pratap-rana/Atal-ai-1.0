@@ -8,7 +8,13 @@ import { checkRateLimit } from '@/lib/rate-limiter-distributed'
 import bcrypt from 'bcrypt'
 
 // Validation schemas
-const SearchQuerySchema = z.string().min(1, 'Search query required').max(100, 'Search query too long')
+// SearchQuerySchema: Allow alphanumeric, spaces, and common search characters (dash, dot, apostrophe)
+// Prevent SQL injection and XSS by limiting special characters
+const SearchQuerySchema = z
+  .string()
+  .min(1, 'Search query required')
+  .max(100, 'Search query too long')
+  .regex(/^[a-zA-Z0-9\s\-.']+$/, 'Search query contains invalid characters')
 const SchoolCodeSchema = z.string().min(1, 'School code required').max(20, 'Invalid school code format')
 const StaffPinSchema = z.string().regex(/^\d{4,8}$/, 'PIN must be 4-8 digits')
 const TeacherNameSchema = z.string().min(1, 'Name required').max(100, 'Name too long').regex(/^[a-zA-Z\s'-]+$/, 'Name contains invalid characters')

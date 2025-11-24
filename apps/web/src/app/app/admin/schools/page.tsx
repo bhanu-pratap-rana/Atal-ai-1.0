@@ -48,10 +48,11 @@ function SchoolFinderModal({
   // Load blocks when district changes
   useEffect(() => {
     if (selectedDistrict) {
-      loadBlocks()
-      setBlocks([])
-      setSchools([])
+      // Clear dependent state BEFORE async load (prevent race condition)
       setSelectedBlock('')
+      setSchools([])
+      // loadBlocks() will set blocks asynchronously when fetch completes
+      loadBlocks()
     }
   }, [selectedDistrict])
 
@@ -81,6 +82,8 @@ function SchoolFinderModal({
   async function loadBlocks() {
     if (!selectedDistrict) return
 
+    // Clear blocks state BEFORE fetch to show loading state cleanly (prevent flicker)
+    setBlocks([])
     setLoading(true)
     try {
       const result = await getBlocksByDistrict(selectedDistrict)

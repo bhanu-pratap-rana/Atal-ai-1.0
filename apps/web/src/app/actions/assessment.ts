@@ -112,9 +112,10 @@ export async function submitAssessment(
       if (!acc[r.module]) {
         acc[r.module] = { total: 0, correct: 0 }
       }
-      acc[r.module].total++
+      const module = acc[r.module]!
+      module.total++
       if (r.isCorrect) {
-        acc[r.module].correct++
+        module.correct++
       }
       return acc
     }, {} as Record<string, { total: number; correct: number }>)

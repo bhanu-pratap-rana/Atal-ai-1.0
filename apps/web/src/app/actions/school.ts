@@ -504,3 +504,84 @@ export async function getStaffPinRotationInfo(schoolCode: string) {
     return { success: false, error: 'An unexpected error occurred' }
   }
 }
+
+/**
+ * Create admin user account (Admin only)
+ * Creates a new Supabase auth user and sets app_metadata.role to 'admin'
+ *
+ * @param email - Admin email address
+ * @param password - Admin password (will be hashed by Supabase)
+ * @returns Success status with created user ID
+ */
+export async function createAdminUser(email: string, password: string) {
+  try {
+    // Validate inputs
+    const trimmedEmail = email.trim().toLowerCase()
+
+    const EmailSchema = z.string().email().max(255, 'Email too long')
+    const PasswordSchema = z.string().min(8, 'Password must be at least 8 characters').max(128, 'Password too long')
+
+    const validatedEmail = EmailSchema.parse(trimmedEmail)
+    const validatedPassword = PasswordSchema.parse(password)
+
+    // Verify caller is authenticated and is admin
+    const user = await getCurrentUser()
+    if (!user) {
+      authLogger.warn('[createAdminUser] Unauthenticated access attempt')
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    const isAdmin = user.app_metadata?.role === 'admin'
+    if (!isAdmin) {
+      authLogger.warn('[createAdminUser] Non-admin user attempted to create admin', { userId: user.id })
+      return { success: false, error: 'Admin access required to create admin users' }
+    }
+
+    // Use admin client to create user
+    const adminClient = await createAdminClient()
+
+    // Create new auth user with admin role in metadata
+    const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
+      email: validatedEmail,
+      password: validatedPassword,
+      email_confirm: true, // Auto-confirm email to skip OTP
+      app_metadata: {
+        role: 'admin',
+      },
+    })
+
+    if (createError || !newUser) {
+      authLogger.error('[createAdminUser] Failed to create admin user', createError)
+      return {
+        success: false,
+        error: 'Failed to create admin user. Email may already be registered.',
+      }
+    }
+
+    authLogger.success('[createAdminUser] Admin user created successfully', {
+      userId: newUser.user.id,
+      email: validatedEmail,
+    })
+
+    return {
+      success: true,
+      userId: newUser.user.id,
+      email: validatedEmail,
+      message: 'Admin user created successfully',
+    }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const firstIssue = error.issues[0]
+      authLogger.warn('[createAdminUser] Validation error', { path: firstIssue?.path, message: firstIssue?.message })
+      return {
+        success: false,
+        error: firstIssue?.message || 'Invalid input',
+      }
+    }
+    authLogger.error('[createAdminUser] Unexpected error', error)
+    return {
+      success: false,
+      error: 'An unexpected error occurred. Please try again.',
+    }
+  }
+}

@@ -19,8 +19,13 @@ export function InvitePanel({ classCode, joinPin, className }: InvitePanelProps)
 
   useEffect(() => {
     if (canvasRef.current && classCode) {
-      // Generate invite link with code, PIN, and via=invite parameter
-      const joinUrl = `${window.location.origin}/join?code=${classCode}&pin=${joinPin}&via=invite`
+      // Generate invite link with properly encoded parameters
+      const params = new URLSearchParams({
+        code: classCode,
+        pin: joinPin,
+        via: 'invite',
+      })
+      const joinUrl = `${window.location.origin}/join?${params.toString()}`
 
       // Generate QR code with high error correction for better scanning reliability
       QRCode.toCanvas(
@@ -48,7 +53,12 @@ export function InvitePanel({ classCode, joinPin, className }: InvitePanelProps)
   }, [classCode, joinPin])
 
   const getInviteLink = () => {
-    return `${window.location.origin}/join?code=${classCode}&pin=${joinPin}&via=invite`
+    const params = new URLSearchParams({
+      code: classCode,
+      pin: joinPin,
+      via: 'invite',
+    })
+    return `${window.location.origin}/join?${params.toString()}`
   }
 
   const copyInviteLink = async () => {

@@ -1,7 +1,17 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { timingSafeEqual } from 'crypto'
+import { z } from 'zod'
 import { createClient, getCurrentUser } from '@/lib/supabase-server'
+import { authLogger } from '@/lib/auth-logger'
+
+// Validation schemas
+const JoinClassSchema = z.object({
+  classCode: z.string().min(1, 'Class code required').max(20, 'Invalid class code').regex(/^[A-Z0-9\-]+$/, 'Class code format invalid'),
+  rollNumber: z.string().min(1, 'Roll number required').max(50, 'Roll number too long'),
+  pin: z.string().length(4, 'PIN must be 4 digits').regex(/^\d{4}$/, 'PIN must contain only digits'),
+})
 
 interface JoinClassParams {
   classCode: string
@@ -11,6 +21,12 @@ interface JoinClassParams {
 
 export async function joinClass({ classCode, rollNumber, pin }: JoinClassParams) {
   try {
+    // Validate inputs
+    const validatedInput = JoinClassSchema.parse({ classCode, rollNumber, pin })
+    classCode = validatedInput.classCode
+    rollNumber = validatedInput.rollNumber
+    pin = validatedInput.pin
+
     const user = await getCurrentUser()
 
     if (!user) {
@@ -27,12 +43,24 @@ export async function joinClass({ classCode, rollNumber, pin }: JoinClassParams)
       .single()
 
     if (classError || !classData) {
-      return { success: false, error: 'Invalid class code' }
+      authLogger.debug('[joinClass] Class not found', { classCode })
+      return { success: false, error: 'Invalid class code or PIN' }
     }
 
-    // Verify PIN
-    if (classData.join_pin !== pin) {
-      return { success: false, error: 'Incorrect PIN' }
+    // Verify PIN using constant-time comparison to prevent timing attacks
+    let pinMatch = false
+    if (classData.join_pin) {
+      try {
+        pinMatch = timingSafeEqual(Buffer.from(pin), Buffer.from(classData.join_pin))
+      } catch {
+        // timingSafeEqual throws if buffers are different lengths
+        pinMatch = false
+      }
+    }
+
+    if (!pinMatch) {
+      authLogger.warn('[joinClass] Invalid PIN attempt', { classCode, userId: user.id })
+      return { success: false, error: 'Invalid class code or PIN' }
     }
 
     // Check if already enrolled

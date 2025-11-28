@@ -412,22 +412,32 @@ export default function AdminSchoolsPage() {
     )
   }
 
-  // Show authorization error
+  // Show authorization error and redirect to admin login
   if (!authorized || authError) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-surface via-background to-surface p-6 flex items-center justify-center">
         <div className="max-w-md mx-auto text-center">
           <Shield className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-foreground mb-2">Access Denied</h1>
-          <p className="text-text-secondary mb-4">
+          <p className="text-text-secondary mb-6">
             {authError || 'You do not have permission to access this page. Admin access required.'}
           </p>
-          <Button
-            onClick={() => (window.location.href = '/app/dashboard')}
-            variant="outline"
-          >
-            Go to Dashboard
-          </Button>
+          <div className="space-y-3">
+            <Button
+              onClick={() => (window.location.href = '/admin/login')}
+              className="w-full"
+              variant="default"
+            >
+              Admin Login
+            </Button>
+            <Button
+              onClick={() => (window.location.href = '/')}
+              variant="outline"
+              className="w-full"
+            >
+              Go Back Home
+            </Button>
+          </div>
         </div>
       </div>
     )

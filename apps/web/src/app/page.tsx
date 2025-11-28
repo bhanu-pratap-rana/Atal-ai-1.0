@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { AuthCard } from '@/components/auth/AuthCard'
 import { createClient } from '@/lib/supabase-browser'
+import { ShieldAlert } from 'lucide-react'
 
 export default function HomePage() {
   const router = useRouter()
@@ -27,9 +28,18 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-surface via-background to-surface flex items-center justify-center p-4">
-      {/* Sign Out Button - Top Right */}
-      {hasSession && (
-        <div className="absolute top-4 right-4">
+      {/* Admin & Sign Out Buttons - Top Right */}
+      <div className="absolute top-4 right-4 flex gap-3">
+        <Button
+          onClick={() => router.push('/admin/login')}
+          variant="outline"
+          size="sm"
+          className="text-sm border-primary text-primary hover:bg-orange-50 flex items-center gap-2"
+        >
+          <ShieldAlert className="w-4 h-4" />
+          Admin
+        </Button>
+        {hasSession && (
           <Button
             onClick={handleSignOut}
             variant="outline"
@@ -37,8 +47,8 @@ export default function HomePage() {
           >
             Sign Out
           </Button>
-        </div>
-      )}
+        )}
+      </div>
 
       <AuthCard
         title="Welcome to ATAL AI"

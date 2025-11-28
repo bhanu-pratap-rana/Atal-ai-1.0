@@ -89,7 +89,10 @@ export async function verifyTeacher({
     // Validate inputs
     schoolCode = SchoolCodeSchema.parse(schoolCode)
     staffPin = StaffPinSchema.parse(staffPin)
-    teacherName = TeacherNameSchema.parse(teacherName)
+    // Validate teacherName only if provided (it's optional)
+    if (teacherName) {
+      teacherName = TeacherNameSchema.parse(teacherName)
+    }
     if (phone) phone = PhoneSchema.parse(phone)
 
     const supabase = await createClient()

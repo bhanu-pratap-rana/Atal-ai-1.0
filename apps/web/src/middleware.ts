@@ -32,10 +32,16 @@ export async function middleware(request: NextRequest) {
 
   // Check if accessing protected route
   const isProtectedRoute = request.nextUrl.pathname.startsWith('/app')
+  const isAdminRoute = request.nextUrl.pathname.startsWith('/admin/login')
   const isStudentAuth = request.nextUrl.pathname.startsWith('/student/start')
   const isTeacherAuth = request.nextUrl.pathname.startsWith('/teacher/start')
   const isJoinRoute = request.nextUrl.pathname.startsWith('/join')
   const isAuthRoute = isStudentAuth || isTeacherAuth
+
+  // If accessing admin login without session, allow (don't redirect)
+  if (isAdminRoute && !user) {
+    return response
+  }
 
   // If accessing protected route without session, redirect to student start
   if (isProtectedRoute && !user) {
@@ -52,5 +58,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/app/:path*', '/student/start', '/teacher/start', '/teacher/:path*', '/join'],
+  matcher: ['/app/:path*', '/admin/login', '/student/start', '/teacher/start', '/teacher/:path*', '/join'],
 }

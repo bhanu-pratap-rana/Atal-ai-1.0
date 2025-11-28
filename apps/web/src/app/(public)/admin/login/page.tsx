@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ShieldAlert, ArrowRight } from 'lucide-react'
 import { toast } from 'sonner'
+import { clientLogger } from '@/lib/client-logger'
 
 export default function AdminLoginPage() {
   const router = useRouter()
@@ -88,7 +89,7 @@ export default function AdminLoginPage() {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred'
       setError(errorMessage)
-      console.error('[AdminLogin] Error:', err)
+      clientLogger.error('Admin login error', { error: err })
     } finally {
       setIsLoading(false)
     }

@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { authLogger } from './auth-logger'
 
@@ -73,6 +74,9 @@ export async function getCurrentUser() {
  * Create an admin client for server-side operations
  * Uses service role key for elevated permissions
  * WARNING: Only use in server actions - never expose to client
+ *
+ * Note: Uses @supabase/supabase-js directly (not SSR) to properly bypass RLS
+ * The SSR client with cookies doesn't reliably bypass RLS even with service role
  */
 export async function createAdminClient() {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -92,31 +96,12 @@ export async function createAdminClient() {
     )
   }
 
-  const cookieStore = await cookies()
-
-  return createServerClient(
-    supabaseUrl,
-    serviceRoleKey,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          } catch (error) {
-            // Errors from Server Components are expected.
-            // Log for debugging cookie sync issues in admin operations.
-            authLogger.debug(
-              '[createAdminClient] Cookie setAll called from Server Component',
-              { error: error instanceof Error ? error.message : String(error) }
-            )
-          }
-        },
-      },
-    }
-  )
+  // Use standard supabase-js client with service role key
+  // This properly bypasses RLS policies for admin operations
+  return createSupabaseClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  })
 }

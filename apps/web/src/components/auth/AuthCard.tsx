@@ -47,7 +47,7 @@ export function AuthCard({ children, title, description }: AuthCardProps) {
 
       {/* Login Card with Gradient Border - Responsive container */}
       <div className="w-full sm:max-w-sm md:max-w-md lg:max-w-lg">
-        <div className="rounded-2xl sm:rounded-3xl bg-gradient-to-br from-primary to-primary-light p-[2px] sm:p-[3px] shadow-[0_8px_20px_rgba(255,140,66,0.15)] sm:shadow-[0_12px_32px_rgba(255,140,66,0.2)] mb-6">
+        <div className="rounded-2xl sm:rounded-3xl bg-gradient-to-br from-primary to-primary-light p-[2px] sm:p-[3px] shadow-[0_8px_20px_rgba(255,126,51,0.15)] sm:shadow-[0_12px_32px_rgba(255,126,51,0.2)] mb-6">
           {/* Inner white card - responsive padding */}
           <div className="bg-white rounded-2xl sm:rounded-[21px] p-5 sm:p-6 md:p-8">
             {/* Card header - responsive spacing */}

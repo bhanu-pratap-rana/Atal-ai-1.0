@@ -1,225 +1,187 @@
 /**
- * Design Token System for ATAL AI
- * Centralized color, gradient, and spacing tokens
- *
- * This module provides a single source of truth for all design tokens
- * used throughout the application. It ensures consistency and makes
- * it easy to update the visual design across the entire codebase.
+ * ATAL AI - Jyoti (ज्योति) Design Token System
+ * 
+ * Single Source of Truth for all design tokens.
+ * These values MUST match globals.css CSS variables.
+ * 
+ * @version 2.0 - Consistent Color System
+ * @theme Jyoti (Light of Learning)
+ * 
+ * USAGE:
+ * - Import COLORS, GRADIENTS, etc. when needed in JS/TS
+ * - Prefer using CSS variable classes (bg-primary, text-primary) in JSX
+ * - Use these constants for dynamic styles or JS calculations only
  */
 
 /* ============================================================================
-   Color Palette
+   PRIMARY COLOR SYSTEM - Orange-Yellow (#FF8C42)
+   Use for: ALL buttons, progress, active states, icon backgrounds, focus states
    ============================================================================ */
 
 export const COLORS = {
-  // Brand Colors - Orange-Yellow Theme
+  // Primary - Orange-Yellow (Energy, Wisdom, Learning)
   primary: '#FF8C42',
-  primaryLight: '#FFD166',
+  primaryDark: '#E67A30',
+  primaryLight: '#FFEBD9',
+  primaryLighter: '#FFF7F0',
 
-  // Backgrounds
-  background: '#FFFFFF',
-  surface: '#F8F9FA',
+  // Secondary - Charcoal (Stability, Professionalism)
+  secondary: '#2D2A26',
+  secondaryLight: '#4A4640',
+  secondaryLighter: '#6B6560',
 
-  // Text Colors
-  textPrimary: '#333333',
-  textSecondary: '#666666',
-  textTertiary: '#999999',
-  textOnPrimary: '#FFFFFF',
+  // Accent - Gold (Achievement, Celebration) - USE ONLY FOR REWARDS/ACHIEVEMENTS
+  accent: '#FFD54F',
+  accentDark: '#FFC107',
+  accentLight: '#FFF8E1',
 
-  // Borders
-  border: '#E8E8E8',
-  borderLight: '#DDDDDD',
+  // Semantic Colors - STATUS INDICATORS ONLY
+  success: '#22C55E',
+  successLight: '#DCFCE7',
+  successDark: '#16A34A',
 
-  // Semantic Colors
-  success: '#10B981',
-  successLight: '#D1FAE5',
   error: '#EF4444',
   errorLight: '#FEE2E2',
+  errorDark: '#DC2626',
+
   warning: '#F59E0B',
   warningLight: '#FEF3C7',
+  warningDark: '#D97706',
+
   info: '#3B82F6',
   infoLight: '#DBEAFE',
+  infoDark: '#2563EB',
 
-  // Chart/Visualization Colors
-  chart1: '#FF8C42',
-  chart2: '#FFD166',
-  chart3: '#06B6D4',
-  chart4: '#8B5CF6',
-  chart5: '#EC4899',
+  // Backgrounds
+  white: '#FFFFFF',
+  cream: '#FFFBF7',
+  background: '#FFFFFF',
+  surface: '#FFFBF7',
 
-  // Accent Colors
-  orange: {
-    50: '#FFF7ED',
-    100: '#FFEDD5',
-    200: '#FED7AA',
-    300: '#FDBA74',
-    400: '#FB923C',
-    500: '#F97316',
-    600: '#EA580C',
-    700: '#C2410C',
-    800: '#9A360F',
-    900: '#7C2D12',
-  },
+  // Text Colors - Warm Gray Scale
+  textPrimary: '#2D2A26',
+  textSecondary: '#57534E',
+  textTertiary: '#78716C',
+  textMuted: '#A8A29E',
+  textOnPrimary: '#FFFFFF',
+  textOnDark: '#FFFFFF',
 
-  yellow: {
-    50: '#FEFCE8',
-    100: '#FEF3C7',
-    200: '#FDE68A',
-    300: '#FCD34D',
-    400: '#FBBF24',
-    500: '#F59E0B',
-    600: '#D97706',
-    700: '#B45309',
-    800: '#92400E',
-    900: '#78350F',
-  },
+  // Border Colors
+  border: '#E8E4E0',
+  borderLight: '#F3F0ED',
+  borderFocus: '#FF8C42',
 
-  blue: {
-    50: '#EFF6FF',
-    100: '#DBEAFE',
-    200: '#BFDBFE',
-    300: '#93C5FD',
-    400: '#60A5FA',
-    500: '#3B82F6',
-    600: '#2563EB',
-    700: '#1D4ED8',
-    800: '#1E40AF',
-    900: '#1E3A8A',
-  },
-
-  green: {
-    50: '#F0FDF4',
-    100: '#DCFCE7',
-    200: '#BBF7D0',
-    300: '#86EFAC',
-    400: '#4ADE80',
-    500: '#22C55E',
-    600: '#16A34A',
-    700: '#15803D',
-    800: '#166534',
-    900: '#145231',
-  },
-
-  red: {
-    50: '#FEF2F2',
-    100: '#FEE2E2',
-    200: '#FECACA',
-    300: '#FCA5A5',
-    400: '#F87171',
-    500: '#EF4444',
-    600: '#DC2626',
-    700: '#B91C1C',
-    800: '#991B1B',
-    900: '#7F1D1D',
-  },
-
+  // Gray Scale - Warm Tones (Stone-based)
   gray: {
-    50: '#F9FAFB',
-    100: '#F3F4F6',
-    200: '#E5E7EB',
-    300: '#D1D5DB',
-    400: '#9CA3AF',
-    500: '#6B7280',
-    600: '#4B5563',
-    700: '#374151',
-    800: '#1F2937',
-    900: '#111827',
+    50: '#FAFAF9',
+    100: '#F5F5F4',
+    200: '#E8E4E0',
+    300: '#D6D3D1',
+    400: '#A8A29E',
+    500: '#78716C',
+    600: '#57534E',
+    700: '#44403C',
+    800: '#292524',
+    900: '#1C1917',
   },
 
-  // Dark mode support
+  // Dark Mode (Admin Dashboard)
   dark: {
-    background: '#0a0a0a',
-    surface: '#1a1a1a',
-    text: '#ededed',
+    background: '#1C1917',
+    surface: '#292524',
+    text: '#FAFAF9',
+    textSecondary: '#A8A29E',
+    border: '#44403C',
   },
 } as const
 
 /* ============================================================================
-   Gradient Definitions
+   GRADIENT DEFINITIONS
    ============================================================================ */
 
 export const GRADIENTS = {
-  // Primary gradient
-  primary: 'linear-gradient(135deg, #FF8C42 0%, #FFD166 100%)',
+  // Primary gradients - Use for buttons, banners, active states
+  primary: 'linear-gradient(135deg, #FF7E33 0%, #FF9F5A 100%)',
+  primaryHover: 'linear-gradient(135deg, #E86A1F 0%, #FF7E33 100%)',
+  primaryVertical: 'linear-gradient(180deg, #FF7E33 0%, #FF9F5A 100%)',
 
-  // Directional gradients
-  primaryToBR: 'linear-gradient(to bottom right, #FF8C42, #FFD166)',
-  primaryToR: 'linear-gradient(to right, #FF8C42, #FFD166)',
-  primaryToB: 'linear-gradient(to bottom, #FF8C42, #FFD166)',
-
-  // Semantic gradients
-  successGradient: 'linear-gradient(135deg, #10B981 0%, #D1FAE5 100%)',
-  errorGradient: 'linear-gradient(135deg, #EF4444 0%, #FEE2E2 100%)',
-  warningGradient: 'linear-gradient(135deg, #F59E0B 0%, #FEF3C7 100%)',
-  infoGradient: 'linear-gradient(135deg, #3B82F6 0%, #DBEAFE 100%)',
-
-  // Multi-color gradients for visualizations
-  rainbow: 'linear-gradient(90deg, #FF8C42, #FFD166, #10B981, #3B82F6, #8B5CF6, #EC4899)',
-  sunset: 'linear-gradient(135deg, #FF8C42 0%, #F59E0B 50%, #EF4444 100%)',
-  ocean: 'linear-gradient(135deg, #06B6D4 0%, #3B82F6 50%, #1E40AF 100%)',
+  // Directional variants
+  primaryToBR: 'linear-gradient(to bottom right, #FF7E33, #FF9F5A)',
+  primaryToR: 'linear-gradient(to right, #FF7E33, #FF9F5A)',
+  primaryToB: 'linear-gradient(to bottom, #FF7E33, #FF9F5A)',
 } as const
 
 /* ============================================================================
-   Shadow Definitions
+   SHADOW DEFINITIONS
    ============================================================================ */
 
 export const SHADOWS = {
-  // Size-based shadows with orange tint
-  sm: '0 1px 2px rgba(255, 140, 66, 0.15)',
-  md: '0 4px 12px rgba(255, 140, 66, 0.2)',
-  lg: '0 8px 20px rgba(255, 140, 66, 0.35)',
-  xl: '0 12px 28px rgba(255, 140, 66, 0.45)',
+  // Size-based shadows
+  xs: '0 1px 2px rgba(0, 0, 0, 0.05)',
+  sm: '0 2px 4px rgba(0, 0, 0, 0.06)',
+  md: '0 4px 12px rgba(0, 0, 0, 0.08)',
+  lg: '0 8px 24px rgba(0, 0, 0, 0.12)',
+  xl: '0 16px 40px rgba(0, 0, 0, 0.16)',
 
-  // Additional shadow variations
+  // Primary colored shadows - CORRECT rgba(255, 126, 51, x) - NOT rgba(255, 140, 66, x)
+  primarySm: '0 2px 8px rgba(255, 126, 51, 0.15)',
+  primaryMd: '0 4px 14px rgba(255, 126, 51, 0.25)',
+  primaryLg: '0 8px 24px rgba(255, 126, 51, 0.30)',
+  primaryXl: '0 12px 28px rgba(255, 126, 51, 0.45)',
+
+  // Component-specific
+  button: '0 4px 14px rgba(255, 126, 51, 0.25)',
+  buttonHover: '0 8px 20px rgba(255, 126, 51, 0.35)',
+  card: '0 4px 12px rgba(0, 0, 0, 0.08)',
+  cardHover: '0 8px 24px rgba(0, 0, 0, 0.12)',
+
   none: 'none',
   inner: 'inset 0 2px 4px rgba(0, 0, 0, 0.06)',
-
-  // Semantic shadows
-  elevation1: '0 1px 3px rgba(0, 0, 0, 0.1)',
-  elevation2: '0 4px 6px rgba(0, 0, 0, 0.1)',
-  elevation3: '0 10px 15px rgba(0, 0, 0, 0.1)',
-  elevation4: '0 20px 25px rgba(0, 0, 0, 0.1)',
 } as const
 
 /* ============================================================================
-   Spacing Scale
+   SPACING SCALE
    ============================================================================ */
 
 export const SPACING = {
   0: '0',
-  1: '0.25rem',  // 4px
-  2: '0.5rem',   // 8px
-  3: '0.75rem',  // 12px
-  4: '1rem',     // 16px
-  6: '1.5rem',   // 24px
-  8: '2rem',     // 32px
-  12: '3rem',    // 48px
-  16: '4rem',    // 64px
-  20: '5rem',    // 80px
-  24: '6rem',    // 96px
+  1: '0.25rem',   // 4px
+  2: '0.5rem',    // 8px
+  3: '0.75rem',   // 12px
+  4: '1rem',      // 16px
+  5: '1.25rem',   // 20px
+  6: '1.5rem',    // 24px
+  8: '2rem',      // 32px
+  10: '2.5rem',   // 40px
+  12: '3rem',     // 48px
+  16: '4rem',     // 64px
+  20: '5rem',     // 80px
+  24: '6rem',     // 96px
 } as const
 
 /* ============================================================================
-   Typography Scale
+   TYPOGRAPHY
    ============================================================================ */
 
 export const TYPOGRAPHY = {
   // Font families
-  fontSans: 'var(--font-geist-sans), system-ui, -apple-system, sans-serif',
-  fontMono: 'var(--font-geist-mono), monospace',
-  fontDevanagari: 'var(--font-devanagari), system-ui, -apple-system, sans-serif',
-  fontBengali: 'var(--font-bengali), system-ui, -apple-system, sans-serif',
+  fontDisplay: "'Baloo 2', var(--font-nunito), system-ui, sans-serif",
+  fontBody: "var(--font-nunito), 'Nunito', system-ui, sans-serif",
+  fontHindi: "var(--font-devanagari), 'Noto Sans Devanagari', system-ui, sans-serif",
+  fontAssamese: "var(--font-bengali), 'Noto Sans Bengali', system-ui, sans-serif",
+  fontCode: "'Fira Code', 'Consolas', monospace",
 
   // Font sizes
   sizes: {
-    xs: '0.75rem',    // 12px
-    sm: '0.875rem',   // 14px
-    base: '1rem',     // 16px
-    lg: '1.125rem',   // 18px
-    xl: '1.25rem',    // 20px
-    '2xl': '1.5rem',  // 24px
+    xs: '0.75rem',     // 12px
+    sm: '0.875rem',    // 14px
+    base: '1rem',      // 16px
+    lg: '1.125rem',    // 18px
+    xl: '1.25rem',     // 20px
+    '2xl': '1.5rem',   // 24px
     '3xl': '1.875rem', // 30px
-    '4xl': '2.25rem', // 36px
+    '4xl': '2.25rem',  // 36px
+    '5xl': '3rem',     // 48px
   },
 
   // Font weights
@@ -234,63 +196,56 @@ export const TYPOGRAPHY = {
 
   // Line heights
   lineHeights: {
-    tight: 1.1,
+    tight: 1.25,
     normal: 1.5,
-    relaxed: 1.75,
+    relaxed: 1.625,
   },
 } as const
 
 /* ============================================================================
-   Border Radius Scale
+   BORDER RADIUS
    ============================================================================ */
 
 export const BORDER_RADIUS = {
   none: '0',
-  sm: '0.25rem',   // 4px
-  md: '0.375rem', // 6px
-  lg: '0.5rem',   // 8px
-  xl: '0.75rem',  // 12px
-  '2xl': '1rem',  // 16px
-  '3xl': '1.5rem', // 24px
+  sm: '0.5rem',    // 8px
+  md: '0.75rem',   // 12px
+  lg: '1rem',      // 16px
+  xl: '1.25rem',   // 20px
+  '2xl': '1.5rem', // 24px
   full: '9999px',
 } as const
 
 /* ============================================================================
-   Transitions
+   TRANSITIONS
    ============================================================================ */
 
 export const TRANSITIONS = {
-  // Duration
   duration: {
-    fastest: '75ms',
-    faster: '100ms',
     fast: '150ms',
-    normal: '200ms',
+    base: '200ms',
     slow: '300ms',
-    slower: '500ms',
-    slowest: '1000ms',
   },
 
-  // Easing functions
   easing: {
     linear: 'linear',
-    in: 'cubic-bezier(0.4, 0, 1, 1)',
-    out: 'cubic-bezier(0, 0, 0.2, 1)',
-    inOut: 'cubic-bezier(0.4, 0, 0.2, 1)',
+    ease: 'ease',
+    easeIn: 'ease-in',
+    easeOut: 'ease-out',
+    easeInOut: 'ease-in-out',
+    spring: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
   },
 
-  // Common transitions
   common: {
-    all: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
-    color: 'color 200ms cubic-bezier(0.4, 0, 0.2, 1)',
-    background: 'background 200ms cubic-bezier(0.4, 0, 0.2, 1)',
-    shadow: 'box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1)',
-    transform: 'transform 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+    all: 'all 200ms ease',
+    colors: 'color, background-color, border-color 200ms ease',
+    transform: 'transform 200ms ease',
+    shadow: 'box-shadow 200ms ease',
   },
 } as const
 
 /* ============================================================================
-   Breakpoints
+   BREAKPOINTS
    ============================================================================ */
 
 export const BREAKPOINTS = {
@@ -303,72 +258,107 @@ export const BREAKPOINTS = {
 } as const
 
 /* ============================================================================
-   Z-Index Scale
+   Z-INDEX SCALE
    ============================================================================ */
 
 export const Z_INDEX = {
   hide: -1,
   base: 0,
-  dropdown: 1000,
-  sticky: 1100,
-  fixed: 1200,
-  modal: 1300,
-  popover: 1400,
-  tooltip: 1500,
-  notification: 1600,
-  max: 1700,
+  dropdown: 100,
+  sticky: 200,
+  fixed: 300,
+  modalBackdrop: 400,
+  modal: 500,
+  popover: 600,
+  tooltip: 700,
+  toast: 800,
+  max: 9999,
 } as const
 
 /* ============================================================================
-   Theme Presets
+   COMPONENT DIMENSIONS
    ============================================================================ */
 
-export const THEME = {
-  light: {
-    colors: COLORS,
-    gradients: GRADIENTS,
-    shadows: SHADOWS,
+export const DIMENSIONS = {
+  // Buttons
+  buttonHeight: {
+    sm: '2.25rem',  // 36px
+    md: '2.75rem',  // 44px
+    lg: '3rem',     // 48px
   },
-  dark: {
-    colors: {
-      ...COLORS,
-      background: COLORS.dark.background,
-      surface: COLORS.dark.surface,
-      textPrimary: COLORS.dark.text,
-    },
-    gradients: GRADIENTS,
-    shadows: SHADOWS,
+
+  // Inputs
+  inputHeight: '2.75rem', // 44px
+
+  // Icon boxes
+  iconBox: {
+    sm: '2.5rem',  // 40px
+    md: '3rem',    // 48px
+    lg: '4rem',    // 64px
+  },
+
+  // Progress bar
+  progressHeight: {
+    sm: '0.25rem', // 4px
+    md: '0.5rem',  // 8px
+  },
+
+  // Logo sizes
+  logo: {
+    sm: '3rem',    // 48px
+    md: '5rem',    // 80px
+    lg: '6.25rem', // 100px
+    xl: '8rem',    // 128px
   },
 } as const
 
 /* ============================================================================
-   CSS Custom Properties (for CSS-in-JS usage)
+   CSS VARIABLE MAPPING
+   
+   Use these when you need to reference CSS variables in JS
+   Prefer using Tailwind classes in JSX: bg-primary, text-text-primary, etc.
    ============================================================================ */
 
-export const getCSSVariables = (theme: 'light' | 'dark' = 'light') => {
-  const colors = theme === 'light' ? COLORS : { ...COLORS, ...COLORS.dark }
+export const CSS_VARS = {
+  // Colors
+  primary: 'var(--color-primary)',
+  primaryDark: 'var(--color-primary-dark)',
+  primaryLight: 'var(--color-primary-light)',
+  secondary: 'var(--color-secondary)',
+  accent: 'var(--color-accent)',
 
-  return {
-    '--primary': colors.primary,
-    '--primary-light': colors.primaryLight,
-    '--background': colors.background,
-    '--surface': colors.surface,
-    '--text-primary': colors.textPrimary,
-    '--text-secondary': colors.textSecondary,
-    '--text-tertiary': colors.textTertiary,
-    '--text-on-primary': colors.textOnPrimary,
-    '--border': colors.border,
-    '--border-light': colors.borderLight,
-    '--gradient-primary': GRADIENTS.primary,
-  } as const
-}
+  // Semantic
+  success: 'var(--color-success)',
+  error: 'var(--color-error)',
+  warning: 'var(--color-warning)',
+  info: 'var(--color-info)',
+
+  // Text
+  textPrimary: 'var(--color-text-primary)',
+  textSecondary: 'var(--color-text-secondary)',
+  textTertiary: 'var(--color-text-tertiary)',
+
+  // Backgrounds
+  background: 'var(--color-background)',
+  surface: 'var(--color-surface)',
+  cream: 'var(--color-cream)',
+
+  // Border
+  border: 'var(--color-border)',
+
+  // Gradients
+  gradientPrimary: 'var(--gradient-primary)',
+
+  // Shadows
+  shadowPrimary: 'var(--shadow-primary)',
+} as const
 
 /* ============================================================================
-   Helper Functions
+   HELPER FUNCTIONS
    ============================================================================ */
 
 /**
- * Convert hex color to RGB values
+ * Convert hex color to RGB object
  */
 export function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
@@ -382,7 +372,8 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } | nul
 }
 
 /**
- * Convert hex color to RGBA with opacity
+ * Convert hex color to RGBA string
+ * @example hexToRgba('#FF7E33', 0.25) => 'rgba(255, 126, 51, 0.25)'
  */
 export function hexToRgba(hex: string, opacity: number): string {
   const rgb = hexToRgb(hex)
@@ -391,8 +382,15 @@ export function hexToRgba(hex: string, opacity: number): string {
 }
 
 /**
- * Get contrast ratio for accessibility (WCAG)
- * Returns true if contrast is sufficient for AA standard
+ * Get primary shadow with custom opacity
+ * Uses correct primary color RGB values (255, 126, 51)
+ */
+export function getPrimaryShadow(blur: number, spread: number, opacity: number): string {
+  return `0 ${blur}px ${spread}px rgba(255, 126, 51, ${opacity})`
+}
+
+/**
+ * Check if contrast ratio meets WCAG AA standard (4.5:1)
  */
 export function hasGoodContrast(hex1: string, hex2: string): boolean {
   const getLuminance = (hex: string): number => {
@@ -415,6 +413,52 @@ export function hasGoodContrast(hex1: string, hex2: string): boolean {
   return (lighter + 0.05) / (darker + 0.05) >= 4.5
 }
 
+/* ============================================================================
+   TAILWIND CLASS REFERENCE
+   
+   Use these Tailwind classes in JSX instead of hardcoded hex values:
+   
+   BACKGROUNDS:
+   - bg-primary          → #FF7E33
+   - bg-primary-dark     → #E86A1F
+   - bg-primary-light    → #FFE8DB
+   - bg-primary-lighter  → #FFF5EE
+   - bg-secondary        → #2D2A26
+   - bg-accent           → #FFD54F (achievements only)
+   - bg-cream            → #FFFBF7
+   - bg-success-light    → #DCFCE7
+   - bg-error-light      → #FEE2E2
+   - bg-warning-light    → #FEF3C7
+   - bg-info-light       → #DBEAFE
+   
+   TEXT:
+   - text-text-primary   → #2D2A26
+   - text-text-secondary → #57534E
+   - text-text-tertiary  → #78716C
+   - text-primary        → #FF7E33
+   - text-error          → #EF4444
+   - text-success        → #22C55E
+   
+   BORDERS:
+   - border-border       → #E8E4E0
+   - border-primary      → #FF7E33
+   - border-error        → #EF4444
+   
+   UTILITY CLASSES (from globals.css):
+   - .btn-primary        → Primary gradient button
+   - .btn-secondary      → Charcoal button
+   - .btn-outline        → Primary border button
+   - .card               → White card with shadow
+   - .card-gradient      → Card with gradient border
+   - .icon-box           → Primary-light icon container
+   - .badge              → Primary badge
+   - .badge-success      → Success status badge
+   - .progress           → Progress bar track
+   - .progress-bar       → Progress bar fill (gradient)
+   - .alert-info         → Info alert box
+   - .gradient-primary   → Primary gradient background
+   ============================================================================ */
+
 export default {
   COLORS,
   GRADIENTS,
@@ -425,9 +469,10 @@ export default {
   TRANSITIONS,
   BREAKPOINTS,
   Z_INDEX,
-  THEME,
-  getCSSVariables,
+  DIMENSIONS,
+  CSS_VARS,
   hexToRgb,
   hexToRgba,
+  getPrimaryShadow,
   hasGoodContrast,
 }

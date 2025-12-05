@@ -61,6 +61,112 @@ These extend the general super-agent rules above and tailor them to the ATAL AI 
 1. **Migrations Only:** All schema changes must be expressed as migrations and committed under `apps/db/migrations/` with clear semantic names (e.g., `007_add_teacher_profiles.sql`).
 2. **No Ad-Hoc SQL:** Never modify production schema via the Supabase SQL editor without creating a matching migration file in the repo first.
 3. **Indexes:** If you add a new query that scans tables, add an index migration in the same PR.
+4. **DATABASE.md Sync:** After any database change, update `DATABASE.md` in the root directory to reflect new tables, columns, RLS policies, or functions.
+
+## B2. ✅ DATABASE COMPLIANCE CHECK (CRITICAL)
+
+> **Reference:** Always consult `DATABASE.md` in the root directory for current schema, RLS policies, and functions.
+
+### Before Writing ANY Database-Related Code:
+
+1. **Table & Column Verification:**
+   - [ ] Verify table exists in `DATABASE.md`
+   - [ ] Verify ALL column names match exactly (case-sensitive)
+   - [ ] Verify column types match (uuid, text, timestamptz, etc.)
+   - [ ] Verify nullable constraints (required vs optional fields)
+   - [ ] Verify foreign key relationships
+
+2. **RLS Policy Compliance:**
+   - [ ] Check which RLS policies apply to your operation (SELECT/INSERT/UPDATE/DELETE)
+   - [ ] Verify your code respects the policy conditions
+   - [ ] For SELECT: User can only see data they're authorized to see
+   - [ ] For INSERT: User can only insert data with their own user_id
+   - [ ] For UPDATE/DELETE: User can only modify their own data or data they manage
+
+3. **User Type Restrictions:**
+   | User Type | Can Access |
+   |-----------|------------|
+   | Anonymous Student | Own profile, enrolled classes, own assessments |
+   | Email Student | Own profile, enrolled classes, own assessments |
+   | Teacher (with profile) | Own profile, own classes, enrolled students' data |
+   | Service Role | school_staff_credentials (server-side only) |
+
+4. **Function Usage:**
+   - [ ] Use `verify_staff_pin()` for PIN verification (service_role only)
+   - [ ] Use `rotate_staff_pin()` for PIN rotation (service_role only)
+   - [ ] Use `check_email_exists()` for email validation
+   - [ ] Never call SECURITY DEFINER functions from client
+
+### Database Tables Quick Reference:
+
+| Table | Primary Key | Key Foreign Keys | RLS |
+|-------|-------------|------------------|-----|
+| `users` | `id` | - | ✅ |
+| `student_profiles` | `user_id` | → auth.users, → schools | ✅ |
+| `teacher_profiles` | `user_id` | → auth.users, → schools | ✅ |
+| `schools` | `id` | - | ✅ |
+| `school_staff_credentials` | `id` | → schools | ✅ (service_role only) |
+| `classes` | `id` | → users (teacher_id) | ✅ |
+| `enrollments` | `id` | → classes, → users | ✅ |
+| `assessment_sessions` | `id` | → users, → classes | ✅ |
+| `assessment_responses` | `id` | → assessment_sessions | ✅ |
+
+### Common RLS Violations to Avoid:
+
+```typescript
+// ❌ WRONG: Trying to read other users' data
+const { data } = await supabase
+  .from('student_profiles')
+  .select('*')  // Will fail - can only see own profile or enrolled students
+
+// ✅ CORRECT: Reading own profile
+const { data } = await supabase
+  .from('student_profiles')
+  .select('*')
+  .eq('user_id', userId)  // Must match auth.uid()
+
+// ❌ WRONG: Client trying to access staff credentials
+const { data } = await supabase
+  .from('school_staff_credentials')
+  .select('*')  // Will return 0 rows - service_role only
+
+// ✅ CORRECT: Use server action with service role
+const adminClient = createAdminClient()
+const { data } = await adminClient
+  .from('school_staff_credentials')
+  .select('*')
+
+// ❌ WRONG: Anonymous user trying to create a class
+const { data } = await supabase
+  .from('classes')
+  .insert({ name: 'My Class', teacher_id: userId })
+  // Will fail - requires teacher_profiles existence
+
+// ✅ CORRECT: Only teachers with profiles can create classes
+// First ensure user has teacher_profile, then create class
+```
+
+### Profile Field Requirements:
+
+**student_profiles (Required for all students):**
+- `user_id` (required) - From auth.uid()
+- `name` (required) - Student's full name
+- `gender` (required) - 'male' or 'female'
+- `phone` (optional) - For records only
+- `roll_number` (optional)
+- `school_id` OR `school_name` (optional)
+- `class_name` (optional) - e.g., "Class 5"
+- `village` (optional)
+
+**teacher_profiles (Required for teachers):**
+- `user_id` (required) - From auth.uid()
+- `name` (required)
+- `school_id` (required) - Must reference valid school
+- `school_code` (required)
+- `phone` (optional)
+- `subject` (optional)
+- `gender` (optional) - 'male' or 'female'
+- `village` (optional)
 
 ## C. ✅ UI & UX Consistency
 
@@ -180,17 +286,31 @@ Before writing ANY code:
    - [ ] No data loss from migration
    - [ ] Indexed new filter columns
    - [ ] RLS policies exist on new tables
+   - [ ] Updated `DATABASE.md` with new schema/policies
+
+7. **DATABASE COMPLIANCE CHECK (For ALL DB-related code)**
+   - [ ] Read `DATABASE.md` before writing any query
+   - [ ] Verified table name exists exactly as documented
+   - [ ] Verified ALL column names match (no typos)
+   - [ ] Verified column types match expected values
+   - [ ] Checked RLS policies for the operation type (SELECT/INSERT/UPDATE/DELETE)
+   - [ ] Confirmed user type can perform this operation
+   - [ ] For teachers: Verified teacher_profiles existence check
+   - [ ] For students: Verified enrollment or self-ownership check
+   - [ ] For service operations: Using createAdminClient()
+   - [ ] No hardcoded IDs or UUIDs
+   - [ ] Foreign key references are valid
 
 ## Phase 3: Validation & Error Handling
 
-7. **Input Validation**
+8. **Input Validation**
    - [ ] All user inputs validated
    - [ ] Email: format + domain + typo detection + disposable check
    - [ ] Password: length + character variety + no patterns
    - [ ] Phone: format + country code validation
    - [ ] Used validation functions (not inline checks)
 
-8. **Error Handling**
+9. **Error Handling**
    - [ ] No bare try/catch blocks
    - [ ] All errors logged with context
    - [ ] User-facing errors are friendly
@@ -198,7 +318,7 @@ Before writing ANY code:
 
 ## Phase 4: Testing Requirements
 
-9. **Unit Tests**
+10. **Unit Tests**
    ```bash
    npm run test
    ```
@@ -207,27 +327,27 @@ Before writing ANY code:
    - [ ] Tests for errors and boundary values
    - [ ] Min coverage: normal + error + edge case
 
-10. **Integration/E2E Tests**
+11. **Integration/E2E Tests**
     - [ ] For critical flows (signup, login, join class): Playwright test
     - [ ] Test full user journey
     - [ ] Test error scenarios
     - [ ] Test mobile viewport
 
-11. **Manual Testing**
+12. **Manual Testing**
     - [ ] Tested in browser (Chrome, Firefox, Safari)
     - [ ] Tested on mobile (iOS + Android)
     - [ ] Tested with real Supabase (not mocks)
 
 ## Phase 5: Security Checklist
 
-12. **Authentication & Authorization**
+13. **Authentication & Authorization**
     - [ ] No passwords logged/exposed
     - [ ] No sensitive data in URL
     - [ ] Session tokens refreshed properly
     - [ ] RLS policies match auth flow
     - [ ] Users can't access others' data
 
-13. **Secrets & Env**
+14. **Secrets & Env**
     - [ ] No secrets in code
     - [ ] No secrets in git history
     - [ ] `.env` file in `.gitignore`
@@ -235,7 +355,7 @@ Before writing ANY code:
 
 ## Phase 6: Code Quality
 
-14. **Linting & Types**
+15. **Linting & Types**
     ```bash
     npm run lint          # 0 errors
     npm run type-check    # 0 errors
@@ -247,7 +367,7 @@ Before writing ANY code:
     - [ ] No unused imports
     - [ ] No console.log in production
 
-15. **Code Style**
+16. **Code Style**
     - [ ] Follows existing patterns
     - [ ] Clear variable names
     - [ ] Comments explain WHY not WHAT
@@ -256,7 +376,7 @@ Before writing ANY code:
 
 ## Phase 7: Git & Deployment
 
-16. **Pre-push Verification**
+17. **Pre-push Verification**
     ```bash
     git status
     git diff --cached
@@ -267,7 +387,7 @@ Before writing ANY code:
     - [ ] No .env files committed
     - [ ] Commit message clear and descriptive
 
-17. **Commit Message Format**
+18. **Commit Message Format**
     ```
     [type]: [description]
 
@@ -278,12 +398,19 @@ Before writing ANY code:
     ```
     Types: feat, fix, refactor, test, docs, chore, perf
 
-18. **Core MCPs Required Before Commit**
+19. **Core MCPs Required Before Commit**
     - [ ] `git log --oneline` — find related commits
     - [ ] `filesystem` search for existing utilities to reuse
     - [ ] `supabase` MCP: verify schema and RLS policies
     - [ ] `memory` MCP: check established patterns
     - [ ] Draft Playwright smoke test for critical paths
+    - [ ] **DATABASE.md compliance check** — verify code matches documented schema
+
+20. **DATABASE.md Sync Check**
+    - [ ] If schema changed: Updated `DATABASE.md` tables section
+    - [ ] If RLS changed: Updated `DATABASE.md` policies section
+    - [ ] If functions changed: Updated `DATABASE.md` functions section
+    - [ ] If migration added: Updated `DATABASE.md` migration history
 
 # Example Agent Prompt Template (for Cursor)
 
@@ -325,9 +452,7 @@ Validation:
 1. **Auto-checker:** Add a CI job that runs `supabase` MCP queries to ensure critical RLS policies exist.
 2. **Agent Linter:** Build a quick script that validates agent prompts for the required fields (Goal/Input/Expected/Validation) before running.
 3. **Migration Linter:** CI job that checks for `-- TODO` or commented-out SQL in migration files.
+4. **DATABASE.md Validator:** CI job that compares `DATABASE.md` against actual Supabase schema and fails if out of sync.
+5. **RLS Policy Checker:** Pre-commit hook that verifies new queries comply with documented RLS policies in `DATABASE.md`.
 
 ---
-
-# Final Note
-
-This rulebook is authoritative for all Cursor agents working on the ATAL AI project. Agents that do not follow these rules will be paused and reviewed. Any proposed deviation must be discussed in a PR and accepted by the project leads.

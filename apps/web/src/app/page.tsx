@@ -1,55 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { AuthCard } from '@/components/auth/AuthCard'
-import { createClient } from '@/lib/supabase-browser'
-import { ShieldAlert } from 'lucide-react'
 
 export default function HomePage() {
   const router = useRouter()
-  const supabase = createClient()
-  const [hasSession, setHasSession] = useState(false)
-
-  useEffect(() => {
-    async function checkSession() {
-      const { data: { session } } = await supabase.auth.getSession()
-      setHasSession(!!session)
-    }
-    checkSession()
-  }, [supabase])
-
-  async function handleSignOut() {
-    await supabase.auth.signOut()
-    setHasSession(false)
-    router.refresh()
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-surface via-background to-surface flex items-center justify-center p-4">
-      {/* Admin & Sign Out Buttons - Top Right */}
-      <div className="absolute top-4 right-4 flex gap-3">
-        <Button
-          onClick={() => router.push('/admin/login')}
-          variant="outline"
-          size="sm"
-          className="text-sm border-primary text-primary hover:bg-orange-50 flex items-center gap-2"
-        >
-          <ShieldAlert className="w-4 h-4" />
-          Admin
-        </Button>
-        {hasSession && (
-          <Button
-            onClick={handleSignOut}
-            variant="outline"
-            className="text-sm border-primary text-primary hover:bg-orange-50"
-          >
-            Sign Out
-          </Button>
-        )}
-      </div>
-
       <AuthCard
         title="Welcome to ATAL AI"
         description="Choose your role to get started"

@@ -34,8 +34,8 @@ export default async function CurriculumPage() {
                 Learn the basics of digital literacy, including computer skills, internet safety, and online communication.
               </p>
               <div className="flex gap-2">
-                <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">Beginner</span>
-                <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">8 Modules</span>
+                <span className="px-3 py-1 bg-primary-light text-primary-dark rounded-full text-sm">Beginner</span>
+                <span className="px-3 py-1 bg-info-light text-info-dark rounded-full text-sm">8 Modules</span>
               </div>
             </CardContent>
           </Card>
@@ -49,8 +49,8 @@ export default async function CurriculumPage() {
                 Introduction to artificial intelligence and machine learning concepts for students.
               </p>
               <div className="flex gap-2">
-                <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm">Intermediate</span>
-                <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">12 Modules</span>
+                <span className="px-3 py-1 bg-warning-light text-warning-dark rounded-full text-sm">Intermediate</span>
+                <span className="px-3 py-1 bg-info-light text-info-dark rounded-full text-sm">12 Modules</span>
               </div>
             </CardContent>
           </Card>
@@ -64,8 +64,8 @@ export default async function CurriculumPage() {
                 Start your coding journey with Python, HTML, CSS, and JavaScript fundamentals.
               </p>
               <div className="flex gap-2">
-                <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">Beginner</span>
-                <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">15 Modules</span>
+                <span className="px-3 py-1 bg-primary-light text-primary-dark rounded-full text-sm">Beginner</span>
+                <span className="px-3 py-1 bg-info-light text-info-dark rounded-full text-sm">15 Modules</span>
               </div>
             </CardContent>
           </Card>

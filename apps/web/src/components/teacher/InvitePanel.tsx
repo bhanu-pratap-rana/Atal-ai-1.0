@@ -156,8 +156,8 @@ export function InvitePanel({ classCode, joinPin, className }: InvitePanelProps)
           {/* Join PIN */}
           <div className="space-y-2">
             <Label className="text-sm font-medium">Join PIN</Label>
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-3 md:p-4">
-              <p className="text-2xl md:text-3xl font-mono font-bold text-center text-blue-600 tracking-widest">
+            <div className="bg-gradient-to-br from-primary-lighter to-primary-light border-2 border-primary/30 rounded-lg p-3 md:p-4">
+              <p className="text-2xl md:text-3xl font-mono font-bold text-center text-primary tracking-widest">
                 {joinPin}
               </p>
             </div>

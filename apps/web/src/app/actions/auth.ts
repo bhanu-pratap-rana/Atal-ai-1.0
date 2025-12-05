@@ -337,7 +337,8 @@ export async function verifyOtp(email: string, token: string) {
       return { success: false, error: error.message }
     }
 
-    const role = data.user?.user_metadata?.role || 'student'
+    // Check both app_metadata (set by admin/system) and user_metadata for role
+    const role = data.user?.app_metadata?.role || data.user?.user_metadata?.role || 'student'
     authLogger.success('[verifyOtp] OTP verified successfully', { role })
 
     // Session is now created - check user role and redirect

@@ -4,12 +4,18 @@ import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { AssessmentRunner } from '@/components/assessment/AssessmentRunner'
 import { AssessmentSkeleton } from '@/components/assessment/AssessmentSkeleton'
 import { startAssessment } from '@/app/actions/assessment'
 import { getQuestionsByLanguage } from '@/data/assessment-questions'
+
+/**
+ * ATAL AI Assessment Start Page - Jyoti Theme
+ * 
+ * Rule.md Compliant: Uses CSS variable classes from globals.css
+ * NO hardcoded hex values - all colors via design tokens
+ */
 
 interface Question {
   id: string
@@ -62,106 +68,117 @@ function AssessmentStartContent() {
 
   // Show language selection screen
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 flex items-center justify-center p-4">
-      <Card className="max-w-2xl w-full p-6 md:p-8 shadow-xl">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-orange-400 to-yellow-400 rounded-full mb-4">
-            <span className="text-3xl">📝</span>
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Pre-Assessment
-          </h1>
-          <p className="text-gray-600">
-            This assessment helps us understand your current digital literacy skills
-          </p>
-        </div>
+    <div className="min-h-screen bg-cream flex items-center justify-center p-4">
+      {/* Card with Gradient Border */}
+      <div className="max-w-2xl w-full">
+        <div className="card-gradient">
+          <div className="bg-white rounded-[17px] p-6 md:p-8">
+            {/* Header */}
+            <div className="text-center mb-8">
+              {/* Icon Box - Primary Light */}
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-light rounded-[16px] mb-4">
+                <span className="text-3xl">📝</span>
+              </div>
+              <h1 className="text-3xl font-bold text-text-primary mb-2">
+                Pre-Assessment
+              </h1>
+              <p className="text-text-secondary">
+                This assessment helps us understand your current digital literacy skills
+              </p>
+            </div>
 
-        {/* Assessment Info */}
-        <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded mb-6">
-          <div className="flex items-start gap-3">
-            <span className="text-2xl">ℹ️</span>
-            <div>
-              <h3 className="font-semibold text-blue-900 mb-2">What to expect:</h3>
-              <ul className="text-sm text-blue-800 space-y-1">
-                <li>• 30 questions covering 5 key digital literacy modules</li>
-                <li>• No time limit - take your time to read carefully</li>
-                <li>• Your answers help us personalize your learning journey</li>
-                <li>• There are no wrong answers - this is about understanding where you are</li>
-              </ul>
+            {/* Assessment Info - Info Alert */}
+            <div className="bg-info-light border-l-4 border-info p-4 rounded-[12px] mb-6">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">ℹ️</span>
+                <div>
+                  <h3 className="font-semibold text-info-dark mb-2">What to expect:</h3>
+                  <ul className="text-sm text-info-dark/80 space-y-1">
+                    <li>• 30 questions covering 5 key digital literacy modules</li>
+                    <li>• No time limit - take your time to read carefully</li>
+                    <li>• Your answers help us personalize your learning journey</li>
+                    <li>• There are no wrong answers - this is about understanding where you are</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Language Selection */}
+            <div className="mb-8">
+              <Label className="text-base font-semibold mb-4 block text-text-primary">
+                Choose your preferred language:
+              </Label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* English */}
+                <button
+                  onClick={() => setSelectedLanguage('en')}
+                  className={`p-4 rounded-[12px] border-2 transition-all duration-200 ${
+                    selectedLanguage === 'en'
+                      ? 'border-primary bg-primary-light shadow-primary-sm'
+                      : 'border-border bg-white hover:border-primary/30 hover:bg-primary-lighter'
+                  }`}
+                >
+                  <div className="text-center">
+                    <span className="text-3xl mb-2 block">🇬🇧</span>
+                    <span className="font-semibold text-text-primary">English</span>
+                  </div>
+                </button>
+
+                {/* Hindi */}
+                <button
+                  onClick={() => setSelectedLanguage('hi')}
+                  className={`p-4 rounded-[12px] border-2 transition-all duration-200 ${
+                    selectedLanguage === 'hi'
+                      ? 'border-primary bg-primary-light shadow-primary-sm'
+                      : 'border-border bg-white hover:border-primary/30 hover:bg-primary-lighter'
+                  }`}
+                >
+                  <div className="text-center">
+                    <span className="text-3xl mb-2 block">🇮🇳</span>
+                    <span className="font-semibold text-text-primary">हिंदी</span>
+                  </div>
+                </button>
+
+                {/* Assamese */}
+                <button
+                  onClick={() => setSelectedLanguage('as')}
+                  className={`p-4 rounded-[12px] border-2 transition-all duration-200 ${
+                    selectedLanguage === 'as'
+                      ? 'border-primary bg-primary-light shadow-primary-sm'
+                      : 'border-border bg-white hover:border-primary/30 hover:bg-primary-lighter'
+                  }`}
+                >
+                  <div className="text-center">
+                    <span className="text-3xl mb-2 block">🇮🇳</span>
+                    <span className="font-semibold text-text-primary">অসমীয়া</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col gap-4">
+              <Button
+                onClick={handleStartAssessment}
+                disabled={loading}
+                loading={loading}
+                size="lg"
+                className="w-full text-lg py-6"
+              >
+                {loading ? 'Starting Assessment...' : 'Start Assessment'}
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => router.back()}
+                disabled={loading}
+              >
+                Back
+              </Button>
             </div>
           </div>
         </div>
-
-        {/* Language Selection */}
-        <div className="mb-8">
-          <Label className="text-base font-semibold mb-4 block">
-            Choose your preferred language:
-          </Label>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button
-              onClick={() => setSelectedLanguage('en')}
-              className={`p-4 rounded-lg border-2 transition-all ${
-                selectedLanguage === 'en'
-                  ? 'border-orange-500 bg-orange-50 shadow-md'
-                  : 'border-gray-200 bg-white hover:border-orange-200'
-              }`}
-            >
-              <div className="text-center">
-                <span className="text-3xl mb-2 block">🇬🇧</span>
-                <span className="font-semibold text-gray-900">English</span>
-              </div>
-            </button>
-
-            <button
-              onClick={() => setSelectedLanguage('hi')}
-              className={`p-4 rounded-lg border-2 transition-all ${
-                selectedLanguage === 'hi'
-                  ? 'border-orange-500 bg-orange-50 shadow-md'
-                  : 'border-gray-200 bg-white hover:border-orange-200'
-              }`}
-            >
-              <div className="text-center">
-                <span className="text-3xl mb-2 block">🇮🇳</span>
-                <span className="font-semibold text-gray-900">हिंदी</span>
-              </div>
-            </button>
-
-            <button
-              onClick={() => setSelectedLanguage('as')}
-              className={`p-4 rounded-lg border-2 transition-all ${
-                selectedLanguage === 'as'
-                  ? 'border-orange-500 bg-orange-50 shadow-md'
-                  : 'border-gray-200 bg-white hover:border-orange-200'
-              }`}
-            >
-              <div className="text-center">
-                <span className="text-3xl mb-2 block">🇮🇳</span>
-                <span className="font-semibold text-gray-900">অসমীয়া</span>
-              </div>
-            </button>
-          </div>
-        </div>
-
-        {/* Start Button */}
-        <div className="flex flex-col gap-4">
-          <Button
-            onClick={handleStartAssessment}
-            disabled={loading}
-            size="lg"
-            className="w-full text-lg py-6"
-          >
-            {loading ? 'Starting Assessment...' : 'Start Assessment'}
-          </Button>
-
-          <Button
-            variant="outline"
-            onClick={() => router.back()}
-            disabled={loading}
-          >
-            Back
-          </Button>
-        </div>
-      </Card>
+      </div>
     </div>
   )
 }

@@ -523,8 +523,9 @@ For issues and questions:
 ### Database Migrations Applied
 1. 001-005: Core schema setup
 2. 006-014: Feature development
-3. **015**: Secure staff credentials with RLS policies
-4. **016**: Performance indexes for analytics
+3. 015-017: Secure staff credentials with RLS policies
+4. 018-026: Performance indexes, security fixes, profile tables
+5. **027-028**: Fix RLS infinite recursion with SECURITY DEFINER helper functions
 
 ### Deployment Ready
 - ✅ All security vulnerabilities patched
@@ -538,5 +539,5 @@ For issues and questions:
 
 **Built with ❤️ for digital empowerment in India**
 
-Last updated: 2025-11-20
+Last updated: 2025-12-05
 Version: 1.0.0 - Phase 6 Complete (Rule.md Compliance 95% A-)

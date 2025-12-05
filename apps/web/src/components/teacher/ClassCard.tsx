@@ -52,9 +52,9 @@ export function ClassCard({ classData, teacherName: _teacherName }: ClassCardPro
             <div className="flex items-start gap-2 flex-1">
               <span className="text-2xl">📚</span>
               <div className="flex-1">
-                <CardTitle className="text-orange-600">{classData.name}</CardTitle>
+                <CardTitle className="text-primary">{classData.name}</CardTitle>
                 {classData.subject && (
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-sm text-text-secondary mt-1">
                     📖 {classData.subject}
                   </p>
                 )}
@@ -64,16 +64,16 @@ export function ClassCard({ classData, teacherName: _teacherName }: ClassCardPro
           <CardDescription className="mt-2">Created {createdDate}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Class Code and PIN display */}
+          {/* Class Code and PIN display - Both use primary colors for consistency */}
           {classData.class_code && classData.join_pin && (
             <div className="space-y-2">
-              <div className="bg-orange-50 border border-orange-200 rounded p-2">
-                <p className="text-xs text-gray-600">Class Code</p>
-                <p className="font-mono font-bold text-orange-600 text-lg">{classData.class_code}</p>
+              <div className="bg-primary-light border border-primary/20 rounded-lg p-3">
+                <p className="text-xs text-text-secondary">Class Code</p>
+                <p className="font-mono font-bold text-primary text-lg">{classData.class_code}</p>
               </div>
-              <div className="bg-blue-50 border border-blue-200 rounded p-2">
-                <p className="text-xs text-gray-600">Join PIN</p>
-                <p className="font-mono font-bold text-blue-600 text-lg">{classData.join_pin}</p>
+              <div className="bg-primary-lighter border border-primary/10 rounded-lg p-3">
+                <p className="text-xs text-text-secondary">Join PIN</p>
+                <p className="font-mono font-bold text-primary-dark text-lg">{classData.join_pin}</p>
               </div>
             </div>
           )}
@@ -88,7 +88,7 @@ export function ClassCard({ classData, teacherName: _teacherName }: ClassCardPro
             {/* Manage Class Dropdown Menu */}
             <div className="flex-1">
               <Button
-                variant="outline"
+                variant="default"
                 size="sm"
                 onClick={() => setShowEditDialog(true)}
                 className="w-full"
@@ -113,9 +113,9 @@ export function ClassCard({ classData, teacherName: _teacherName }: ClassCardPro
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* Edit Section */}
-            <div className="space-y-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="font-medium text-sm text-blue-900">Edit Class Details</p>
+            {/* Edit Section - Uses primary color */}
+            <div className="space-y-3 p-4 bg-primary-light rounded-lg border border-primary/20">
+              <p className="font-medium text-sm text-primary-dark">Edit Class Details</p>
               <div className="space-y-3">
                 <div className="space-y-1">
                   <Label htmlFor="edit-class-name" className="text-xs">Class Name</Label>
@@ -170,10 +170,10 @@ export function ClassCard({ classData, teacherName: _teacherName }: ClassCardPro
               </div>
             </div>
 
-            {/* Delete Section */}
-            <div className="space-y-3 p-4 bg-red-50 rounded-lg border border-red-200">
-              <p className="font-medium text-sm text-red-900">Delete Class</p>
-              <p className="text-xs text-red-800">
+            {/* Delete Section - Uses error/destructive color */}
+            <div className="space-y-3 p-4 bg-error-light rounded-lg border border-error/20">
+              <p className="font-medium text-sm text-error-dark">Delete Class</p>
+              <p className="text-xs text-error">
                 This action cannot be undone. All class data will be permanently deleted.
               </p>
               <Button
@@ -209,7 +209,7 @@ export function ClassCard({ classData, teacherName: _teacherName }: ClassCardPro
           <DialogHeader>
             <DialogTitle>Delete Class</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{classData.name}"? This action cannot be undone. All class data will be permanently deleted.
+              Are you sure you want to delete &quot;{classData.name}&quot;? This action cannot be undone. All class data will be permanently deleted.
             </DialogDescription>
           </DialogHeader>
 

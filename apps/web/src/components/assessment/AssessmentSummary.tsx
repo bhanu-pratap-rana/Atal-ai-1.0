@@ -2,7 +2,13 @@
 
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
+
+/**
+ * ATAL AI Assessment Summary - Jyoti Theme
+ * 
+ * Rule.md Compliant: Uses CSS variable classes from globals.css
+ * NO hardcoded hex values - all colors via design tokens
+ */
 
 interface AssessmentSummaryProps {
   score: number
@@ -59,38 +65,41 @@ export function AssessmentSummary({
   const scoreMessage = getScoreMessage(score)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 p-4 md:p-8">
+    <div className="min-h-screen bg-cream p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
-        {/* Header Card */}
-        <Card className="p-6 md:p-8 mb-6 text-center shadow-lg">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-orange-400 to-yellow-400 rounded-full mb-4">
-            <span className="text-5xl">{scoreMessage.emoji}</span>
-          </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-            {scoreMessage.title}
-          </h1>
-          <p className="text-lg text-gray-600 mb-6">{scoreMessage.message}</p>
+        {/* Header Card with Gradient Border */}
+        <div className="card-gradient mb-6">
+          <div className="bg-white rounded-[17px] p-6 md:p-8 text-center">
+            {/* Score Icon - Primary Gradient */}
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-primary rounded-[20px] mb-4">
+              <span className="text-5xl">{scoreMessage.emoji}</span>
+            </div>
+            <h1 className="text-3xl md:text-4xl font-bold text-text-primary mb-2">
+              {scoreMessage.title}
+            </h1>
+            <p className="text-lg text-text-secondary mb-6">{scoreMessage.message}</p>
 
-          {/* Score Display */}
-          <div className="flex items-center justify-center gap-8 mb-4">
-            <div>
-              <div className="text-5xl md:text-6xl font-bold text-orange-600">
-                {score}%
+            {/* Score Display */}
+            <div className="flex items-center justify-center gap-8 mb-4">
+              <div>
+                <div className="text-5xl md:text-6xl font-bold text-primary">
+                  {score}%
+                </div>
+                <div className="text-sm text-text-tertiary mt-2">Overall Score</div>
               </div>
-              <div className="text-sm text-gray-600 mt-2">Overall Score</div>
-            </div>
-            <div className="text-left">
-              <div className="text-2xl font-semibold text-gray-700">
-                {correctAnswers}/{totalQuestions}
+              <div className="text-left">
+                <div className="text-2xl font-semibold text-text-primary">
+                  {correctAnswers}/{totalQuestions}
+                </div>
+                <div className="text-sm text-text-tertiary">Correct Answers</div>
               </div>
-              <div className="text-sm text-gray-600">Correct Answers</div>
             </div>
           </div>
-        </Card>
+        </div>
 
         {/* Module Breakdown */}
-        <Card className="p-6 md:p-8 mb-6 shadow-lg">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+        <div className="card mb-6">
+          <h2 className="text-2xl font-bold text-text-primary mb-6">
             Performance by Module
           </h2>
           <div className="space-y-4">
@@ -99,16 +108,17 @@ export function AssessmentSummary({
               return (
                 <div key={module}>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-gray-700">
+                    <span className="font-medium text-text-primary">
                       {formatModuleName(module)}
                     </span>
-                    <span className="text-sm font-semibold text-gray-600">
+                    <span className="text-sm font-semibold text-text-secondary">
                       {stats.correct}/{stats.total} ({moduleScore}%)
                     </span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                  {/* Progress Bar - Primary Gradient */}
+                  <div className="w-full bg-border-light rounded-full h-2 overflow-hidden">
                     <div
-                      className="bg-gradient-to-r from-orange-400 to-yellow-400 h-full transition-all"
+                      className="bg-gradient-primary h-full rounded-full transition-all duration-500"
                       style={{ width: `${moduleScore}%` }}
                     />
                   </div>
@@ -116,46 +126,48 @@ export function AssessmentSummary({
               )
             })}
           </div>
-        </Card>
+        </div>
 
         {/* Additional Stats */}
-        <Card className="p-6 md:p-8 mb-6 shadow-lg">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+        <div className="card mb-6">
+          <h2 className="text-2xl font-bold text-text-primary mb-6">
             Additional Insights
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-lg border-2 border-blue-200">
-              <div className="text-sm text-blue-600 font-semibold mb-1">
+            {/* Response Time - Primary Light */}
+            <div className="bg-primary-light p-5 rounded-[16px] border border-primary/20">
+              <div className="text-sm text-primary font-semibold mb-1">
                 Average Response Time
               </div>
-              <div className="text-3xl font-bold text-blue-700">
+              <div className="text-3xl font-bold text-primary-dark">
                 {Math.round(avgResponseTime / 1000)}s
               </div>
-              <div className="text-xs text-blue-600 mt-1">
+              <div className="text-xs text-primary/70 mt-1">
                 Time spent per question
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-lg border-2 border-green-200">
-              <div className="text-sm text-green-600 font-semibold mb-1">
+            {/* Modules - Success Light */}
+            <div className="bg-success-light p-5 rounded-[16px] border border-success/20">
+              <div className="text-sm text-success font-semibold mb-1">
                 Modules Covered
               </div>
-              <div className="text-3xl font-bold text-green-700">
+              <div className="text-3xl font-bold text-success-dark">
                 {Object.keys(moduleBreakdown).length}
               </div>
-              <div className="text-xs text-green-600 mt-1">
+              <div className="text-xs text-success/70 mt-1">
                 Digital literacy areas assessed
               </div>
             </div>
           </div>
-        </Card>
+        </div>
 
         {/* Next Steps */}
-        <Card className="p-6 md:p-8 shadow-lg">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+        <div className="card">
+          <h2 className="text-2xl font-bold text-text-primary mb-4">
             What&apos;s Next?
           </h2>
-          <p className="text-gray-600 mb-6">
+          <p className="text-text-secondary mb-6">
             Based on your assessment, we&apos;ve identified learning modules that will help you
             grow your digital literacy skills. Start your learning journey now!
           </p>
@@ -176,7 +188,7 @@ export function AssessmentSummary({
               Go to Dashboard
             </Button>
           </div>
-        </Card>
+        </div>
       </div>
     </div>
   )

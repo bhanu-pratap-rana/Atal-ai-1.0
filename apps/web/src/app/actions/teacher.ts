@@ -7,7 +7,7 @@ import {
   ANALYTICS_WINDOW_DAYS,
   RAPID_RESPONSE_THRESHOLD_MS,
   AT_RISK_RAPID_PERCENTAGE,
-} from '@/lib/constants/auth'
+} from '@/lib/constants/analytics'
 
 // Validation schemas
 const CreateClassSchema = z.object({
@@ -30,10 +30,10 @@ export async function createClass(name: string, subject?: string) {
 
     const supabase = await createClient()
 
-    // Verify user is a teacher
+    // Verify user is a teacher (teacher_profiles uses user_id as primary key, not id)
     const { data: teacherProfile } = await supabase
       .from('teacher_profiles')
-      .select('id')
+      .select('user_id')
       .eq('user_id', user.id)
       .single()
 
@@ -75,10 +75,10 @@ export async function updateClass(classId: string, name: string, subject?: strin
 
     const supabase = await createClient()
 
-    // Verify user is a teacher
+    // Verify user is a teacher (teacher_profiles uses user_id as primary key, not id)
     const { data: teacherProfile } = await supabase
       .from('teacher_profiles')
-      .select('id')
+      .select('user_id')
       .eq('user_id', user.id)
       .single()
 
@@ -131,10 +131,10 @@ export async function deleteClass(classId: string) {
 
     const supabase = await createClient()
 
-    // Verify user is a teacher
+    // Verify user is a teacher (teacher_profiles uses user_id as primary key, not id)
     const { data: teacherProfile } = await supabase
       .from('teacher_profiles')
-      .select('id')
+      .select('user_id')
       .eq('user_id', user.id)
       .single()
 

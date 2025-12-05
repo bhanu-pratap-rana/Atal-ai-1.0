@@ -37,7 +37,7 @@ async function getTeacherData(userId: string): Promise<TeacherData> {
       .eq('teacher_id', userId)
       .order('created_at', { ascending: false })
 
-    if (error) {
+    if (error && Object.keys(error).length > 0) {
       authLogger.error('[getTeacherData] Failed to fetch classes', error)
     }
 

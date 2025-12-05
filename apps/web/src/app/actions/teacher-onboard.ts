@@ -98,11 +98,23 @@ export async function verifyEmailOtp({
     })
 
     if (error) {
-      // User-friendly error message
-      if (error.message.includes('expired') || error.message.includes('invalid')) {
+      authLogger.error('[Verify Email OTP] Supabase error', {
+        message: error.message,
+        status: error.status,
+        code: error.code
+      })
+
+      // User-friendly error messages based on error type
+      if (error.status === 406 || error.message.includes('expired') || error.message.includes('invalid') || error.message.includes('Token')) {
         return {
           success: false,
-          error: "That code didn't work. Request a new one.",
+          error: "That code didn't work or has expired. Please request a new one.",
+        }
+      }
+      if (error.message.includes('rate') || error.status === 429) {
+        return {
+          success: false,
+          error: 'Too many attempts. Please wait a few minutes before trying again.',
         }
       }
       return { success: false, error: error.message }

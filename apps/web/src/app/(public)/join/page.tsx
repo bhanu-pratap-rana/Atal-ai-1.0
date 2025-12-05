@@ -38,7 +38,7 @@ function AuthSelectionStep({
 
         <Button
           onClick={onPhoneAuth}
-          className="w-full h-14 text-base text-[17px] shadow-[0_8px_20px_rgba(255,140,66,0.35)] hover:shadow-[0_12px_28px_rgba(255,140,66,0.45)] hover:-translate-y-0.5 transition-all"
+          className="w-full h-14 text-base text-[17px] shadow-[0_8px_20px_rgba(255,126,51,0.35)] hover:shadow-[0_12px_28px_rgba(255,126,51,0.45)] hover:-translate-y-0.5 transition-all"
           variant="default"
         >
           <span className="text-xl mr-2">📱</span>
@@ -47,7 +47,7 @@ function AuthSelectionStep({
 
         <Button
           onClick={onAnonymousAuth}
-          className="w-full h-14 text-base text-[17px] border-2 hover:border-primary hover:shadow-[0_4px_12px_rgba(255,140,66,0.15)] hover:-translate-y-0.5 transition-all"
+          className="w-full h-14 text-base text-[17px] border-2 hover:border-primary hover:shadow-[0_4px_12px_rgba(255,126,51,0.15)] hover:-translate-y-0.5 transition-all"
           variant="outline"
         >
           <span className="text-xl mr-2">👤</span>
@@ -161,7 +161,7 @@ function PhoneOTPStep({
 
           <Button
             type="submit"
-            className="w-full text-[17px] shadow-[0_8px_20px_rgba(255,140,66,0.35)] hover:shadow-[0_12px_28px_rgba(255,140,66,0.45)] hover:-translate-y-0.5"
+            className="w-full text-[17px] shadow-[0_8px_20px_rgba(255,126,51,0.35)] hover:shadow-[0_12px_28px_rgba(255,126,51,0.45)] hover:-translate-y-0.5"
             disabled={stepLoading || loading || otpInput.value.length !== OTP_LENGTH}
             loading={stepLoading || loading}
           >
@@ -229,7 +229,7 @@ function PhoneOTPStep({
 
         <Button
           type="submit"
-          className="w-full text-[17px] shadow-[0_8px_20px_rgba(255,140,66,0.35)] hover:shadow-[0_12px_28px_rgba(255,140,66,0.45)] hover:-translate-y-0.5"
+          className="w-full text-[17px] shadow-[0_8px_20px_rgba(255,126,51,0.35)] hover:shadow-[0_12px_28px_rgba(255,126,51,0.45)] hover:-translate-y-0.5"
           disabled={stepLoading || loading || phoneInput.displayValue.length < PHONE_DIGIT_LENGTH}
           loading={stepLoading || loading}
         >
@@ -350,8 +350,8 @@ function JoinClassForm({
           </p>
         </div>
 
-        <div className="bg-blue-50 border-l-4 border-blue-400 p-3 rounded">
-          <p className="text-xs text-blue-800">
+        <div className="bg-info-light border-l-4 border-info p-3 rounded">
+          <p className="text-xs text-info-dark">
             <strong>📌 Note:</strong> Your teacher will verify your enrollment.
             Make sure to use the correct roll number.
           </p>
@@ -359,7 +359,7 @@ function JoinClassForm({
 
         <Button
           type="submit"
-          className="w-full text-[17px] shadow-[0_8px_20px_rgba(255,140,66,0.35)] hover:shadow-[0_12px_28px_rgba(255,140,66,0.45)] hover:-translate-y-0.5"
+          className="w-full text-[17px] shadow-[0_8px_20px_rgba(255,126,51,0.35)] hover:shadow-[0_12px_28px_rgba(255,126,51,0.45)] hover:-translate-y-0.5"
           disabled={loading || !classCode || !rollNumber || pin.length !== 4}
           loading={loading}
         >

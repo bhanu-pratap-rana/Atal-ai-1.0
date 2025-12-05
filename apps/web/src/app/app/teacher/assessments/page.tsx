@@ -12,7 +12,9 @@ export default async function TeacherAssessmentsPage() {
     redirect('/login')
   }
 
-  if (user.user_metadata?.role !== 'teacher') {
+  // Check both app_metadata (set by admin) and user_metadata for role
+  const isTeacher = user.app_metadata?.role === 'teacher' || user.user_metadata?.role === 'teacher'
+  if (!isTeacher) {
     redirect('/app/dashboard')
   }
 
@@ -44,8 +46,8 @@ export default async function TeacherAssessmentsPage() {
                 A sample multi-language pre-assessment to test basic digital literacy skills.
               </p>
               <div className="flex gap-2 mb-4">
-                <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">10 Questions</span>
-                <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">Active</span>
+                <span className="px-3 py-1 bg-primary-light text-primary-dark rounded-full text-sm">10 Questions</span>
+                <span className="px-3 py-1 bg-success-light text-success-dark rounded-full text-sm">Active</span>
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm">View</Button>

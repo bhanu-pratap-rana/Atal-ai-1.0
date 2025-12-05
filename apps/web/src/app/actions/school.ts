@@ -3,13 +3,8 @@
 import { z } from 'zod'
 import { createClient, createAdminClient, getCurrentUser } from '@/lib/supabase-server'
 import { authLogger } from '@/lib/auth-logger'
-import { BCRYPT_ROUNDS } from '@/lib/constants/auth'
 import { checkRateLimit } from '@/lib/rate-limiter-distributed'
-import bcrypt from 'bcrypt'
 
-// Validation schemas
-// SearchQuerySchema: Allow alphanumeric, spaces, and common search characters (dash, dot, apostrophe)
-// Prevent SQL injection and XSS by limiting special characters
 const SearchQuerySchema = z
   .string()
   .min(1, 'Search query required')
@@ -20,21 +15,18 @@ const StaffPinSchema = z.string().regex(/^\d{4,8}$/, 'PIN must be 4-8 digits')
 const TeacherNameSchema = z.string().min(1, 'Name required').max(100, 'Name too long').regex(/^[a-zA-Z\s'-]+$/, 'Name contains invalid characters')
 const PhoneSchema = z.string().regex(/^\+?[0-9\-\s()]{10,}$/, 'Invalid phone number format').optional()
 
-// Rate limit configuration for search endpoints
 const SEARCH_RATE_LIMIT = {
   maxTokens: 30,
   refillRate: 30 / 3600, // 30 requests per hour
   refillInterval: 1000,
 }
 
-// Rate limit configuration for teacher verification (prevents brute force)
 const VERIFY_TEACHER_RATE_LIMIT = {
   maxTokens: 5,
   refillRate: 5 / 3600, // 5 attempts per hour per IP
   refillInterval: 1000,
 }
 
-// Types
 export interface VerifyTeacherParams {
   schoolCode: string
   staffPin: string
@@ -86,10 +78,8 @@ export async function verifyTeacher({
   subject,
 }: VerifyTeacherParams): Promise<VerifyTeacherResult> {
   try {
-    // Validate inputs
     schoolCode = SchoolCodeSchema.parse(schoolCode)
     staffPin = StaffPinSchema.parse(staffPin)
-    // Validate teacherName only if provided (it's optional)
     if (teacherName) {
       teacherName = TeacherNameSchema.parse(teacherName)
     }
@@ -97,7 +87,6 @@ export async function verifyTeacher({
 
     const supabase = await createClient()
 
-    // 1. Get current user
     const {
       data: { user },
       error: userError,
@@ -107,7 +96,6 @@ export async function verifyTeacher({
       return { success: false, error: 'Not authenticated' }
     }
 
-    // 2. Apply rate limiting to prevent brute force attacks on school code + PIN
     const isAllowed = await checkRateLimit(`verify-teacher:${user.id}`, VERIFY_TEACHER_RATE_LIMIT)
     if (!isAllowed) {
       authLogger.warn('[verifyTeacher] Rate limit exceeded for user', { userId: user.id })
@@ -117,7 +105,6 @@ export async function verifyTeacher({
       }
     }
 
-    // 3. Check if user is anonymous
     const isAnonymous = user.is_anonymous || false
     if (isAnonymous) {
       return {
@@ -126,63 +113,91 @@ export async function verifyTeacher({
       }
     }
 
-    // 4. Check if user is already a teacher
-    const { data: existingTeacher } = await supabase
+    // Use admin client for all database operations to bypass RLS restrictions
+    const adminClient = await createAdminClient()
+
+    // Check if user already has a teacher profile using admin client
+    const { data: existingTeacher, error: existingTeacherError } = await adminClient
       .from('teacher_profiles')
-      .select('*')
+      .select('user_id')
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
+
+    if (existingTeacherError) {
+      authLogger.error('[verifyTeacher] Error checking existing teacher profile', existingTeacherError)
+    }
 
     if (existingTeacher) {
       return { success: false, error: 'You are already registered as a teacher' }
     }
 
-    // 5. Find school by code
-    const { data: school, error: schoolError } = await supabase
+    // Get school by code using admin client
+    const { data: school, error: schoolError } = await adminClient
       .from('schools')
-      .select('*')
+      .select('id, school_code, school_name')
       .eq('school_code', schoolCode.toUpperCase().trim())
       .single()
 
     if (schoolError || !school) {
-      // Generic error - don't reveal if school exists
-      authLogger.debug('[verifyTeacher] School code not found', { schoolCode })
+      authLogger.debug('[verifyTeacher] School code not found', { schoolCode, error: schoolError?.message })
       return {
         success: false,
-        error: 'Invalid school code or PIN. Please verify and try again.',
+        error: 'Invalid school code. Please verify and try again.',
       }
     }
 
-    // 6. Get staff credentials for this school
-    const { data: credentials, error: credError } = await supabase
-      .from('school_staff_credentials')
-      .select('pin_hash')
-      .eq('school_id', school.id)
-      .single()
+    authLogger.debug('[verifyTeacher] School found', { schoolId: school.id, schoolName: school.school_name })
 
-    // 7. Verify PIN (use bcrypt compare) - handle missing credentials gracefully
+    // Verify staff PIN using the secure RPC function
+    authLogger.debug('[verifyTeacher] Calling verify_staff_pin RPC', { schoolId: school.id, pinLength: staffPin.length })
+
+    const { data: verifyResult, error: verifyError } = await adminClient.rpc('verify_staff_pin', {
+      p_school_id: school.id,
+      p_pin: staffPin,
+    })
+
+    authLogger.debug('[verifyTeacher] PIN verification RPC response', {
+      hasData: !!verifyResult,
+      dataLength: Array.isArray(verifyResult) ? verifyResult.length : 0,
+      verifyResult: JSON.stringify(verifyResult),
+      verifyError: verifyError ? { message: verifyError.message, code: verifyError.code, details: verifyError.details } : null,
+      schoolId: school.id
+    })
+
+    // Handle RPC errors
+    if (verifyError) {
+      authLogger.error('[verifyTeacher] RPC error during PIN verification', {
+        message: verifyError.message,
+        code: verifyError.code,
+        details: verifyError.details,
+        hint: verifyError.hint
+      })
+      return {
+        success: false,
+        error: 'Unable to verify PIN. Please try again.',
+      }
+    }
+
     let pinMatch = false
-    if (!credError && credentials) {
-      pinMatch = await bcrypt.compare(staffPin, credentials.pin_hash)
+    if (verifyResult && Array.isArray(verifyResult) && verifyResult.length > 0) {
+      pinMatch = verifyResult[0].is_valid === true
+      authLogger.debug('[verifyTeacher] PIN match result', { is_valid: verifyResult[0].is_valid, pinMatch })
     } else {
-      // Even if credentials not found, use bcrypt compare with dummy hash to prevent timing attacks
-      // This prevents attackers from knowing whether credentials exist
-      await bcrypt.compare(staffPin, '$2b$10$fake.hash.to.prevent.timing.attack..........................')
+      authLogger.warn('[verifyTeacher] No PIN record found for school', { schoolId: school.id })
     }
 
     if (!pinMatch) {
-      // Generic error - don't reveal whether school exists or credentials were found
-      authLogger.warn('[verifyTeacher] Invalid credentials attempt', { schoolCode })
+      authLogger.warn('[verifyTeacher] Invalid PIN attempt', { schoolCode, schoolId: school.id, hasResult: !!verifyResult })
       return {
         success: false,
-        error: 'Invalid school code or PIN. Please verify and try again.',
+        error: 'Invalid PIN. Please verify and try again.',
       }
     }
 
-    // 8. Create teacher profile (only if teacherName is provided)
-    // If teacherName is empty, this is just a verification step
+    authLogger.info('[verifyTeacher] PIN verified successfully', { schoolId: school.id })
+
     if (teacherName && teacherName.trim()) {
-      const { error: insertError } = await supabase.from('teacher_profiles').insert({
+      const { error: insertError } = await adminClient.from('teacher_profiles').insert({
         user_id: user.id,
         school_id: school.id,
         name: teacherName,
@@ -199,29 +214,20 @@ export async function verifyTeacher({
         }
       }
 
-      // 9. Update user app_metadata to include role using Admin API
-      // This ensures the JWT reflects app_metadata.role = 'teacher' immediately
-      try {
-        const adminClient = await createAdminClient()
-        const { error: updateError } = await adminClient.auth.admin.updateUserById(
-          user.id,
-          {
-            app_metadata: {
-              role: 'teacher',
-              school_id: school.id,
-              school_code: school.school_code,
-            },
-          }
-        )
-
-        if (updateError) {
-          authLogger.warn('[verifyTeacher] Failed to update app_metadata (non-critical)', updateError)
-          // Don't fail here - profile is already created
-          // User can still function, just need to refresh session
+      // Update user app_metadata to include role using the already-initialized admin client
+      const { error: updateError } = await adminClient.auth.admin.updateUserById(
+        user.id,
+        {
+          app_metadata: {
+            role: 'teacher',
+            school_id: school.id,
+            school_code: school.school_code,
+          },
         }
-      } catch (adminError) {
-        authLogger.warn('[verifyTeacher] Admin client error (non-critical)', adminError as Error)
-        // Don't fail - profile creation succeeded
+      )
+
+      if (updateError) {
+        authLogger.warn('[verifyTeacher] Failed to update app_metadata (non-critical)', updateError)
       }
     }
 
@@ -244,16 +250,13 @@ export async function verifyTeacher({
  */
 export async function searchSchools(query: string) {
   try {
-    // Validate input
     const validatedQuery = SearchQuerySchema.parse(query)
 
-    // Get current user for rate limiting
     const user = await getCurrentUser()
     if (!user) {
       return { success: false, error: 'Unauthorized', data: [] }
     }
 
-    // Apply rate limiting per user
     const isAllowed = await checkRateLimit(`search-schools:${user.id}`, SEARCH_RATE_LIMIT)
     if (!isAllowed) {
       return { success: false, error: 'Too many search requests. Please wait a moment before trying again.', data: [] }
@@ -293,7 +296,6 @@ export async function getSchoolByCode(schoolCode: string) {
       .single()
 
     if (error || !data) {
-      // Generic error - don't expose whether school exists
       authLogger.debug('[getSchoolByCode] School lookup failed', { schoolCode })
       return { success: false, error: 'Unable to find school. Please verify your school code and try again.' }
     }
@@ -315,13 +317,11 @@ export async function getSchoolByCode(schoolCode: string) {
  */
 export async function rotateStaffPin(schoolCode: string, newPin: string) {
   try {
-    // Validate inputs
     schoolCode = SchoolCodeSchema.parse(schoolCode)
     newPin = StaffPinSchema.parse(newPin)
 
     const supabase = await createClient()
 
-    // 1. Verify caller is authenticated
     const {
       data: { user },
       error: userError,
@@ -332,18 +332,14 @@ export async function rotateStaffPin(schoolCode: string, newPin: string) {
       return { success: false, error: 'Not authenticated' }
     }
 
-    // 2. Verify user has admin or teacher role
-    // If no explicit role is set, check if user has teacher profile
     const userRole = user.app_metadata?.role
 
-    // Determine if user is authorized
     let isAuthorized = userRole === 'admin' || userRole === 'teacher'
 
-    // If no role metadata, check if user has a teacher profile
     if (!isAuthorized && !userRole) {
       const { data: teacherProfile } = await supabase
         .from('teacher_profiles')
-        .select('id, school_id')
+        .select('user_id, school_id')
         .eq('user_id', user.id)
         .single()
 
@@ -355,7 +351,6 @@ export async function rotateStaffPin(schoolCode: string, newPin: string) {
       return { success: false, error: 'Unauthorized: Teacher or Admin access required' }
     }
 
-    // 3. Validate PIN requirements (4-8 digits)
     if (!newPin || newPin.length < 4) {
       return {
         success: false,
@@ -363,7 +358,6 @@ export async function rotateStaffPin(schoolCode: string, newPin: string) {
       }
     }
 
-    // 4. Find school by code and verify authorization in one check
     let school = null
     let isAuthorizedForSchool = false
 
@@ -376,7 +370,6 @@ export async function rotateStaffPin(schoolCode: string, newPin: string) {
     if (!schoolError && schoolData) {
       school = schoolData
 
-      // 5. For non-admin users, verify they are authorized for this school
       if (userRole !== 'admin') {
         const { data: teacherProfile } = await supabase
           .from('teacher_profiles')
@@ -386,47 +379,46 @@ export async function rotateStaffPin(schoolCode: string, newPin: string) {
 
         isAuthorizedForSchool = !!(teacherProfile && school.id === teacherProfile.school_id)
       } else {
-        // Admins are always authorized
         isAuthorizedForSchool = true
       }
     }
 
-    // Return same generic error regardless of reason (school not found, not authorized, etc.)
     if (!school || !isAuthorizedForSchool) {
       if (!school) {
         authLogger.warn('[rotateStaffPin] School code not found or not provided', { schoolCode })
       } else {
         authLogger.warn('[rotateStaffPin] User not authorized for school', { userId: user.id, schoolId: school.id })
       }
-      // Generic error message - don't reveal whether school exists or user is authorized
       return {
         success: false,
         error: 'Unable to rotate PIN. Please verify your school code and try again.',
       }
     }
 
-    // 6. Generate new bcrypt hash
-    const pinHash = await bcrypt.hash(newPin, BCRYPT_ROUNDS)
+    // Use admin client to call the secure rotate_staff_pin RPC function
+    // The RLS policy only allows service_role to write to school_staff_credentials
+    const adminClient = await createAdminClient()
 
-    // 7. Upsert credentials (idempotent - updates if exists, inserts if not)
-    const { error: upsertError } = await supabase
-      .from('school_staff_credentials')
-      .upsert(
-        {
-          school_id: school.id,
-          pin_hash: pinHash,
-          rotated_at: new Date().toISOString(),
-        },
-        {
-          onConflict: 'school_id',
-        }
-      )
+    const { data: rotateResult, error: rotateError } = await adminClient.rpc('rotate_staff_pin', {
+      p_school_id: school.id,
+      p_new_pin: newPin,
+    })
 
-    if (upsertError) {
-      authLogger.error('[rotateStaffPin] Failed to upsert credentials', upsertError)
+    if (rotateError) {
+      authLogger.error('[rotateStaffPin] Failed to rotate PIN via RPC', rotateError)
       return {
         success: false,
         error: 'Failed to rotate PIN. Please try again.',
+      }
+    }
+
+    // Check RPC result
+    if (!rotateResult || !rotateResult[0]?.success) {
+      const errorMsg = rotateResult?.[0]?.error_message || 'Failed to rotate PIN'
+      authLogger.error('[rotateStaffPin] RPC rotation failed', { error: errorMsg })
+      return {
+        success: false,
+        error: errorMsg,
       }
     }
 
@@ -457,7 +449,6 @@ export async function getStaffPinRotationInfo(schoolCode: string) {
   try {
     const supabase = await createClient()
 
-    // 1. Verify caller is authenticated
     const {
       data: { user },
       error: userError,
@@ -467,7 +458,6 @@ export async function getStaffPinRotationInfo(schoolCode: string) {
       return { success: false, error: 'Not authenticated' }
     }
 
-    // 2. Find school
     const { data: school, error: schoolError } = await supabase
       .from('schools')
       .select('id, school_code, school_name')
@@ -478,7 +468,6 @@ export async function getStaffPinRotationInfo(schoolCode: string) {
       return { success: false, error: 'School not found' }
     }
 
-    // 3. Get rotation info (without pin_hash)
     const { data: credentials, error: credError } = await supabase
       .from('school_staff_credentials')
       .select('rotated_at, created_at')
@@ -518,7 +507,6 @@ export async function getStaffPinRotationInfo(schoolCode: string) {
  */
 export async function createAdminUser(email: string, password: string) {
   try {
-    // Validate inputs
     const trimmedEmail = email.trim().toLowerCase()
 
     const EmailSchema = z.string().email().max(255, 'Email too long')
@@ -527,7 +515,6 @@ export async function createAdminUser(email: string, password: string) {
     const validatedEmail = EmailSchema.parse(trimmedEmail)
     const validatedPassword = PasswordSchema.parse(password)
 
-    // Verify caller is authenticated and is admin
     const user = await getCurrentUser()
     if (!user) {
       authLogger.warn('[createAdminUser] Unauthenticated access attempt')
@@ -540,10 +527,8 @@ export async function createAdminUser(email: string, password: string) {
       return { success: false, error: 'Admin access required to create admin users' }
     }
 
-    // Use admin client to create user
     const adminClient = await createAdminClient()
 
-    // Create new auth user with admin role in metadata
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
       email: validatedEmail,
       password: validatedPassword,

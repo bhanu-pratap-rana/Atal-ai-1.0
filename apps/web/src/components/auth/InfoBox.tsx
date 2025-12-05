@@ -1,12 +1,22 @@
 import { ReactNode } from 'react'
+import { cn } from '@/lib/utils'
 
-type InfoBoxVariant = 'info' | 'warning' | 'success' | 'error'
+/**
+ * ATAL AI InfoBox Component - Jyoti Theme
+ * 
+ * STRICT RULES:
+ * - default: Uses PRIMARY-light background (#FFE8DB)
+ * - success/warning/error/info: Use semantic colors
+ */
+
+type InfoBoxVariant = 'default' | 'info' | 'warning' | 'success' | 'error'
 
 const variantStyles: Record<InfoBoxVariant, string> = {
-  info: 'bg-blue-50 border-l-4 border-blue-500 text-blue-900',
-  warning: 'bg-orange-50 border-l-4 border-orange-500 text-orange-900',
-  success: 'bg-green-50 border-l-4 border-green-500 text-green-900',
-  error: 'bg-red-50 border-l-4 border-red-500 text-red-900',
+  default: 'bg-primary-light border-l-4 border-primary text-secondary',
+  info: 'bg-info-light border-l-4 border-info text-info-dark',
+  warning: 'bg-warning-light border-l-4 border-warning text-warning-dark',
+  success: 'bg-success-light border-l-4 border-success text-success-dark',
+  error: 'bg-error-light border-l-4 border-error text-error-dark',
 }
 
 interface InfoBoxProps {
@@ -23,15 +33,22 @@ interface InfoBoxProps {
  */
 export function InfoBox({
   children,
-  variant = 'info',
+  variant = 'default',
   title,
   icon,
   className = '',
 }: InfoBoxProps) {
   return (
-    <div className={`rounded p-3 ${variantStyles[variant]} ${className}`} role="alert">
+    <div 
+      className={cn(
+        "rounded-xl p-4",
+        variantStyles[variant],
+        className
+      )} 
+      role="alert"
+    >
       <div className="flex gap-3">
-        {icon && <div className="flex-shrink-0">{icon}</div>}
+        {icon && <div className="flex-shrink-0 text-lg">{icon}</div>}
         <div className="flex-1">
           {title && <p className="font-semibold mb-1">{title}</p>}
           <p className="text-sm">{children}</p>

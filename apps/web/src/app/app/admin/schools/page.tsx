@@ -491,7 +491,7 @@ export default function AdminSchoolsPage() {
                   disabled={loading}
                   loading={loading}
                   size="sm"
-                  className="shadow-[0_4px_12px_rgba(255,140,66,0.25)]"
+                  className="shadow-[0_4px_12px_rgba(255,126,51,0.25)]"
                 >
                   <Search className="h-4 w-4" />
                 </Button>
@@ -677,7 +677,7 @@ export default function AdminSchoolsPage() {
 
               <Button
                 type="submit"
-                className="w-full shadow-[0_8px_20px_rgba(255,140,66,0.35)]"
+                className="w-full shadow-[0_8px_20px_rgba(255,126,51,0.35)]"
                 disabled={loading || newPin !== confirmPin || newPin.length < 4}
                 loading={loading}
                 size="lg"

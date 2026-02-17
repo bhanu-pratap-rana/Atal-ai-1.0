@@ -62,8 +62,7 @@ next-env.d.ts
 # Sentry Config File
 .env.sentry-build-plugin
 
-# PWA generated files (next-pwa)
-/public/sw.js
+# PWA generated files (legacy next-pwa, no longer used)
 /public/sw.js.map
 /public/workbox-*.js
 /public/workbox-*.js.map

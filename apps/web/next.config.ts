@@ -126,6 +126,20 @@ const nextConfig: NextConfig = {
             value: 'private, no-cache, must-revalidate'
           }
         ],
+      },
+      // Service worker: no-cache to ensure updates are picked up immediately
+      {
+        source: '/sw.js',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'application/javascript; charset=utf-8',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate',
+          },
+        ],
       }
     ]
   }

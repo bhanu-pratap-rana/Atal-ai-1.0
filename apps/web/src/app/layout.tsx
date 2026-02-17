@@ -8,7 +8,6 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { PageTransition } from "@/components/ui/page-transition";
 import { OfflineBanner } from "@/components/offline/OfflineBanner";
-import { BackgroundSyncInitializer } from "@/components/offline/BackgroundSyncInitializer";
 import { GlobalErrorBoundary } from "@/components/errors/GlobalErrorBoundary";
 import { LanguageProvider } from "@/lib/i18n";
 import "./globals.css";
@@ -131,7 +130,7 @@ export default function RootLayout({
         >
           <LanguageProvider>
             <GlobalErrorBoundary>
-              <BackgroundSyncInitializer />
+              {/* BackgroundSyncInitializer disabled: next-pwa is disabled for Next.js 16 compatibility */}
               <OfflineBanner position="top" />
               <main id="main-content">
                 <PageTransition>{children}</PageTransition>

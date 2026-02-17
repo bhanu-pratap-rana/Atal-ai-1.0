@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import { useCallback } from 'react'
+import { useCallback } from "react";
 
 /**
  * ATAL AI Assessment Question Pagination - Jyoti Theme
@@ -15,14 +15,20 @@ import { useCallback } from 'react'
  * - Arrow buttons to shift window
  */
 
-export type QuestionStatus = 'current' | 'answered' | 'skipped' | 'unanswered'
+export type QuestionStatus = "current" | "answered" | "skipped" | "unanswered";
+
+/** Selection state for pagination items - S2301 compliance */
+type SelectionState = "selected" | "unselected";
+
+/** Navigation state for arrow buttons - S2301 compliance */
+type NavigationState = "enabled" | "disabled";
 
 interface QuestionPaginationProps {
-  totalQuestions: number
-  currentIndex: number
-  questionStatuses: QuestionStatus[]
-  historyLength: number
-  onJumpTo: (index: number) => void
+  readonly totalQuestions: number;
+  readonly currentIndex: number;
+  readonly questionStatuses: QuestionStatus[];
+  readonly historyLength: number;
+  readonly onJumpTo: (index: number) => void;
 }
 
 export function QuestionPagination({
@@ -33,61 +39,83 @@ export function QuestionPagination({
   onJumpTo,
 }: QuestionPaginationProps) {
   // Calculate pagination window (show 5 dots at a time)
-  const WINDOW_SIZE = 5
-  const maxOffset = Math.max(0, totalQuestions - WINDOW_SIZE)
+  const WINDOW_SIZE = 5;
+  const maxOffset = Math.max(0, totalQuestions - WINDOW_SIZE);
 
   // Center the window around current question when possible
   const calculateOffset = useCallback(() => {
-    if (totalQuestions <= WINDOW_SIZE) return 0
-    const idealOffset = Math.floor(currentIndex - WINDOW_SIZE / 2)
-    return Math.max(0, Math.min(idealOffset, maxOffset))
-  }, [currentIndex, totalQuestions, maxOffset])
+    if (totalQuestions <= WINDOW_SIZE) return 0;
+    const idealOffset = Math.floor(currentIndex - WINDOW_SIZE / 2);
+    return Math.max(0, Math.min(idealOffset, maxOffset));
+  }, [currentIndex, totalQuestions, maxOffset]);
 
-  const offset = calculateOffset()
+  const offset = calculateOffset();
 
   // Get dots to display
-  const visibleDots = Array.from({ length: Math.min(WINDOW_SIZE, totalQuestions) }, (_, i) => {
-    const questionIndex = offset + i
-    return {
-      index: questionIndex,
-      status: questionStatuses[questionIndex] || 'unanswered',
-      isCurrent: questionIndex === currentIndex,
-      canJump: questionIndex < historyLength, // Can only jump within history
-    }
-  })
+  const visibleDots = Array.from(
+    { length: Math.min(WINDOW_SIZE, totalQuestions) },
+    (_, i) => {
+      const questionIndex = offset + i;
+      return {
+        index: questionIndex,
+        status: questionStatuses[questionIndex] || "unanswered",
+        isCurrent: questionIndex === currentIndex,
+        canJump: questionIndex < historyLength, // Can only jump within history
+      };
+    },
+  );
 
-  const canShiftLeft = offset > 0
-  const canShiftRight = offset < maxOffset
+  const canShiftLeft = offset > 0;
+  const canShiftRight = offset < maxOffset;
 
-  // Get status color class
-  const getStatusColor = (status: QuestionStatus, isCurrent: boolean) => {
-    if (isCurrent) return 'bg-info ring-2 ring-info ring-offset-2'
+  // Get status color class - S2301: use state parameter instead of boolean
+  const getStatusColor = (
+    status: QuestionStatus,
+    selection: SelectionState,
+  ) => {
+    if (selection === "selected")
+      return "bg-info ring-2 ring-info ring-offset-2";
     switch (status) {
-      case 'answered':
-        return 'bg-success'
-      case 'skipped':
-        return 'bg-warning'
+      case "answered":
+        return "bg-success";
+      case "skipped":
+        return "bg-warning";
       default:
-        return 'bg-border'
+        return "bg-border";
     }
-  }
+  };
 
-  // Get status label for accessibility
-  const getStatusLabel = (status: QuestionStatus, index: number, isCurrent: boolean) => {
-    const baseLabel = `Question ${index + 1}`
-    if (isCurrent) return `${baseLabel} (current)`
+  // Get status label for accessibility - S2301: use state parameter instead of boolean
+  const getStatusLabel = (
+    status: QuestionStatus,
+    index: number,
+    selection: SelectionState,
+  ) => {
+    const baseLabel = `Question ${index + 1}`;
+    if (selection === "selected") return `${baseLabel} (current)`;
     switch (status) {
-      case 'answered':
-        return `${baseLabel} (answered)`
-      case 'skipped':
-        return `${baseLabel} (skipped)`
+      case "answered":
+        return `${baseLabel} (answered)`;
+      case "skipped":
+        return `${baseLabel} (skipped)`;
       default:
-        return `${baseLabel} (not attempted)`
+        return `${baseLabel} (not attempted)`;
     }
-  }
+  };
+
+  // Get arrow button styling - S2301: use state parameter instead of boolean
+  const getArrowButtonClass = (navigation: NavigationState): string => {
+    if (navigation === "enabled") {
+      return "text-text-secondary hover:text-primary hover:bg-primary-lighter cursor-pointer";
+    }
+    return "text-text-muted cursor-not-allowed";
+  };
 
   return (
-    <div className="flex items-center justify-center gap-2" role="navigation" aria-label="Question navigation">
+    <nav
+      className="flex items-center justify-center gap-2"
+      aria-label="Question navigation"
+    >
       {/* Left Arrow */}
       <button
         type="button"
@@ -96,10 +124,7 @@ export function QuestionPagination({
         className={`
           w-8 h-8 flex items-center justify-center rounded-full
           transition-colors duration-200
-          ${canShiftLeft || currentIndex > 0
-            ? 'text-text-secondary hover:text-primary hover:bg-primary-lighter cursor-pointer'
-            : 'text-text-muted cursor-not-allowed'
-          }
+          ${getArrowButtonClass(canShiftLeft || currentIndex > 0 ? "enabled" : "disabled")}
         `}
         aria-label="Previous questions"
       >
@@ -115,31 +140,35 @@ export function QuestionPagination({
           </span>
         )}
 
-        {visibleDots.map(({ index, status, isCurrent, canJump }) => (
-          <button
-            key={index}
-            type="button"
-            onClick={() => canJump && onJumpTo(index)}
-            disabled={!canJump}
-            className={`
-              w-8 h-8 min-w-[2rem] min-h-[2rem] sm:w-10 sm:h-10 sm:min-w-[2.5rem] sm:min-h-[2.5rem]
-              rounded-full flex items-center justify-center
-              text-xs sm:text-sm font-semibold
-              transition-all duration-200
-              ${getStatusColor(status, isCurrent)}
-              ${isCurrent ? 'text-white scale-110' : 'text-white'}
-              ${canJump && !isCurrent
-                ? 'hover:scale-105 hover:ring-2 hover:ring-primary hover:ring-offset-1 cursor-pointer'
-                : ''
-              }
-              ${!canJump && !isCurrent ? 'opacity-60 cursor-default' : ''}
-            `}
-            aria-label={getStatusLabel(status, index, isCurrent)}
-            aria-current={isCurrent ? 'step' : undefined}
-          >
-            {index + 1}
-          </button>
-        ))}
+        {visibleDots.map(({ index, status, isCurrent, canJump }) => {
+          const selection: SelectionState = isCurrent ? "selected" : "unselected";
+          return (
+            <button
+              key={index}
+              type="button"
+              onClick={() => canJump && onJumpTo(index)}
+              disabled={!canJump}
+              className={`
+                min-w-[2.75rem] min-h-[2.75rem] w-8 h-8 sm:w-10 sm:h-10
+                rounded-full flex items-center justify-center
+                text-xs sm:text-sm font-semibold
+                transition-all duration-200
+                ${getStatusColor(status, selection)}
+                ${isCurrent ? "text-white scale-110" : "text-white"}
+                ${
+                  canJump && !isCurrent
+                    ? "hover:scale-105 hover:ring-2 hover:ring-primary hover:ring-offset-1 cursor-pointer"
+                    : ""
+                }
+                ${canJump || isCurrent ? "" : "opacity-60 cursor-default"}
+              `}
+              aria-label={getStatusLabel(status, index, selection)}
+              aria-current={isCurrent ? "step" : undefined}
+            >
+              {index + 1}
+            </button>
+          );
+        })}
 
         {/* Show ellipsis if there are questions after the window */}
         {offset + WINDOW_SIZE < totalQuestions && (
@@ -157,17 +186,14 @@ export function QuestionPagination({
         className={`
           w-8 h-8 flex items-center justify-center rounded-full
           transition-colors duration-200
-          ${canShiftRight || currentIndex < historyLength
-            ? 'text-text-secondary hover:text-primary hover:bg-primary-lighter cursor-pointer'
-            : 'text-text-muted cursor-not-allowed'
-          }
+          ${getArrowButtonClass(canShiftRight || currentIndex < historyLength ? "enabled" : "disabled")}
         `}
         aria-label="Next questions"
       >
         <span className="text-lg">→</span>
       </button>
-    </div>
-  )
+    </nav>
+  );
 }
 
 // Legend component for explaining the pagination colors
@@ -191,5 +217,5 @@ export function PaginationLegend() {
         <span>Not Attempted</span>
       </div>
     </div>
-  )
+  );
 }

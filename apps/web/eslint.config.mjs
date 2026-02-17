@@ -12,7 +12,27 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated/compiled files:
+    "public/sw.js",
+    "public/sw.js.map",
+    "public/**/*.js",
+    "public/**/*.js.map",
+    "dist/**",
   ]),
+  // Configure unused variables rule to ignore underscore-prefixed variables
+  {
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          destructuredArrayIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;

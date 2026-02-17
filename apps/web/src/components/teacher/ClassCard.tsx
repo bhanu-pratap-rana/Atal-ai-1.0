@@ -1,66 +1,78 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { toast } from 'sonner'
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { clientLogger } from "@/lib/client-logger";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { deleteClass, updateClass } from '@/app/actions/teacher'
+} from "@/components/ui/dialog";
+import { deleteClass, updateClass } from "@/app/actions/teacher";
 
 interface ClassCardProps {
-  classData: {
-    id: string
-    name: string
-    subject?: string
-    created_at: string
-    class_code?: string
-    join_pin?: string
-  }
+  readonly classData: {
+    readonly id: string;
+    readonly name: string;
+    readonly subject?: string;
+    readonly created_at: string;
+    readonly class_code?: string;
+    readonly join_pin?: string;
+  };
 }
 
 export function ClassCard({ classData }: ClassCardProps) {
-  const router = useRouter()
-  const [showEditDialog, setShowEditDialog] = useState(false)
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [editName, setEditName] = useState(classData.name)
-  const [editSubject, setEditSubject] = useState(classData.subject || '')
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [isUpdating, setIsUpdating] = useState(false)
+  const router = useRouter();
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [editName, setEditName] = useState(classData.name);
+  const [editSubject, setEditSubject] = useState(classData.subject || "");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  const createdDate = new Date(classData.created_at).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
+  const createdDate = new Date(classData.created_at).toLocaleDateString(
+    "en-US",
+    {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    },
+  );
 
   return (
     <>
-      <Card className="hover:shadow-lg transition-shadow">
+      <Card className="card-hover">
         <CardHeader>
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-start gap-2 flex-1">
               <span className="text-2xl">📚</span>
               <div className="flex-1">
-                <CardTitle className="text-primary">{classData.name}</CardTitle>
+                <CardTitle className="text-primary truncate">{classData.name}</CardTitle>
                 {classData.subject && (
-                  <p className="text-sm text-text-secondary mt-1">
+                  <p className="text-sm text-text-secondary mt-1 truncate">
                     📖 {classData.subject}
                   </p>
                 )}
               </div>
             </div>
           </div>
-          <CardDescription className="mt-2">Created {createdDate}</CardDescription>
+          <CardDescription className="mt-2">
+            Created {createdDate}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Class Code and PIN display - Both use primary colors for consistency */}
@@ -68,17 +80,25 @@ export function ClassCard({ classData }: ClassCardProps) {
             <div className="space-y-2">
               <div className="bg-primary-light border border-primary/20 rounded-lg p-3">
                 <p className="text-xs text-text-secondary">Class Code</p>
-                <p className="font-mono font-bold text-primary text-lg">{classData.class_code}</p>
+                <p className="font-mono font-bold text-primary text-lg">
+                  {classData.class_code}
+                </p>
               </div>
               <div className="bg-primary-lighter border border-primary/10 rounded-lg p-3">
                 <p className="text-xs text-text-secondary">Join PIN</p>
-                <p className="font-mono font-bold text-primary-dark text-lg">{classData.join_pin}</p>
+                <p className="font-mono font-bold text-primary-dark text-lg">
+                  {classData.join_pin}
+                </p>
               </div>
             </div>
           )}
 
           <div className="flex gap-2">
-            <Link href={`/app/teacher/classes/${classData.id}`} className="flex-1" aria-label={`View roster for class ${classData.name}`}>
+            <Link
+              href={`/app/teacher/classes/${classData.id}`}
+              className="flex-1"
+              aria-label={`View roster for class ${classData.name}`}
+            >
               <Button className="w-full" variant="outline" size="sm">
                 View Roster
               </Button>
@@ -114,10 +134,14 @@ export function ClassCard({ classData }: ClassCardProps) {
           <div className="space-y-4">
             {/* Edit Section - Uses primary color */}
             <div className="space-y-3 p-4 bg-primary-light rounded-lg border border-primary/20">
-              <p className="font-medium text-sm text-primary-dark">Edit Class Details</p>
+              <p className="font-medium text-sm text-primary-dark">
+                Edit Class Details
+              </p>
               <div className="space-y-3">
                 <div className="space-y-1">
-                  <Label htmlFor="edit-class-name" className="text-xs">Class Name</Label>
+                  <Label htmlFor="edit-class-name" className="text-xs">
+                    Class Name
+                  </Label>
                   <Input
                     id="edit-class-name"
                     placeholder="e.g., Class 10-A"
@@ -130,7 +154,9 @@ export function ClassCard({ classData }: ClassCardProps) {
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="edit-subject" className="text-xs">Subject</Label>
+                  <Label htmlFor="edit-subject" className="text-xs">
+                    Subject
+                  </Label>
                   <Input
                     id="edit-subject"
                     placeholder="e.g., Mathematics, English, Science"
@@ -143,20 +169,30 @@ export function ClassCard({ classData }: ClassCardProps) {
 
                 <Button
                   onClick={async () => {
-                    setIsUpdating(true)
+                    setIsUpdating(true);
                     try {
-                      const result = await updateClass(classData.id, editName, editSubject)
+                      const result = await updateClass(
+                        classData.id,
+                        editName,
+                        editSubject,
+                      );
                       if (result.success) {
-                        toast.success('Class updated successfully!')
-                        setShowEditDialog(false)
-                        router.refresh()
+                        toast.success("Class updated successfully!");
+                        setShowEditDialog(false);
+                        router.refresh();
+                      } else if ("error" in result) {
+                        toast.error(result.error || "Failed to update class");
                       } else {
-                        toast.error(result.error || 'Failed to update class')
+                        toast.error("Failed to update class");
                       }
-                    } catch {
-                      toast.error('An unexpected error occurred')
+                    } catch (error) {
+                      clientLogger.error(
+                        "[ClassCard] Failed to update class",
+                        error instanceof Error ? error : { error: String(error) },
+                      );
+                      toast.error("An unexpected error occurred");
                     } finally {
-                      setIsUpdating(false)
+                      setIsUpdating(false);
                     }
                   }}
                   disabled={isUpdating || isDeleting || !editName}
@@ -164,16 +200,19 @@ export function ClassCard({ classData }: ClassCardProps) {
                   size="sm"
                   aria-label={`Update class ${classData.name} with new details`}
                 >
-                  {isUpdating ? 'Updating...' : 'Update Class'}
+                  {isUpdating ? "Updating..." : "Update Class"}
                 </Button>
               </div>
             </div>
 
             {/* Delete Section - Uses error/destructive color */}
             <div className="space-y-3 p-4 bg-error-light rounded-lg border border-error/20">
-              <p className="font-medium text-sm text-error-dark">Delete Class</p>
+              <p className="font-medium text-sm text-error-dark">
+                Delete Class
+              </p>
               <p className="text-xs text-error">
-                This action cannot be undone. All class data will be permanently deleted.
+                This action cannot be undone. All class data will be permanently
+                deleted.
               </p>
               <Button
                 onClick={() => setShowDeleteConfirm(true)}
@@ -183,7 +222,7 @@ export function ClassCard({ classData }: ClassCardProps) {
                 size="sm"
                 aria-label={`Delete class ${classData.name}`}
               >
-                {isDeleting ? 'Deleting...' : 'Delete Class'}
+                {isDeleting ? "Deleting..." : "Delete Class"}
               </Button>
             </div>
           </div>
@@ -208,7 +247,9 @@ export function ClassCard({ classData }: ClassCardProps) {
           <DialogHeader>
             <DialogTitle>Delete Class</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete &quot;{classData.name}&quot;? This action cannot be undone. All class data will be permanently deleted.
+              Are you sure you want to delete &quot;{classData.name}&quot;? This
+              action cannot be undone. All class data will be permanently
+              deleted.
             </DialogDescription>
           </DialogHeader>
 
@@ -224,21 +265,25 @@ export function ClassCard({ classData }: ClassCardProps) {
             </Button>
             <Button
               onClick={async () => {
-                setIsDeleting(true)
+                setIsDeleting(true);
                 try {
-                  const result = await deleteClass(classData.id)
+                  const result = await deleteClass(classData.id);
                   if (result.success) {
-                    toast.success('Class deleted successfully!')
-                    setShowDeleteConfirm(false)
-                    setShowEditDialog(false)
-                    router.refresh()
+                    toast.success("Class deleted successfully!");
+                    setShowDeleteConfirm(false);
+                    setShowEditDialog(false);
+                    router.refresh();
                   } else {
-                    toast.error(result.error || 'Failed to delete class')
+                    toast.error(result.error || "Failed to delete class");
                   }
-                } catch {
-                  toast.error('An unexpected error occurred')
+                } catch (error) {
+                  clientLogger.error(
+                    "[ClassCard] Failed to delete class",
+                    error instanceof Error ? error : { error: String(error) },
+                  );
+                  toast.error("An unexpected error occurred");
                 } finally {
-                  setIsDeleting(false)
+                  setIsDeleting(false);
                 }
               }}
               disabled={isDeleting}
@@ -246,11 +291,11 @@ export function ClassCard({ classData }: ClassCardProps) {
               size="sm"
               aria-label={`Confirm deletion of class ${classData.name}`}
             >
-              {isDeleting ? 'Deleting...' : 'Delete'}
+              {isDeleting ? "Deleting..." : "Delete"}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }

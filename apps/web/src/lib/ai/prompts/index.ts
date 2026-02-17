@@ -13,4 +13,4 @@ export {
   SOCRATIC_PROMPT_EN,
   SOCRATIC_PROMPT_HI,
   SOCRATIC_PROMPT_AS,
-} from './socratic-tutor';
+} from "./socratic-tutor";

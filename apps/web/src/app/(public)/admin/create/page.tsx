@@ -1,92 +1,113 @@
-'use client'
+"use client";
+export const dynamic = "force-dynamic";
 
-import { useState, useEffect } from 'react'
-import { createAdminUser, checkAdminExists } from '@/app/actions/admin-auth'
-import { AuthCard } from '@/components/auth/AuthCard'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { AlertCircle, CheckCircle, Loader2, Eye, EyeOff, ShieldAlert } from 'lucide-react'
-import { toast } from 'sonner'
-import { FORM_TIMING } from '@/lib/constants/ui-timings'
+import { useState, useEffect } from "react";
+import { createAdminUser, checkAdminExists } from "@/app/actions/admin-auth";
+import { AuthCard } from "@/components/auth/AuthCard";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  AlertCircle,
+  CheckCircle,
+  Loader2,
+  Eye,
+  EyeOff,
+} from "lucide-react";
+import { AdminAccessDeniedState } from "@/components/admin/AdminAccessDeniedState";
+import { toast } from "sonner";
+import { FORM_TIMING } from "@/lib/constants/ui-timings";
 
 export default function CreateAdminPage() {
-  const [email, setEmail] = useState('atal.app.ai@gmail.com')
-  const [adminExists, setAdminExists] = useState<boolean | null>(null)
-  const [checkingAdmin, setCheckingAdmin] = useState(true)
+  const [email, setEmail] = useState("");
+  const [adminExists, setAdminExists] = useState<boolean | null>(null);
+  const [checkingAdmin, setCheckingAdmin] = useState(true);
 
   // Check if admin exists on mount
   useEffect(() => {
     async function checkAdmin() {
-      const result = await checkAdminExists()
-      setAdminExists(result.exists)
-      setCheckingAdmin(false)
+      const result = await checkAdminExists();
+      setAdminExists(result.exists);
+      setCheckingAdmin(false);
     }
-    checkAdmin()
-  }, [])
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+    checkAdmin();
+  }, []);
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   async function handleCreateAdmin() {
     if (!email.trim()) {
-      setMessage({ type: 'error', text: 'Please enter an email address' })
-      return
+      setMessage({ type: "error", text: "Please enter an email address" });
+      return;
     }
 
     if (!password) {
-      setMessage({ type: 'error', text: 'Please enter a password' })
-      return
+      setMessage({ type: "error", text: "Please enter a password" });
+      return;
     }
 
     if (password.length < 8) {
-      setMessage({ type: 'error', text: 'Password must be at least 8 characters' })
-      return
+      setMessage({
+        type: "error",
+        text: "Password must be at least 8 characters",
+      });
+      return;
     }
 
     if (password !== confirmPassword) {
-      setMessage({ type: 'error', text: 'Passwords do not match' })
-      return
+      setMessage({ type: "error", text: "Passwords do not match" });
+      return;
     }
 
-    setIsLoading(true)
-    setMessage(null)
+    setIsLoading(true);
+    setMessage(null);
 
     try {
-      const result = await createAdminUser(email.trim().toLowerCase(), password)
+      const result = await createAdminUser(
+        email.trim().toLowerCase(),
+        password,
+      );
 
       if (result.success) {
         setMessage({
-          type: 'success',
+          type: "success",
           text: `✓ Admin account created! Email: ${email}`,
-        })
-        toast.success(`Admin account created for ${email}`)
+        });
+        toast.success(`Admin account created for ${email}`);
 
         // Clear form
-        setEmail('atal.app.ai@gmail.com')
-        setPassword('')
-        setConfirmPassword('')
+        setEmail("atal.app.ai@gmail.com");
+        setPassword("");
+        setConfirmPassword("");
 
         // Show next steps message after brief delay
         // SECURITY: Never display passwords in messages - recommend password manager
         setTimeout(() => {
           setMessage({
-            type: 'success',
+            type: "success",
             text: `✓ You can now login at /admin/login with:\nEmail: ${email}\n\nTip: Use a password manager to securely store your credentials.`,
-          })
-        }, FORM_TIMING.nextStepsDelay)
+          });
+        }, FORM_TIMING.nextStepsDelay);
       } else {
-        setMessage({ type: 'error', text: result.error || 'Failed to create admin account' })
-        toast.error(result.error || 'Failed to create admin account')
+        setMessage({
+          type: "error",
+          text: result.error || "Failed to create admin account",
+        });
+        toast.error(result.error || "Failed to create admin account");
       }
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'An unexpected error occurred'
-      setMessage({ type: 'error', text: errorMsg })
-      toast.error(errorMsg)
+      const errorMsg =
+        error instanceof Error ? error.message : "An unexpected error occurred";
+      setMessage({ type: "error", text: errorMsg });
+      toast.error(errorMsg);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
@@ -99,68 +120,25 @@ export default function CreateAdminPage() {
           <p className="text-text-secondary">Checking system status...</p>
         </div>
       </div>
-    )
+    );
   }
 
   // Show access denied if admin already exists
   if (adminExists) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-surface via-background to-surface flex items-center justify-center p-4">
-        <div className="absolute top-4 left-4">
-          <Button
-            onClick={() => (window.location.href = '/admin/login')}
-            variant="outline"
-            size="sm"
-            className="text-sm border-primary text-primary hover:bg-primary/10"
-          >
-            ← Back to Login
-          </Button>
-        </div>
-
-        <AuthCard
-          title="Access Denied"
-          description="This page is for first-time setup only"
-        >
-          <div className="space-y-6">
-            <div className="bg-error-light border border-error/30 rounded-lg p-4">
-              <div className="flex gap-3">
-                <ShieldAlert className="w-6 h-6 text-error flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold text-error">Admin Account Already Exists</p>
-                  <p className="text-xs text-error/80 mt-1">
-                    The system already has an admin account configured. For security reasons, new admin
-                    accounts can only be created by existing super admins through the admin panel.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-surface border border-border rounded-lg p-4">
-              <p className="text-sm text-text-primary font-semibold mb-2">What to do:</p>
-              <ul className="text-xs text-text-secondary space-y-1 list-disc list-inside">
-                <li>Go to <strong>/admin/login</strong> to sign in</li>
-                <li>Contact your system administrator if you need an account</li>
-                <li>Super admins can create new admin accounts in the admin panel</li>
-              </ul>
-            </div>
-
-            <Button
-              onClick={() => (window.location.href = '/admin/login')}
-              className="w-full bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary"
-            >
-              Go to Admin Login
-            </Button>
-          </div>
-        </AuthCard>
-      </div>
-    )
+      <AdminAccessDeniedState
+        onNavigateToLogin={() => {
+          globalThis.location.href = "/admin/login";
+        }}
+      />
+    );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-surface via-background to-surface flex items-center justify-center p-4">
       <div className="absolute top-4 left-4">
         <Button
-          onClick={() => (window.location.href = '/admin/login')}
+          onClick={() => (globalThis.location.href = "/admin/login")}
           variant="outline"
           size="sm"
           className="text-sm border-primary text-primary hover:bg-primary/10"
@@ -180,8 +158,8 @@ export default function CreateAdminPage() {
               <strong>ℹ️ First Time Setup:</strong>
               <br />
               <span className="text-xs">
-                Create the first super admin account. This account will have full system access
-                and can create additional admin accounts.
+                Create the first super admin account. This account will have
+                full system access and can create additional admin accounts.
               </span>
             </p>
           </div>
@@ -213,7 +191,7 @@ export default function CreateAdminPage() {
             <div className="relative">
               <Input
                 id="admin-password"
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 placeholder="Enter secure password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -225,10 +203,16 @@ export default function CreateAdminPage() {
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text"
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showPassword ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
               </button>
             </div>
-            <p className="text-xs text-text-secondary">Use a strong, unique password</p>
+            <p className="text-xs text-text-secondary">
+              Use a strong, unique password
+            </p>
           </div>
 
           {/* Confirm Password Input */}
@@ -238,7 +222,7 @@ export default function CreateAdminPage() {
             </Label>
             <Input
               id="confirm-password"
-              type={showPassword ? 'text' : 'password'}
+              type={showPassword ? "text" : "password"}
               placeholder="Confirm password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
@@ -251,19 +235,19 @@ export default function CreateAdminPage() {
           {message && (
             <div
               className={`flex gap-3 p-4 rounded-lg border whitespace-pre-wrap ${
-                message.type === 'success'
-                  ? 'bg-success-light border-success/30'
-                  : 'bg-error-light border-error/30'
+                message.type === "success"
+                  ? "bg-success-light border-success/30"
+                  : "bg-error-light border-error/30"
               }`}
             >
-              {message.type === 'success' ? (
+              {message.type === "success" ? (
                 <CheckCircle className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
               ) : (
                 <AlertCircle className="w-5 h-5 text-error flex-shrink-0 mt-0.5" />
               )}
               <span
                 className={`text-sm ${
-                  message.type === 'success' ? 'text-success' : 'text-error'
+                  message.type === "success" ? "text-success" : "text-error"
                 }`}
               >
                 {message.text}
@@ -274,7 +258,9 @@ export default function CreateAdminPage() {
           {/* Create Button */}
           <Button
             onClick={handleCreateAdmin}
-            disabled={isLoading || !email.trim() || !password || !confirmPassword}
+            disabled={
+              isLoading || !email.trim() || !password || !confirmPassword
+            }
             className="w-full bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary"
           >
             {isLoading ? (
@@ -283,21 +269,23 @@ export default function CreateAdminPage() {
                 Creating...
               </>
             ) : (
-              'Create Admin Account'
+              "Create Admin Account"
             )}
           </Button>
 
           {/* Security Notice */}
           <div className="bg-warning-light border border-warning/30 rounded-lg p-4">
             <p className="text-xs text-warning-dark">
-              <strong>🔒 Security:</strong> Store your admin password securely. You&apos;ll need it to
-              login to the admin panel.
+              <strong>🔒 Security:</strong> Store your admin password securely.
+              You&apos;ll need it to login to the admin panel.
             </p>
           </div>
 
           {/* Instructions Box */}
           <div className="bg-surface border border-border rounded-lg p-4">
-            <p className="text-sm text-text-primary font-semibold mb-2">📋 Next Steps:</p>
+            <p className="text-sm text-text-primary font-semibold mb-2">
+              📋 Next Steps:
+            </p>
             <ol className="text-xs text-text-secondary space-y-1 list-decimal list-inside">
               <li>Create admin account with email and password</li>
               <li>Go to /admin/login</li>
@@ -308,5 +296,5 @@ export default function CreateAdminPage() {
         </div>
       </AuthCard>
     </div>
-  )
+  );
 }

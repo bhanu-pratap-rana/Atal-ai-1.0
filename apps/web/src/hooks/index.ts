@@ -11,7 +11,7 @@ export {
   type SignInTab,
   type SignUpTab,
   type PhoneOtpStep,
-} from './useAuthState';
+} from "./useAuthState";
 
 // Network Status
 export {
@@ -19,14 +19,14 @@ export {
   hasNetworkInformation,
   type NetworkStatus,
   type ConnectionType,
-} from './useNetworkStatus';
+} from "./useNetworkStatus";
 
 // Offline Sync
-export { useOfflineSync } from './useOfflineSync';
+export { useOfflineSync } from "./useOfflineSync";
 
 // Input Hooks
-export { useOTPInput, type UseOTPInputReturn } from './useOTPInput';
-export { usePhoneInput, type UsePhoneInputReturn } from './usePhoneInput';
+export { useOTPInput, type UseOTPInputReturn } from "./useOTPInput";
+export { usePhoneInput, type UsePhoneInputReturn } from "./usePhoneInput";
 
 // Form State Management
 export {
@@ -34,4 +34,37 @@ export {
   type MessageType,
   type FormMessage,
   type UseFormHandlerReturn,
-} from './useFormHandler';
+} from "./useFormHandler";
+
+// Admin Management
+export { useAdminManagement } from "./useAdminManagement";
+
+// Auth Requirement
+export { useRequireAuth } from "./useRequireAuth";
+
+// Timer
+export { useTimer, type UseTimerOptions } from "./useTimer";
+
+// PIN Management
+export { usePINManagement } from "./usePINManagement";
+
+// Teacher Onboarding
+export {
+  useTeacherOnboarding,
+  type TeacherOnboardingState,
+} from "./useTeacherOnboarding";
+
+// Dynamic Lesson
+export { useDynamicLesson } from "./useDynamicLesson";
+
+// Conversational Voice
+export { useConversationalVoice } from "./useConversationalVoice";
+
+// Toast
+export { useToast } from "./use-toast";
+
+// Offline Lesson
+export { useOfflineLesson } from "./useOfflineLesson";
+
+// PWA Installation
+export { usePWAInstall, type UsePWAInstallReturn } from "./usePWAInstall";

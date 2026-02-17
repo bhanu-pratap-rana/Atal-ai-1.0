@@ -1321,16 +1321,410 @@ FOR ALL USING ((SELECT private.has_role('admin')));
 
 # 🛠️ MCP TOOLS REFERENCE
 
-| Tool | Use For |
-|------|---------|
-| `mcp__supabase__*` | Database verification |
-| `mcp__context7__*` | Library docs lookup |
-| `Glob` | Find files by pattern |
-| `Grep` | Search code content |
-| `Read` | Read file contents |
-| `Bash` | Run build/test commands |
-| `Task(Explore)` | Explore codebase |
-| `WebSearch` | Find solutions, best practices |
+## Available MCP Servers
+
+| MCP Server | Status | Use For | Key Commands |
+|------------|--------|---------|--------------|
+| **PMD MCP** | ✅ Installed & Ready (@springsoftware/pmd-mcp@0.1.2) | Static code analysis, duplicate detection | `pmd_check`, `pmd_cpd`, `pmd_list_languages`, `pmd_list_rulesets` |
+| **SonarQube MCP** | ⚠️ Configured (network issues) | Code quality metrics, issue tracking | `issues`, `quality_gate_status`, `measures_component` |
+| **Context7 MCP** | ✅ Available | Latest library documentation | `resolve-library-id`, `get-library-docs` |
+| **Memory MCP** | ✅ Available | Knowledge graph storage | `create_entities`, `create_relations`, `search_nodes` |
+| **Sequential Thinking MCP** | ✅ Available | Complex problem solving | `sequentialthinking` |
+| **Fetch MCP** | ✅ Available | Web resource access | `fetch` |
+| **Supabase MCP** | ✅ Available | Database operations | `list_tables`, `list_migrations`, `execute_sql`, `get_advisors` |
+| **Filesystem MCP** | ✅ Available | File operations | `read_file`, `write`, `list_dir`, `glob_file_search` |
+
+## MCP Usage Guidelines
+
+### 1. PMD MCP - Static Code Analysis
+
+**Status:** ✅ Installed and Ready
+- **Package**: `@springsoftware/pmd-mcp@0.1.2` (installed globally)
+- **Java**: Java 17.0.12 (required dependency)
+- **Setup Guide**: See `PMD_MCP_SETUP_GUIDE.md` for detailed documentation
+
+**When to Use:**
+- Before committing code changes
+- When refactoring large functions
+- To detect duplicate code patterns
+- To check code quality against rulesets
+
+**Usage Examples:**
+```typescript
+// Check a TypeScript file for best practices
+pmd_check({
+  path: "apps/web/src/lib/ai/services/tutor-service.ts",
+  language_version: "ecmascript-ES2022",
+  rulesets: ["category/ecmascript/bestpractices.xml"],
+  minimum_priority: 3
+})
+
+// Find duplicate code in a directory
+pmd_cpd({
+  path: "apps/web/src/components",
+  language: "typescript",
+  minimum_tokens: 50
+})
+
+// List available languages
+pmd_list_languages()
+
+// List rulesets for a language
+pmd_list_rulesets({ language: "typescript" })
+```
+
+**Supported Languages:**
+- Static Analysis: `ecmascript`, `typescript` (via ecmascript), `java`, `python`, etc.
+- Copy-Paste Detection: `typescript`, `python`, `java`, `javascript`, etc.
+
+### 2. SonarQube MCP - Code Quality Metrics
+
+**When to Use:**
+- Get comprehensive code quality metrics
+- Track issue resolution progress
+- Check quality gate status
+- Analyze security hotspots
+
+**Usage Examples:**
+```typescript
+// Get issues for a project
+issues({
+  project_key: "Atal-AI",
+  page: 1,
+  page_size: 50,
+  severities: ["CRITICAL", "MAJOR"]
+})
+
+// Check quality gate status
+quality_gate_status({ project_key: "Atal-AI" })
+
+// Get component measures
+measures_component({
+  component: "Atal-AI:apps/web/src/lib/ai",
+  metric_keys: ["complexity", "cognitive_complexity", "code_smells"]
+})
+```
+
+**Note:** If SonarQube server is unavailable, use the CSV export at `sonarqube-export/issues.csv`.
+
+### 3. Context7 MCP - Library Documentation
+
+**When to Use:**
+- Need latest documentation for libraries (Next.js, Supabase, React, etc.)
+- Verify best practices before implementation
+- Check for breaking changes in library updates
+
+**Usage Examples:**
+```typescript
+// Resolve library ID first
+resolve_library_id({ libraryName: "vercel ai sdk" })
+
+// Get documentation
+get_library_docs({
+  context7CompatibleLibraryID: "/vercel/ai",
+  topic: "streaming",
+  page: 1
+})
+```
+
+**Common Libraries:**
+- `vercel ai sdk` → `/vercel/ai`
+- `next.js` → `/vercel/next.js`
+- `supabase` → `/supabase/supabase`
+- `react` → `/facebook/react`
+
+### 4. Memory MCP - Knowledge Graph
+
+**When to Use:**
+- Store analysis findings for future reference
+- Track code patterns and decisions
+- Build knowledge graph of codebase relationships
+
+**Usage Examples:**
+```typescript
+// Create entities
+create_entities({
+  entities: [{
+    name: "TutorService",
+    entityType: "Service",
+    observations: ["Implements Socratic tutoring", "Uses RAG for context"]
+  }]
+})
+
+// Create relations
+create_relations({
+  relations: [{
+    from: "TutorService",
+    to: "RAGService",
+    relationType: "uses"
+  }]
+})
+
+// Search nodes
+search_nodes({ query: "AI services" })
+```
+
+### 5. Sequential Thinking MCP - Problem Solving
+
+**When to Use:**
+- Complex root cause analysis
+- Multi-step problem solving
+- Planning refactoring strategies
+- Breaking down large tasks
+
+**Usage Examples:**
+```typescript
+sequentialthinking({
+  thought: "Analyzing why authentication fails...",
+  thoughtNumber: 1,
+  totalThoughts: 5,
+  nextThoughtNeeded: true
+})
+```
+
+### 6. Fetch MCP - Web Resources
+
+**When to Use:**
+- Get external documentation
+- Fetch best practices from web
+- Access API documentation
+
+**Usage Examples:**
+```typescript
+fetch({
+  url: "https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition",
+  max_length: 5000
+})
+```
+
+### 7. Supabase MCP - Database Operations
+
+**When to Use:**
+- Verify database schema
+- Check migration status
+- Run SQL queries for verification
+- Get security/performance advisors
+
+**Usage Examples:**
+```typescript
+// List tables
+list_tables()
+
+// List migrations
+list_migrations()
+
+// Execute SQL
+execute_sql({ query: "SELECT COUNT(*) FROM curriculum_content" })
+
+// Get advisors
+get_advisors()
+```
+
+### 8. Filesystem MCP - File Operations
+
+**When to Use:**
+- Read/write files
+- Search for files by pattern
+- List directory contents
+
+**Usage Examples:**
+```typescript
+// Read file
+read_file({ target_file: "apps/web/src/lib/ai/services/tutor-service.ts" })
+
+// Search files
+glob_file_search({ glob_pattern: "**/tutor-service.ts" })
+
+// List directory
+list_dir({ target_directory: "apps/web/src/lib/ai" })
+```
+
+## MCP Analysis Workflow
+
+### Standard Code Analysis Workflow:
+
+1. **Initial Scan:**
+   - Use `glob_file_search` to find relevant files
+   - Use `grep` to search for patterns
+   - Use `read_file` to examine code
+
+2. **Quality Check:**
+   - Use `pmd_check` for static analysis
+   - Use `pmd_cpd` for duplicate detection
+   - Use SonarQube `issues` for comprehensive metrics
+
+3. **Documentation Lookup:**
+   - Use `context7` for library best practices
+   - Use `fetch` for external resources
+
+4. **Knowledge Storage:**
+   - Use `memory` to store findings
+   - Use `sequentialthinking` for complex analysis
+
+5. **Verification:**
+   - Use `supabase` to verify database state
+   - Use `run_terminal_cmd` to test builds
+
+## ATAL AI - Full Code Scan Profile (Vulnerabilities, Maintainability, Performance)
+
+When you say "run full code scan according to `rule.md`", follow this exact MCP-driven workflow for the ATAL AI project:
+
+### Step 0 – Plan & Context
+- Use **Sequential Thinking MCP** to plan the scan:
+  ```typescript
+  sequentialthinking({
+    thought: "Plan a full-code scan for ATAL AI focusing on security, maintainability, and performance.",
+    thoughtNumber: 1,
+    totalThoughts: 5,
+    nextThoughtNeeded: true
+  })
+  ```
+- Use **Filesystem MCP** to confirm project roots:
+  ```typescript
+  list_dir({ target_directory: "apps/web" })
+  list_dir({ target_directory: "apps/db" })
+  ```
+
+### Step 1 – SonarQube MCP (Global Quality & Security)
+- Get current **issues** (security + reliability + maintainability):
+  ```typescript
+  issues({
+    project_key: "Atal-AI",
+    page: 1,
+    page_size: 500,
+    scopes: ["MAIN"]
+  })
+  ```
+- Check **quality gate** and high-level risk:
+  ```typescript
+  quality_gate_status({ project_key: "Atal-AI" })
+  ```
+- Pull **metrics** for hotspots (cognitive complexity, duplication, coverage):
+  ```typescript
+  measures_component({
+    component: "Atal-AI",
+    metric_keys: [
+      "bugs",
+      "vulnerabilities",
+      "code_smells",
+      "cognitive_complexity",
+      "duplicated_lines_density",
+      "coverage"
+    ]
+  })
+  ```
+- If SonarQube is unreachable, use the CSV export that already exists in this repo:
+  ```typescript
+  read_file({ target_file: "sonarqube-export/issues.csv" })
+  ```
+
+### Step 2 – PMD MCP (Static Analysis & Duplicate Code)
+- Run **ECMAScript/TypeScript** rules over the web app source:
+  ```typescript
+  pmd_check({
+    path: "apps/web/src",
+    language_version: "ecmascript-ES2022",
+    rulesets: [
+      "category/ecmascript/bestpractices.xml",
+      "category/ecmascript/errorprone.xml",
+      "category/ecmascript/codestyle.xml"
+    ],
+    minimum_priority: 3
+  })
+  ```
+- Detect **copy-paste** / duplication in UI + libs:
+  ```typescript
+  pmd_cpd({
+    path: "apps/web/src",
+    language: "typescript",
+    minimum_tokens: 50,
+    ignore_literals: true,
+    ignore_identifiers: true
+  })
+  ```
+
+### Step 3 – Supabase MCP (Schema, Security, Performance)
+- Confirm **migrations** and schema alignment:
+  ```typescript
+  list_migrations()
+  list_tables()
+  ```
+- Run **key health queries** (replace with specific checks as needed):
+  ```typescript
+  execute_sql({ query: "SELECT COUNT(*) FROM curriculum_content" })
+  execute_sql({ query: "SELECT COUNT(*) FROM student_profiles" })
+  ```
+- Get **Supabase advisors** for security/performance:
+  ```typescript
+  get_advisors()
+  ```
+
+### Step 4 – Filesystem + Grep MCP (Local Code Smell Sweep)
+- Use **glob + grep** to find high-risk patterns:
+  ```typescript
+  glob_file_search({ glob_pattern: "apps/web/src/**/*.ts" })
+  grep({
+    pattern: ": any",
+    path: "apps/web/src",
+    type: "js",
+    output_mode: "content"
+  })
+  grep({
+    pattern: "console\\.(log|warn|error)",
+    path: "apps/web/src",
+    type: "js",
+    output_mode: "content"
+  })
+  grep({
+    pattern: "catch\\s*\\(\\s*\\)\\s*\\{",
+    path: "apps/web/src",
+    type: "js",
+    output_mode: "content"
+  })
+  ```
+
+### Step 5 – Library Best Practices (Context7 MCP)
+- For any library under review (for example **Next.js**, **Supabase**, **Vercel AI SDK**), pull **latest** usage and best practices:
+  ```typescript
+  resolve_library_id({ libraryName: "next.js" })
+  get_library_docs({
+    context7CompatibleLibraryID: "/vercel/next.js",
+    topic: "app-router",
+    page: 1
+  })
+  ```
+
+### Step 6 – Aggregate Findings (Memory MCP)
+- Store the structured scan summary so the next analysis can build on it:
+  ```typescript
+  mcp_memory_create_entities({
+    entities: [{
+      name: "ATAL_AI_FULL_SCAN_YYYYMMDD",
+      entityType: "ScanRun",
+      observations: [
+        "SonarQube: 752 issues, 13 bugs, 692 code smells",
+        "PMD: duplicate UI card patterns in assessment components",
+        "Supabase advisors: RLS and index health OK, see advisor notes"
+      ]
+    }]
+  })
+  ```
+
+### Step 7 – Output & Approval
+- Present results using the **OUTPUT FORMAT** defined earlier in this file:
+  - Issue summary table
+  - Root cause analysis per major issue
+  - Proposed fix plan (grouped by security, maintainability, performance)
+- **Ask for explicit approval** before modifying any files.
+
+## MCP Best Practices
+
+1. **Always verify MCP availability** before using
+2. **Handle errors gracefully** - MCPs may be unavailable
+3. **Cache results** when possible (use Memory MCP)
+4. **Use appropriate tools** for each task (don't overuse one tool)
+5. **Document findings** in Memory MCP for future reference
+6. **Combine tools** for comprehensive analysis (e.g., PMD + SonarQube)
 
 ## 🎯 CONTEXT-AWARE ANALYSIS
 When analyzing code:

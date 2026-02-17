@@ -11,28 +11,28 @@
  * - https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Guides/Offline_and_background_operation
  */
 
-'use client';
+"use client";
 
-import { useEffect, useState, useCallback } from 'react';
-import { Wifi, WifiOff, RefreshCw, Check, AlertCircle } from 'lucide-react';
-import { useNetworkStatus } from '@/hooks/useNetworkStatus';
-import { syncQueue, type SyncStatus } from '@/lib/offline/sync-queue';
-import { Button } from '@/components/ui/button';
+import { useEffect, useState, useCallback } from "react";
+import { WifiOff, RefreshCw, AlertCircle, Check } from "lucide-react";
+import { useNetworkStatus } from "@/hooks/useNetworkStatus";
+import { Button } from "@/components/ui/button";
+import { syncQueue, type SyncStatus } from "@/lib/offline/sync-queue";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
   TooltipProvider,
-} from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 interface SyncStatusIndicatorProps {
   /** Additional CSS classes */
-  className?: string;
+  readonly className?: string;
   /** Show pending count badge */
-  showBadge?: boolean;
+  readonly showBadge?: boolean;
   /** Compact mode (icon only) */
-  compact?: boolean;
+  readonly compact?: boolean;
 }
 
 /**
@@ -41,10 +41,17 @@ interface SyncStatusIndicatorProps {
 function formatRelativeTime(timestamp: number): string {
   const seconds = Math.floor((Date.now() - timestamp) / 1000);
 
-  if (seconds < 60) return 'Just now';
+  if (seconds < 60) return "Just now";
   if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
   if (seconds < 86400) return `${Math.floor(seconds / 3600)} hr ago`;
   return `${Math.floor(seconds / 86400)} days ago`;
+}
+
+/**
+ * Get badge count display (caps at 9+)
+ */
+function getBadgeCountDisplay(count: number): string | number {
+  return count > 9 ? "9+" : count;
 }
 
 /**
@@ -97,23 +104,23 @@ export function SyncStatusIndicator({
     if (!isOnline) {
       return {
         icon: <WifiOff className="h-4 w-4" />,
-        color: 'text-error',
-        label: 'Offline - changes will sync when you reconnect',
+        color: "text-error",
+        label: "Offline - changes will sync when you reconnect",
       };
     }
 
     if (status.isSyncing || isManualSyncing) {
       return {
         icon: <RefreshCw className="h-4 w-4 animate-spin" />,
-        color: 'text-warning',
-        label: 'Syncing...',
+        color: "text-warning",
+        label: "Syncing...",
       };
     }
 
     if (status.failedCount > 0) {
       return {
         icon: <AlertCircle className="h-4 w-4" />,
-        color: 'text-error',
+        color: "text-error",
         label: `${status.failedCount} failed - tap to retry`,
       };
     }
@@ -121,23 +128,26 @@ export function SyncStatusIndicator({
     if (status.pendingCount > 0) {
       return {
         icon: <RefreshCw className="h-4 w-4" />,
-        color: 'text-warning',
+        color: "text-warning",
         label: `${status.pendingCount} pending - tap to sync`,
       };
     }
 
     return {
       icon: <Check className="h-4 w-4" />,
-      color: 'text-success',
+      color: "text-success",
       label: status.lastSyncAt
         ? `All synced (${formatRelativeTime(status.lastSyncAt)})`
-        : 'All synced',
+        : "All synced",
     };
   };
 
   const { icon, color, label } = getStatusDisplay();
   const canSync =
-    isOnline && !status.isSyncing && !isManualSyncing && status.pendingCount > 0;
+    isOnline &&
+    !status.isSyncing &&
+    !isManualSyncing &&
+    status.pendingCount > 0;
   const hasBadge = showBadge && status.pendingCount > 0 && !status.isSyncing;
 
   if (compact) {
@@ -147,14 +157,14 @@ export function SyncStatusIndicator({
           <TooltipTrigger asChild>
             <div
               className={cn(
-                'relative inline-flex items-center justify-center',
-                className
+                "relative inline-flex items-center justify-center",
+                className,
               )}
             >
               <span className={color}>{icon}</span>
               {hasBadge && (
                 <span className="absolute -top-1 -right-1 bg-warning text-warning-foreground text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-medium">
-                  {status.pendingCount > 9 ? '9+' : status.pendingCount}
+                  {getBadgeCountDisplay(status.pendingCount)}
                 </span>
               )}
             </div>
@@ -174,14 +184,14 @@ export function SyncStatusIndicator({
           <Button
             variant="ghost"
             size="sm"
-            className={cn('relative', className)}
+            className={cn("relative", className)}
             onClick={canSync ? handleManualSync : undefined}
             disabled={!canSync && status.pendingCount > 0}
           >
             <span className={color}>{icon}</span>
             {hasBadge && (
               <span className="absolute -top-1 -right-1 bg-warning text-warning-foreground text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-medium">
-                {status.pendingCount > 9 ? '9+' : status.pendingCount}
+                {status.pendingCount > 9 ? "9+" : status.pendingCount}
               </span>
             )}
           </Button>

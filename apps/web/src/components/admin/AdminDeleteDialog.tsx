@@ -1,80 +1,119 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { deleteAdminAccount } from '@/app/actions/admin-management'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { AlertCircle, CheckCircle, Loader2, X } from 'lucide-react'
-import { toast } from 'sonner'
-import { FORM_TIMING } from '@/lib/constants/ui-timings'
-import { clientLogger } from '@/lib/client-logger'
+import { useCallback, useState } from "react";
+import { deleteAdminAccount } from "@/app/actions/admin-management";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { AlertCircle, Loader2, X } from "lucide-react";
+import { FormMessage } from "@/components/ui/FormMessage";
+import { toast } from "sonner";
+import { FORM_TIMING } from "@/lib/constants/ui-timings";
+import { clientLogger } from "@/lib/client-logger";
 
 interface AdminDeleteDialogProps {
-  adminId: string
-  adminEmail: string
-  isOpen: boolean
-  onClose: () => void
-  onSuccess?: () => void
+  readonly adminId: string;
+  readonly adminEmail: string;
+  readonly isOpen: boolean;
+  readonly onClose: () => void;
+  readonly onSuccess?: () => void;
+}
+
+/**
+ * Get delete button content based on loading state
+ */
+function getDeleteButtonContent(isLoading: boolean): React.ReactNode {
+  if (isLoading) {
+    return (
+      <>
+        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+        Deleting...
+      </>
+    );
+  }
+  return "Delete Admin";
 }
 
 /**
  * AdminDeleteDialog - Modal for confirming admin account deletion
  */
-export function AdminDeleteDialog({ adminId, adminEmail, isOpen, onClose, onSuccess }: AdminDeleteDialogProps) {
-  const [emailConfirmation, setEmailConfirmation] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+export function AdminDeleteDialog({
+  adminId,
+  adminEmail,
+  isOpen,
+  onClose,
+  onSuccess,
+}: AdminDeleteDialogProps) {
+  const [emailConfirmation, setEmailConfirmation] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
-  if (!isOpen) {
-    return null
-  }
+  const isConfirmed =
+    emailConfirmation.toLowerCase() === adminEmail.toLowerCase();
 
-  const isConfirmed = emailConfirmation.toLowerCase() === adminEmail.toLowerCase()
-
-  async function handleDelete() {
+  const handleDelete = useCallback(async () => {
     if (!isConfirmed) {
-      setMessage({ type: 'error', text: 'Please enter the email address correctly' })
-      return
+      setMessage({
+        type: "error",
+        text: "Please enter the email address correctly",
+      });
+      return;
     }
 
-    setIsLoading(true)
-    setMessage(null)
+    setIsLoading(true);
+    setMessage(null);
 
     try {
-      const result = await deleteAdminAccount(adminId)
+      const result = await deleteAdminAccount(adminId);
 
       if (result.success) {
-        setMessage({ type: 'success', text: 'Admin account deleted successfully' })
-        toast.success('Admin account deleted')
+        setMessage({
+          type: "success",
+          text: "Admin account deleted successfully",
+        });
+        toast.success("Admin account deleted");
 
         setTimeout(() => {
-          setEmailConfirmation('')
-          onClose()
+          setEmailConfirmation("");
+          onClose();
           if (onSuccess) {
-            onSuccess()
+            onSuccess();
           }
-        }, FORM_TIMING.successCallback)
+        }, FORM_TIMING.successCallback);
       } else {
-        setMessage({ type: 'error', text: result.error || 'Failed to delete admin account' })
-        toast.error(result.error || 'Failed to delete admin account')
+        setMessage({
+          type: "error",
+          text: result.error || "Failed to delete admin account",
+        });
+        toast.error(result.error || "Failed to delete admin account");
       }
     } catch (error) {
-      clientLogger.error('[AdminDeleteDialog] Error deleting admin', error instanceof Error ? error : { error: String(error) })
-      const errorMsg = error instanceof Error ? error.message : 'An unexpected error occurred'
-      setMessage({ type: 'error', text: errorMsg })
-      toast.error(errorMsg)
+      clientLogger.error(
+        "[AdminDeleteDialog] Error deleting admin",
+        error instanceof Error ? error : { error: String(error) },
+      );
+      const errorMsg =
+        error instanceof Error ? error.message : "An unexpected error occurred";
+      setMessage({ type: "error", text: errorMsg });
+      toast.error(errorMsg);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  }, [isConfirmed, adminId, onClose, onSuccess]);
 
-  function handleClose() {
+  const handleClose = useCallback(() => {
     if (!isLoading) {
-      setEmailConfirmation('')
-      setMessage(null)
-      onClose()
+      setEmailConfirmation("");
+      setMessage(null);
+      onClose();
     }
+  }, [isLoading, onClose]);
+
+  if (!isOpen) {
+    return null;
   }
 
   return (
@@ -97,7 +136,8 @@ export function AdminDeleteDialog({ adminId, adminEmail, isOpen, onClose, onSucc
           <div className="flex gap-3">
             <AlertCircle className="w-5 h-5 text-error flex-shrink-0 mt-0.5" />
             <p className="text-sm text-error">
-              <strong>This action cannot be undone.</strong> All access for this admin will be permanently removed.
+              <strong>This action cannot be undone.</strong> All access for this
+              admin will be permanently removed.
             </p>
           </div>
         </div>
@@ -107,7 +147,9 @@ export function AdminDeleteDialog({ adminId, adminEmail, isOpen, onClose, onSucc
           <p className="text-sm text-text-secondary">
             To confirm deletion, please enter the admin email address:
           </p>
-          <p className="font-mono text-sm bg-surface p-2 rounded border border-border">{adminEmail}</p>
+          <p className="font-mono text-sm bg-surface p-2 rounded border border-border">
+            {adminEmail}
+          </p>
 
           <div className="space-y-2">
             <Label htmlFor="email-confirm" className="text-sm font-semibold">
@@ -127,19 +169,11 @@ export function AdminDeleteDialog({ adminId, adminEmail, isOpen, onClose, onSucc
 
         {/* Message Display */}
         {message && (
-          <div
-            className={`flex gap-3 p-3 rounded-lg border mb-4 ${
-              message.type === 'success' ? 'bg-success-light border-success/30' : 'bg-error-light border-error/30'
-            }`}
-          >
-            {message.type === 'success' ? (
-              <CheckCircle className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
-            ) : (
-              <AlertCircle className="w-5 h-5 text-error flex-shrink-0 mt-0.5" />
-            )}
-            <span className={`text-sm ${message.type === 'success' ? 'text-success' : 'text-error'}`}>
-              {message.text}
-            </span>
+          <div className="mb-4">
+            <FormMessage
+              type={message.type === "success" ? "success" : "error"}
+              text={message.text}
+            />
           </div>
         )}
 
@@ -158,17 +192,10 @@ export function AdminDeleteDialog({ adminId, adminEmail, isOpen, onClose, onSucc
             disabled={isLoading || !isConfirmed}
             className="flex-1 bg-error hover:bg-error/90"
           >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Deleting...
-              </>
-            ) : (
-              'Delete Admin'
-            )}
+            {getDeleteButtonContent(isLoading)}
           </Button>
         </div>
       </div>
     </div>
-  )
+  );
 }

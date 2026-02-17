@@ -1,86 +1,82 @@
-import { defineConfig, devices } from '@playwright/test'
-import dotenv from 'dotenv'
-import path from 'path'
+import { defineConfig, devices } from "@playwright/test";
 
-// Load environment variables from .env.local
-dotenv.config({ path: path.resolve(__dirname, '.env.local') })
-
-const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000'
+/**
+ * Playwright E2E Test Configuration
+ *
+ * Test Categories:
+ * - Smoke tests: Basic functionality
+ * - Flow tests: Complete user journeys
+ * - Comprehensive: Full feature coverage
+ */
 
 export default defineConfig({
-  testDir: './tests',
+  testDir: "./tests",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-
-  // Global setup for authentication
-  globalSetup: require.resolve('./tests/global-setup'),
-
-  // Reporter configuration
-  reporter: [
-    ['html', { open: 'never' }],
-    ['list'],
-    ...(process.env.CI ? [['github', {}] as const] : []),
-  ],
+  reporter: [["html", { open: "never" }], ["list"]],
 
   use: {
-    baseURL,
-    trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
-
-    // Default timeout for actions
-    actionTimeout: 10000,
-
-    // Navigation timeout
-    navigationTimeout: 30000,
-  },
-
-  // Timeout for each test
-  timeout: 60000,
-
-  // Expect timeout
-  expect: {
-    timeout: 10000,
+    baseURL: "http://localhost:3000",
+    trace: "on-first-retry",
+    screenshot: "only-on-failure",
+    video: "retain-on-failure",
   },
 
   projects: [
-    // Setup project for authentication
+    // Desktop browsers
     {
-      name: 'setup',
-      testMatch: /global-setup\.ts/,
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "firefox",
+      use: { ...devices["Desktop Firefox"] },
+    },
+    {
+      name: "webkit",
+      use: { ...devices["Desktop Safari"] },
     },
 
-    // Main test suite - Desktop Chrome
+    // Mobile browsers
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-      dependencies: ['setup'],
+      name: "mobile-chrome",
+      use: { ...devices["Pixel 5"] },
+    },
+    {
+      name: "mobile-safari",
+      use: { ...devices["iPhone 12"] },
     },
 
-    // Mobile testing (optional)
+    // Role-specific projects for flow tests
     {
-      name: 'mobile-chrome',
-      use: { ...devices['Pixel 5'] },
-      dependencies: ['setup'],
-      testIgnore: /admin-.*\.spec\.ts/, // Skip admin tests on mobile
+      name: "chromium-teacher",
+      use: {
+        ...devices["Desktop Chrome"],
+        storageState: "./tests/.auth/teacher.json",
+      },
     },
-
-    // Tablet testing (optional)
     {
-      name: 'tablet',
-      use: { ...devices['iPad Pro 11'] },
-      dependencies: ['setup'],
+      name: "chromium-student",
+      use: {
+        ...devices["Desktop Chrome"],
+        storageState: "./tests/.auth/student.json",
+      },
+    },
+    {
+      name: "chromium-admin",
+      use: {
+        ...devices["Desktop Chrome"],
+        storageState: "./tests/.auth/admin.json",
+      },
     },
   ],
 
   webServer: {
-    command: 'npm run dev',
-    url: baseURL,
+    command: "npm run dev",
+    url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
-    stdout: 'ignore',
-    stderr: 'pipe',
-    timeout: 120000, // 2 minutes for server startup
+    timeout: 120000,
   },
-})
+});

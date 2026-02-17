@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import { useState, useEffect, useRef } from 'react'
+import { useTimer, formatTimeMMSS } from "@/hooks/useTimer";
 
 /**
  * ATAL AI Assessment Timer - Jyoti Theme
@@ -16,77 +16,42 @@ import { useState, useEffect, useRef } from 'react'
 
 interface AssessmentTimerProps {
   /** Whether to pause the timer */
-  isPaused?: boolean
+  readonly isPaused?: boolean;
   /** Initial elapsed time in seconds (for resuming) */
-  initialSeconds?: number
+  readonly initialSeconds?: number;
   /** Callback when time updates (receives total seconds) */
-  onTimeUpdate?: (seconds: number) => void
+  readonly onTimeUpdate?: (seconds: number) => void;
   /** Custom class name for styling */
-  className?: string
+  readonly className?: string;
 }
 
 export function AssessmentTimer({
   isPaused = false,
   initialSeconds = 0,
   onTimeUpdate,
-  className = '',
+  className = "",
 }: AssessmentTimerProps) {
-  const [elapsedSeconds, setElapsedSeconds] = useState(initialSeconds)
-  const intervalRef = useRef<NodeJS.Timeout | null>(null)
-
-  // Format seconds as MM:SS
-  const formatTime = (totalSeconds: number): string => {
-    const minutes = Math.floor(totalSeconds / 60)
-    const seconds = totalSeconds % 60
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-  }
-
-  // Start/stop timer based on pause state
-  useEffect(() => {
-    if (isPaused) {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
-      }
-      return
-    }
-
-    intervalRef.current = setInterval(() => {
-      setElapsedSeconds((prev) => {
-        const newTime = prev + 1
-        onTimeUpdate?.(newTime)
-        return newTime
-      })
-    }, 1000)
-
-    // Cleanup on unmount or when paused
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
-      }
-    }
-  }, [isPaused, onTimeUpdate])
-
-  // Sync with initialSeconds when it changes
-  useEffect(() => {
-    setElapsedSeconds(initialSeconds)
-  }, [initialSeconds])
+  // Use shared timer hook (eliminates duplication)
+  const elapsedSeconds = useTimer({
+    initialSeconds,
+    isPaused,
+    onTimeUpdate,
+  });
 
   return (
     <div
       className={`inline-flex items-center gap-2 text-text-secondary ${className}`}
       role="timer"
-      aria-label={`Elapsed time: ${formatTime(elapsedSeconds)}`}
+      aria-label={`Elapsed time: ${formatTimeMMSS(elapsedSeconds)}`}
     >
       <span className="text-lg" aria-hidden="true">
         ⏱️
       </span>
       <span className="font-mono text-base font-medium tabular-nums">
-        {formatTime(elapsedSeconds)}
+        {formatTimeMMSS(elapsedSeconds)}
       </span>
     </div>
-  )
+  );
 }
 
 /**
@@ -96,52 +61,21 @@ export function CompactTimer({
   isPaused = false,
   initialSeconds = 0,
   onTimeUpdate,
-}: Omit<AssessmentTimerProps, 'className'>) {
-  const [elapsedSeconds, setElapsedSeconds] = useState(initialSeconds)
-  const intervalRef = useRef<NodeJS.Timeout | null>(null)
-
-  const formatTime = (totalSeconds: number): string => {
-    const minutes = Math.floor(totalSeconds / 60)
-    const seconds = totalSeconds % 60
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-  }
-
-  useEffect(() => {
-    if (isPaused) {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
-      }
-      return
-    }
-
-    intervalRef.current = setInterval(() => {
-      setElapsedSeconds((prev) => {
-        const newTime = prev + 1
-        onTimeUpdate?.(newTime)
-        return newTime
-      })
-    }, 1000)
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
-      }
-    }
-  }, [isPaused, onTimeUpdate])
-
-  useEffect(() => {
-    setElapsedSeconds(initialSeconds)
-  }, [initialSeconds])
+}: Readonly<Omit<AssessmentTimerProps, "className">>) {
+  // Use shared timer hook (eliminates duplication)
+  const elapsedSeconds = useTimer({
+    initialSeconds,
+    isPaused,
+    onTimeUpdate,
+  });
 
   return (
     <span
       className="text-sm font-mono font-medium text-text-tertiary tabular-nums"
       role="timer"
-      aria-label={`Elapsed time: ${formatTime(elapsedSeconds)}`}
+      aria-label={`Elapsed time: ${formatTimeMMSS(elapsedSeconds)}`}
     >
-      {formatTime(elapsedSeconds)}
+      {formatTimeMMSS(elapsedSeconds)}
     </span>
-  )
+  );
 }

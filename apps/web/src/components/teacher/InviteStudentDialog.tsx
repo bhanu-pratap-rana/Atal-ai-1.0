@@ -1,8 +1,8 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { toast } from 'sonner'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -11,87 +11,101 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { enrollStudent } from '@/app/actions/teacher'
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { enrollStudent } from "@/app/actions/teacher";
+import { clientLogger } from "@/lib/client-logger";
+import { StudentSearchResults } from "./StudentSearchResults";
 
 interface InviteStudentDialogProps {
-  classId: string
+  readonly classId: string;
 }
 
 interface StudentResult {
-  id: string
-  email: string
+  readonly id: string;
+  readonly email: string;
 }
 
 export function InviteStudentDialog({ classId }: InviteStudentDialogProps) {
-  const router = useRouter()
-  const [open, setOpen] = useState(false)
-  const [searchInput, setSearchInput] = useState('')
-  const [studentId, setStudentId] = useState('')
-  const [selectedStudent, setSelectedStudent] = useState<StudentResult | null>(null)
-  const [searchResults, setSearchResults] = useState<StudentResult[]>([])
-  const [loading, setLoading] = useState(false)
-  const [searching, setSearching] = useState(false)
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
+  const [studentId, setStudentId] = useState("");
+  const [selectedStudent, setSelectedStudent] = useState<StudentResult | null>(
+    null,
+  );
+  const [searchResults, setSearchResults] = useState<StudentResult[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searching, setSearching] = useState(false);
 
   async function handleSearch() {
     if (!searchInput.trim()) {
-      setSearchResults([])
-      return
+      setSearchResults([]);
+      return;
     }
 
-    setSearching(true)
+    setSearching(true);
     try {
       // Search for students by email or ID (using API route)
-      const response = await fetch('/api/teacher/search-students', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/teacher/search-students", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: searchInput }),
-      })
+      });
 
       if (response.ok) {
-        const { students } = await response.json()
-        setSearchResults(students)
+        const { students } = await response.json();
+        setSearchResults(students);
       } else {
-        toast.error('Failed to search students')
+        toast.error("Failed to search students");
       }
-    } catch {
-      toast.error('An error occurred while searching')
+    } catch (error) {
+      clientLogger.error(
+        "[InviteStudentDialog] Failed to search students",
+        error instanceof Error ? error : { error: String(error) },
+      );
+      toast.error("An error occurred while searching");
     } finally {
-      setSearching(false)
+      setSearching(false);
     }
   }
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!studentId) {
-      toast.error('Please select a student')
-      return
+      toast.error("Please select a student");
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
 
     try {
-      const result = await enrollStudent(classId, studentId)
+      const result = await enrollStudent(classId, studentId);
 
       if (result.success) {
-        toast.success('Student enrolled successfully!')
-        setStudentId('')
-        setSearchInput('')
-        setSelectedStudent(null)
-        setSearchResults([])
-        setOpen(false)
-        router.refresh()
+        toast.success("Student enrolled successfully!");
+        setStudentId("");
+        setSearchInput("");
+        setSelectedStudent(null);
+        setSearchResults([]);
+        setOpen(false);
+        router.refresh();
+      } else if ("error" in result) {
+        toast.error(result.error || "Failed to enroll student");
       } else {
-        toast.error(result.error || 'Failed to enroll student')
+        toast.error("Failed to enroll student");
       }
-    } catch {
-      toast.error('An unexpected error occurred')
+    } catch (error) {
+      clientLogger.error(
+        "[InviteStudentDialog] Failed to enroll student",
+        error instanceof Error ? error : { error: String(error) },
+      );
+      toast.error("An unexpected error occurred");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
@@ -100,7 +114,7 @@ export function InviteStudentDialog({ classId }: InviteStudentDialogProps) {
       <DialogTrigger asChild>
         <Button>
           <span className="mr-2">+</span>
-          Invite Student
+          <span>Invite Student</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
@@ -122,11 +136,11 @@ export function InviteStudentDialog({ classId }: InviteStudentDialogProps) {
                   placeholder="student@example.com or user ID"
                   value={searchInput}
                   onChange={(e) => {
-                    setSearchInput(e.target.value)
+                    setSearchInput(e.target.value);
                     if (e.target.value.trim()) {
-                      handleSearch()
+                      handleSearch();
                     } else {
-                      setSearchResults([])
+                      setSearchResults([]);
                     }
                   }}
                   disabled={loading || searching}
@@ -138,7 +152,7 @@ export function InviteStudentDialog({ classId }: InviteStudentDialogProps) {
                   disabled={loading || searching || !searchInput.trim()}
                   className="px-4"
                 >
-                  {searching ? '...' : 'Search'}
+                  {searching ? "..." : "Search"}
                 </Button>
               </div>
               <p className="text-xs text-text-secondary">
@@ -147,50 +161,39 @@ export function InviteStudentDialog({ classId }: InviteStudentDialogProps) {
             </div>
 
             {/* Search Results */}
-            {searchResults.length > 0 && (
-              <div className="space-y-2">
-                <Label htmlFor="student-list" className="text-sm font-medium">Select Student</Label>
-                <ul
-                  id="student-list"
-                  className="border rounded-lg space-y-1 max-h-48 overflow-y-auto"
-                  role="listbox"
-                  aria-label="Student search results"
-                >
-                  {searchResults.map((student) => (
-                    <li key={student.id} role="option">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setStudentId(student.id)
-                          setSelectedStudent(student)
-                          setSearchResults([])
-                          setSearchInput('')
-                        }}
-                        className="w-full text-left px-3 py-2 hover:bg-primary/10 border-b last:border-b-0 transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
-                        aria-label={`Select student: ${student.email} (ID: ${student.id})`}
-                      >
-                        <p className="font-medium text-sm">{student.email}</p>
-                        <p className="text-xs text-text-secondary">{student.id}</p>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            <StudentSearchResults
+              results={searchResults}
+              selectedStudent={selectedStudent}
+              onSelectStudent={(student) => {
+                setStudentId(student.id);
+                setSelectedStudent(student);
+                setSearchResults([]);
+                setSearchInput("");
+              }}
+              isLoading={loading || searching}
+            />
 
             {/* Selected Student Info */}
             {selectedStudent && (
               <div className="p-3 bg-cyan-lightest border border-cyan/30 rounded-lg">
-                <p className="text-sm font-medium text-cyan-darkest">Selected Student:</p>
-                <p className="text-sm text-cyan-darkest">{selectedStudent.email}</p>
-                <p className="text-xs text-cyan-dark mt-1">{selectedStudent.id}</p>
+                <p className="text-sm font-medium text-cyan-darkest">
+                  Selected Student:
+                </p>
+                <p className="text-sm text-cyan-darkest">
+                  {selectedStudent.email}
+                </p>
+                <p className="text-xs text-cyan-dark mt-1">
+                  {selectedStudent.id}
+                </p>
               </div>
             )}
 
             {/* Manual ID Entry */}
             {!selectedStudent && (
               <div className="space-y-2">
-                <Label htmlFor="manual-id" className="text-xs">Or enter Student ID manually</Label>
+                <Label htmlFor="manual-id" className="text-xs">
+                  Or enter Student ID manually
+                </Label>
                 <Input
                   id="manual-id"
                   placeholder="00000000-0000-0000-0000-000000000002"
@@ -208,22 +211,22 @@ export function InviteStudentDialog({ classId }: InviteStudentDialogProps) {
               type="button"
               variant="outline"
               onClick={() => {
-                setOpen(false)
-                setSearchInput('')
-                setStudentId('')
-                setSelectedStudent(null)
-                setSearchResults([])
+                setOpen(false);
+                setSearchInput("");
+                setStudentId("");
+                setSelectedStudent(null);
+                setSearchResults([]);
               }}
               disabled={loading}
             >
               Cancel
             </Button>
             <Button type="submit" disabled={loading || !studentId}>
-              {loading ? 'Enrolling...' : 'Enroll Student'}
+              {loading ? "Enrolling..." : "Enroll Student"}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

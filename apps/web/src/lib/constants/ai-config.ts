@@ -18,7 +18,7 @@ export const AI_DEFAULTS = {
   temperature: 0.7,
   /** Default max tokens for general responses */
   maxTokens: 2048,
-} as const
+} as const;
 
 /**
  * Feature-specific AI configurations
@@ -44,75 +44,76 @@ export const AI_FEATURES = {
     temperature: 0.3,
     maxTokens: 1024,
   },
-} as const
+} as const;
 
 /**
  * Provider configurations
+ *
+ * NOTE: Project uses only Google products (Gemini, Vertex AI).
+ * Groq and Ollama are kept as development/testing fallbacks.
+ * OpenAI was removed per project requirements.
  */
 export const AI_PROVIDERS = {
   gemini: {
-    name: 'Google Gemini',
-    defaultModel: 'gemini-2.5-flash-preview-05-20',
-    baseUrl: 'https://generativelanguage.googleapis.com/v1',
-    embeddingModel: 'text-embedding-004',
+    name: "Google Gemini",
+    defaultModel: "gemini-2.5-flash-preview-05-20",
+    baseUrl: "https://generativelanguage.googleapis.com/v1",
+    embeddingModel: "text-embedding-004",
     embeddingDimensions: 768,
   },
   groq: {
-    name: 'Groq',
-    defaultModel: 'llama-3.3-70b-versatile',
-    baseUrl: 'https://api.groq.com/openai/v1',
+    name: "Groq",
+    defaultModel: "llama-3.3-70b-versatile",
+    baseUrl: "https://api.groq.com/openai/v1",
   },
   ollama: {
-    name: 'Ollama',
-    defaultModel: 'cogito:14b',
-    baseUrl: 'http://localhost:11434',
+    name: "Ollama",
+    defaultModel: "cogito:14b",
+    baseUrl: "http://localhost:11434",
   },
-  openai: {
-    name: 'OpenAI',
-    defaultModel: 'gpt-4o-mini',
-    baseUrl: 'https://api.openai.com/v1',
-  },
-} as const
+  // NOTE: OpenAI removed - project uses only Google products
+} as const;
 
 /**
  * TTS (Text-to-Speech) configurations
  */
 export const TTS_CONFIG = {
   ai4bharat: {
-    name: 'AI4Bharat Indic-Parler-TTS',
-    huggingFaceUrl: 'https://api-inference.huggingface.co/models/ai4bharat/indic-parler-tts',
-    supportedLanguages: ['en', 'hi', 'as'] as const,
-    defaultVoice: 'female',
-    defaultEmotion: 'friendly',
+    name: "AI4Bharat Indic-Parler-TTS",
+    huggingFaceUrl:
+      "https://api-inference.huggingface.co/models/ai4bharat/indic-parler-tts",
+    supportedLanguages: ["en", "hi", "as"] as const,
+    defaultVoice: "female",
+    defaultEmotion: "friendly",
   },
-} as const
+} as const;
 
 /**
  * Voice recognition (STT) configurations
  */
 export const STT_CONFIG = {
   webSpeechApi: {
-    name: 'Web Speech API',
+    name: "Web Speech API",
     languageCodes: {
-      en: 'en-IN',
-      hi: 'hi-IN',
-      as: 'as-IN', // Assamese supported!
+      en: "en-IN",
+      hi: "hi-IN",
+      as: "as-IN", // Assamese supported!
     } as const,
   },
-} as const
+} as const;
 
 /**
  * Supported languages for AI responses
  */
 export const AI_LANGUAGES = {
-  en: 'English',
-  hi: 'Hindi',
-  as: 'Assamese',
-} as const
+  en: "English",
+  hi: "Hindi",
+  as: "Assamese",
+} as const;
 
 /**
  * Type definitions
  */
-export type AIProviderKey = keyof typeof AI_PROVIDERS
-export type AILanguageKey = keyof typeof AI_LANGUAGES
-export type AIFeatureKey = keyof typeof AI_FEATURES
+export type AIProviderKey = keyof typeof AI_PROVIDERS;
+export type AILanguageKey = keyof typeof AI_LANGUAGES;
+export type AIFeatureKey = keyof typeof AI_FEATURES;

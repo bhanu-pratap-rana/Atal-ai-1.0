@@ -1,18 +1,20 @@
+"use client";
+
 /**
  * Custom hook for managing OTP input state and validation
  * Consolidates OTP sanitization and validation logic
  */
 
-import { useState } from 'react'
-import { sanitizeOTP, validateOTP } from '@/lib/validation-utils'
-import { OTP_LENGTH } from '@/lib/auth-constants'
+import { useState } from "react";
+import { sanitizeOTP, validateOTP } from "@/lib/validation-utils";
+import { OTP_LENGTH } from "@/lib/auth-constants";
 
 export interface UseOTPInputReturn {
-  value: string
-  error: string | null
-  onChange: (input: string) => void
-  reset: () => void
-  isValid: () => boolean
+  value: string;
+  error: string | null;
+  onChange: (input: string) => void;
+  reset: () => void;
+  isValid: () => boolean;
 }
 
 /**
@@ -21,34 +23,34 @@ export interface UseOTPInputReturn {
  * @param initialValue - Initial OTP value (default: empty string)
  * @returns OTP state management object
  */
-export function useOTPInput(initialValue: string = ''): UseOTPInputReturn {
-  const [value, setValue] = useState(initialValue)
-  const [error, setError] = useState<string | null>(null)
+export function useOTPInput(initialValue: string = ""): UseOTPInputReturn {
+  const [value, setValue] = useState(initialValue);
+  const [error, setError] = useState<string | null>(null);
 
   const handleChange = (input: string) => {
-    const sanitized = sanitizeOTP(input)
-    setValue(sanitized)
+    const sanitized = sanitizeOTP(input);
+    setValue(sanitized);
 
     // Clear error when user starts typing correct length
     if (sanitized.length === OTP_LENGTH) {
-      setError(null)
+      setError(null);
     }
-  }
+  };
 
   const isValid = (): boolean => {
-    const validation = validateOTP(value)
+    const validation = validateOTP(value);
     if (!validation.valid) {
-      setError(validation.error || 'Invalid OTP')
-      return false
+      setError(validation.error || "Invalid OTP");
+      return false;
     }
-    setError(null)
-    return true
-  }
+    setError(null);
+    return true;
+  };
 
   const reset = () => {
-    setValue('')
-    setError(null)
-  }
+    setValue("");
+    setError(null);
+  };
 
   return {
     value,
@@ -56,5 +58,5 @@ export function useOTPInput(initialValue: string = ''): UseOTPInputReturn {
     onChange: handleChange,
     reset,
     isValid,
-  }
+  };
 }

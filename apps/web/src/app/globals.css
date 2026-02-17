@@ -72,6 +72,39 @@
   --color-secondary-lighter: #6B6560;
 
   /* ==========================================
+     RESPONSIVE SPACING TOKENS (Mobile-First)
+     ========================================== */
+  /* Page Container Padding */
+  --page-padding-x: 1rem;           /* Mobile: 16px */
+  --page-padding-y: 1.5rem;         /* Mobile: 24px */
+
+  /* Section Spacing */
+  --section-gap: 1.5rem;            /* Mobile: 24px */
+
+  /* Container Max Widths */
+  --container-sm: 640px;
+  --container-md: 768px;
+  --container-lg: 1024px;
+  --container-xl: 1280px;
+  --container-2xl: 1536px;
+
+  /* Touch Target (PWA Requirement) */
+  --touch-target-min: 2.75rem;      /* 44px - minimum for accessibility */
+
+  /* Responsive Typography */
+  --text-heading-1: 1.875rem;       /* Mobile: 30px */
+  --text-heading-2: 1.5rem;         /* Mobile: 24px */
+  --text-heading-3: 1.25rem;        /* Mobile: 20px */
+  --text-heading-4: 1.125rem;       /* Mobile: 18px */
+
+  /* Responsive Card */
+  --card-padding-responsive: 1rem;  /* Mobile: 16px */
+  --card-gap: 1rem;                 /* Mobile: 16px */
+
+  /* Grid Columns */
+  --grid-cols: 1;                   /* Mobile: single column */
+
+  /* ==========================================
      ACCENT COLOR - Gold (#FFD54F)
      Use ONLY for: Achievements, rewards, streaks,
      super admin indicators, celebrations
@@ -1166,40 +1199,16 @@ body {
 /* --------------------------------------------
    RESPONSIVE SPACING TOKENS
    Mobile base, then scale up for larger screens
+   Note: These tokens are defined in the main :root block above
+   to avoid duplicate selector warnings (SonarQube S4654)
+
+   The :root selectors below are inside @media queries which is
+   the correct CSS pattern for responsive custom properties.
+   SonarQube S4666 is a false positive for this valid CSS pattern.
    -------------------------------------------- */
-:root {
-  /* Page Container Padding */
-  --page-padding-x: 1rem;           /* Mobile: 16px */
-  --page-padding-y: 1.5rem;         /* Mobile: 24px */
-
-  /* Section Spacing */
-  --section-gap: 1.5rem;            /* Mobile: 24px */
-
-  /* Container Max Widths */
-  --container-sm: 640px;
-  --container-md: 768px;
-  --container-lg: 1024px;
-  --container-xl: 1280px;
-  --container-2xl: 1536px;
-
-  /* Touch Target (PWA Requirement) */
-  --touch-target-min: 2.75rem;      /* 44px - minimum for accessibility */
-
-  /* Responsive Typography */
-  --text-heading-1: 1.875rem;       /* Mobile: 30px */
-  --text-heading-2: 1.5rem;         /* Mobile: 24px */
-  --text-heading-3: 1.25rem;        /* Mobile: 20px */
-  --text-heading-4: 1.125rem;       /* Mobile: 18px */
-
-  /* Responsive Card */
-  --card-padding-responsive: 1rem;  /* Mobile: 16px */
-  --card-gap: 1rem;                 /* Mobile: 16px */
-
-  /* Grid Columns */
-  --grid-cols: 1;                   /* Mobile: single column */
-}
 
 /* Tablet (sm: 640px+) */
+/* stylelint-disable-next-line no-duplicate-selectors -- Intentional: responsive CSS custom properties */
 @media (min-width: 640px) {
   :root {
     --page-padding-x: 1.5rem;       /* 24px */
@@ -1710,4 +1719,32 @@ button {
 /* Keep icon boxes primary even in dark mode for consistency */
 .dark-theme .icon-box {
   background: var(--color-primary-light);
+}
+
+/* --------------------------------------------
+   MOBILE RESPONSIVENESS - OVERFLOW PREVENTION
+   -------------------------------------------- */
+/* Prevent horizontal overflow on mobile */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Additional safe area utilities for individual use */
+@supports (padding: max(0px)) {
+  .safe-top {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+
+  .safe-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .safe-left {
+    padding-left: max(1rem, env(safe-area-inset-left));
+  }
+
+  .safe-right {
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
 }

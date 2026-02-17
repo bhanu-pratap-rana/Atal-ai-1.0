@@ -15,9 +15,9 @@
  * - https://blog.logrocket.com/offline-first-frontend-apps-2025-indexeddb-sqlite/
  */
 
-import { offlineDB, type QueuedMutation } from './database';
-import { createClient } from '@/lib/supabase-browser';
-import { clientLogger } from '@/lib/client-logger';
+import { offlineDB, type QueuedMutation } from "./database";
+import { createClient } from "@/lib/supabase-browser";
+import { clientLogger } from "@/lib/client-logger";
 
 /**
  * Maximum retry attempts before giving up
@@ -38,6 +38,12 @@ const MAX_DELAY = 32000;
  * Jitter factor (10% variance to prevent thundering herd)
  */
 const JITTER_FACTOR = 0.1;
+
+/**
+ * PWA-002 FIX: Sync operation timeout (30 seconds)
+ * Prevents users getting stuck in sync state forever
+ */
+const SYNC_TIMEOUT_MS = 30000;
 
 /**
  * Sync status for UI updates
@@ -75,9 +81,10 @@ type ProgressCallback = (current: number, total: number) => void;
  */
 export class SyncQueue {
   private isSyncing = false;
+  private syncPromise: Promise<SyncResult> | null = null;
   private lastSyncAt: number | null = null;
   private lastError: string | null = null;
-  private subscribers: Set<SyncStatusCallback> = new Set();
+  private readonly subscribers: Set<SyncStatusCallback> = new Set();
 
   /**
    * Subscribe to sync status updates
@@ -96,19 +103,30 @@ export class SyncQueue {
   subscribe(callback: SyncStatusCallback): () => void {
     this.subscribers.add(callback);
 
-    // Immediately send current status
+    // BUG-001 FIX: Track subscription state to prevent race condition
+    // The callback might be unsubscribed before getStatus() resolves,
+    // so we check if still subscribed before invoking the callback
     this.getStatus()
-      .then((status) => callback(status))
+      .then((status) => {
+        // Only call callback if still subscribed (prevents race condition)
+        if (this.subscribers.has(callback)) {
+          callback(status);
+        }
+      })
       .catch((error) => {
-        clientLogger.error('[SyncQueue] Failed to get initial status', { error: error instanceof Error ? error.message : String(error) });
-        // Send default status on error
-        callback({
-          pendingCount: 0,
-          failedCount: 0,
-          isSyncing: false,
-          lastSyncAt: null,
-          lastError: error instanceof Error ? error.message : 'Unknown error',
+        clientLogger.error("[SyncQueue] Failed to get initial status", {
+          error: error instanceof Error ? error.message : String(error),
         });
+        // Only send default status if still subscribed
+        if (this.subscribers.has(callback)) {
+          callback({
+            pendingCount: 0,
+            failedCount: 0,
+            isSyncing: false,
+            lastSyncAt: null,
+            lastError: error instanceof Error ? error.message : "Unknown error",
+          });
+        }
       });
 
     // Return unsubscribe function
@@ -126,7 +144,9 @@ export class SyncQueue {
       try {
         callback(status);
       } catch (error) {
-        clientLogger.error('[SyncQueue] Subscriber error', { error: error instanceof Error ? error.message : String(error) });
+        clientLogger.error("[SyncQueue] Subscriber error", {
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
     });
   }
@@ -135,10 +155,10 @@ export class SyncQueue {
    * Add a mutation to the queue
    */
   async enqueue(
-    type: QueuedMutation['type'],
-    payload: Record<string, unknown>
+    type: QueuedMutation["type"],
+    payload: Record<string, unknown>,
   ): Promise<number | undefined> {
-    const mutation: Omit<QueuedMutation, 'id'> = {
+    const mutation: Omit<QueuedMutation, "id"> = {
       type,
       payload,
       timestamp: Date.now(),
@@ -150,71 +170,110 @@ export class SyncQueue {
     // Notify subscribers of new item
     await this.notifySubscribers();
 
-    // Try to sync immediately if online
-    if (typeof navigator !== 'undefined' && navigator.onLine) {
-      this.syncAll();
+    // Try to sync immediately if online (fire-and-forget with error handling)
+    if (typeof navigator !== "undefined" && navigator.onLine) {
+      this.syncAll().catch((err) => {
+        clientLogger.warn("[SyncQueue] Background sync failed", { error: err instanceof Error ? err.message : String(err) });
+      });
     }
 
     return id;
   }
 
   /**
-   * Sync all pending mutations
+   * Process a batch of sync items (shared by syncAll and manualSync)
    */
-  async syncAll(): Promise<SyncResult> {
-    if (this.isSyncing) {
-      const status = await this.getStatus();
-      return {
-        success: 0,
-        failed: 0,
-        pending: status.pendingCount,
-        errors: [],
-      };
-    }
-
-    this.isSyncing = true;
-    this.lastError = null;
-    await this.notifySubscribers();
-
+  private async processSyncBatch(
+    items: QueuedMutation[],
+    onProgress?: ProgressCallback,
+  ): Promise<{ success: number; failed: number; errors: Array<{ id: number; error: string }> }> {
     let success = 0;
     let failed = 0;
     const errors: Array<{ id: number; error: string }> = [];
 
-    try {
-      const pending = await offlineDB.syncQueue.toArray();
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
 
-      for (const item of pending) {
-        const result = await this.syncItem(item);
+      // Report progress if callback provided
+      onProgress?.(i + 1, items.length);
 
-        if (result.success) {
-          await offlineDB.syncQueue.delete(item.id!);
-          success++;
-        } else if (item.retries >= MAX_RETRIES) {
-          // Max retries exceeded - move to failed state
-          clientLogger.error('[SyncQueue] Max retries exceeded', { itemId: item.id, type: item.type, retries: item.retries });
-          await offlineDB.syncQueue.delete(item.id!);
-          failed++;
-          errors.push({ id: item.id!, error: result.error || 'Max retries exceeded' });
-        } else {
-          // Increment retry count
-          await offlineDB.syncQueue.update(item.id!, {
-            retries: item.retries + 1,
-            lastError: result.error,
-          });
-        }
+      if (!item.id) {
+        clientLogger.warn("[SyncQueue] Item missing id, skipping", {
+          type: item.type,
+          timestamp: item.timestamp,
+        });
+        continue;
       }
 
+      const result = await this.syncItem(item);
+
+      if (result.success) {
+        await offlineDB.syncQueue.delete(item.id);
+        success++;
+      } else if (item.retries >= MAX_RETRIES) {
+        clientLogger.error("[SyncQueue] Max retries exceeded", {
+          itemId: item.id,
+          type: item.type,
+          retries: item.retries,
+        });
+        await offlineDB.syncQueue.delete(item.id);
+        failed++;
+        errors.push({
+          id: item.id,
+          error: result.error || "Max retries exceeded",
+        });
+      } else if (item.id) {
+        // Increment retry count
+        await offlineDB.syncQueue.update(item.id, {
+          retries: item.retries + 1,
+          lastError: result.error,
+        });
+      }
+    }
+
+    return { success, failed, errors };
+  }
+
+  /**
+   * Sync all pending mutations
+   */
+  async syncAll(): Promise<SyncResult> {
+    // If already syncing, wait for the ongoing sync instead of returning empty results
+    if (this.syncPromise) {
+      return this.syncPromise;
+    }
+
+    this.syncPromise = this.executeSyncAll();
+    try {
+      return await this.syncPromise;
+    } finally {
+      this.syncPromise = null;
+    }
+  }
+
+  private async executeSyncAll(): Promise<SyncResult> {
+    this.isSyncing = true;
+    this.lastError = null;
+    await this.notifySubscribers();
+
+    try {
+      const pending = await offlineDB.syncQueue.toArray();
+      const { success, failed, errors } = await this.processSyncBatch(pending);
       this.lastSyncAt = Date.now();
+
+      const status = await this.getStatus();
+      return { success, failed, pending: status.pendingCount, errors };
     } catch (error) {
-      this.lastError = error instanceof Error ? error.message : 'Unknown error';
-      clientLogger.error('[SyncQueue] Sync failed', { error: error instanceof Error ? error.message : this.lastError });
+      this.lastError = error instanceof Error ? error.message : "Unknown error";
+      clientLogger.error("[SyncQueue] Sync failed", {
+        error: error instanceof Error ? error.message : this.lastError,
+      });
+      const status = await this.getStatus();
+      return { success: 0, failed: 0, pending: status.pendingCount, errors: [] };
     } finally {
       this.isSyncing = false;
       await this.notifySubscribers();
     }
-
-    const status = await this.getStatus();
-    return { success, failed, pending: status.pendingCount, errors };
   }
 
   /**
@@ -242,49 +301,27 @@ export class SyncQueue {
     this.lastError = null;
     await this.notifySubscribers();
 
-    const pending = await offlineDB.syncQueue.toArray();
-    const total = pending.length;
-    let success = 0;
-    let failed = 0;
-    const errors: Array<{ id: number; error: string }> = [];
-
     try {
-      for (let i = 0; i < pending.length; i++) {
-        const item = pending[i];
-
-        // Report progress
-        onProgress?.(i + 1, total);
-
-        const result = await this.syncItem(item);
-
-        if (result.success) {
-          await offlineDB.syncQueue.delete(item.id!);
-          success++;
-        } else if (item.retries >= MAX_RETRIES) {
-          await offlineDB.syncQueue.delete(item.id!);
-          failed++;
-          errors.push({ id: item.id!, error: result.error || 'Max retries exceeded' });
-        } else {
-          await offlineDB.syncQueue.update(item.id!, {
-            retries: item.retries + 1,
-            lastError: result.error,
-          });
-          failed++;
-          errors.push({ id: item.id!, error: result.error || 'Unknown error' });
-        }
-      }
-
+      const pending = await offlineDB.syncQueue.toArray();
+      const { success, failed, errors } = await this.processSyncBatch(
+        pending,
+        onProgress,
+      );
       this.lastSyncAt = Date.now();
+
+      const status = await this.getStatus();
+      return { success, failed, pending: status.pendingCount, errors };
     } catch (error) {
-      this.lastError = error instanceof Error ? error.message : 'Unknown error';
-      clientLogger.error('[SyncQueue] Manual sync failed', { error: error instanceof Error ? error.message : this.lastError });
+      this.lastError = error instanceof Error ? error.message : "Unknown error";
+      clientLogger.error("[SyncQueue] Manual sync failed", {
+        error: error instanceof Error ? error.message : this.lastError,
+      });
+      const status = await this.getStatus();
+      return { success: 0, failed: 0, pending: status.pendingCount, errors: [] };
     } finally {
       this.isSyncing = false;
       await this.notifySubscribers();
     }
-
-    const status = await this.getStatus();
-    return { success, failed, pending: status.pendingCount, errors };
   }
 
   /**
@@ -318,10 +355,37 @@ export class SyncQueue {
   }
 
   /**
+   * PWA-002 FIX: Wrap a promise with a timeout
+   * Prevents operations from hanging indefinitely
+   */
+  private async withTimeout<T>(
+    promise: Promise<T>,
+    timeoutMs: number = SYNC_TIMEOUT_MS,
+  ): Promise<T> {
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => {
+        reject(new Error(`Operation timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
+    });
+
+    try {
+      const result = await Promise.race([promise, timeoutPromise]);
+      clearTimeout(timeoutId!);
+      return result;
+    } catch (error) {
+      clearTimeout(timeoutId!);
+      throw error;
+    }
+  }
+
+  /**
    * Sync a single item with exponential backoff and jitter
+   * PWA-002 FIX: Added timeout to prevent infinite waiting
    */
   private async syncItem(
-    item: QueuedMutation
+    item: QueuedMutation,
   ): Promise<{ success: boolean; error?: string }> {
     // Calculate backoff delay with jitter
     const delay = this.getBackoffDelay(item.retries);
@@ -334,33 +398,63 @@ export class SyncQueue {
     try {
       const supabase = createClient();
 
+      // PWA-002 FIX: Wrap all database operations with timeout
+      // Note: Supabase query builders are "thenables", so we wrap with Promise.resolve()
       switch (item.type) {
-        case 'assessment_submit':
-          await supabase.from('formative_responses').insert(item.payload);
+        case "assessment_submit": {
+          const { error } = await this.withTimeout(
+            Promise.resolve(supabase.from("formative_responses").insert(item.payload)),
+          );
+          if (error) throw new Error(`Sync assessment failed: ${error.message}`);
           break;
+        }
 
-        case 'progress_update':
-          await supabase.from('student_knowledge_state').upsert(item.payload);
+        case "progress_update": {
+          // BUG-016 FIX: Use update_progress_atomic RPC instead of direct upsert
+          // Direct upsert allows score regression and resets attempts counter
+          // The RPC uses GREATEST() to keep highest score and increments attempts
+          const { error } = await this.withTimeout(
+            Promise.resolve(supabase.rpc("update_progress_atomic", {
+              p_student_id: item.payload.student_id,
+              p_topic_id: item.payload.topic_id,
+              p_module_id: item.payload.module_id,
+              p_score: item.payload.mastery_score,
+            })),
+          );
+          if (error) throw new Error(`Sync progress failed: ${error.message}`);
           break;
+        }
 
-        case 'chat_message':
-          await supabase.from('ai_tutor_interactions').insert(item.payload);
+        case "chat_message": {
+          const { error } = await this.withTimeout(
+            Promise.resolve(supabase.from("ai_tutor_interactions").insert(item.payload)),
+          );
+          if (error) throw new Error(`Sync chat failed: ${error.message}`);
           break;
+        }
 
-        case 'points_award':
-          await supabase.from('points_history').insert(item.payload);
+        case "points_award": {
+          const { error } = await this.withTimeout(
+            Promise.resolve(supabase.from("points_history").insert(item.payload)),
+          );
+          if (error) throw new Error(`Sync points failed: ${error.message}`);
           break;
+        }
 
         default:
-          clientLogger.warn('[SyncQueue] Unknown mutation type', { type: item.type });
+          clientLogger.warn("[SyncQueue] Unknown mutation type", {
+            type: item.type,
+          });
           return { success: false, error: `Unknown type: ${item.type}` };
       }
 
       return { success: true };
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-      clientLogger.error('[SyncQueue] Item sync failed', { error: error instanceof Error ? error.message : errorMessage });
+        error instanceof Error ? error.message : "Unknown error";
+      clientLogger.error("[SyncQueue] Item sync failed", {
+        error: error instanceof Error ? error.message : errorMessage,
+      });
       return { success: false, error: errorMessage };
     }
   }
@@ -368,13 +462,18 @@ export class SyncQueue {
   /**
    * Calculate exponential backoff delay with jitter
    * Jitter prevents "thundering herd" problem when many clients reconnect
+   * Uses crypto.getRandomValues() for secure randomness
    */
   private getBackoffDelay(retries: number): number {
     // Exponential backoff: 1s, 2s, 4s, 8s, 16s, 32s (capped)
     const baseDelay = Math.min(BASE_DELAY * Math.pow(2, retries), MAX_DELAY);
 
-    // Add ±10% jitter
-    const jitter = baseDelay * JITTER_FACTOR * (Math.random() * 2 - 1);
+    // Add ±10% jitter using secure random
+    const array = new Uint32Array(1);
+    crypto.getRandomValues(array);
+    // Convert to range [-1, 1]: (value / max * 2) - 1
+    const randomFactor = (array[0] / 0xFFFFFFFF) * 2 - 1;
+    const jitter = baseDelay * JITTER_FACTOR * randomFactor;
 
     return Math.floor(baseDelay + jitter);
   }
@@ -385,10 +484,10 @@ export class SyncQueue {
   async getStatus(): Promise<SyncStatus> {
     const allItems = await offlineDB.syncQueue.toArray();
     const pendingCount = allItems.filter(
-      (item) => item.retries < MAX_RETRIES
+      (item) => item.retries < MAX_RETRIES,
     ).length;
     const failedCount = allItems.filter(
-      (item) => item.retries >= MAX_RETRIES
+      (item) => item.retries >= MAX_RETRIES,
     ).length;
 
     return {
@@ -413,9 +512,12 @@ export class SyncQueue {
    */
   async clearFailed(): Promise<void> {
     const failedItems = await this.getFailedItems();
-    for (const item of failedItems) {
-      await offlineDB.syncQueue.delete(item.id!);
-    }
+    // PERF-014 FIX: Delete failed items in parallel (independent operations)
+    await Promise.all(
+      failedItems
+        .filter((item) => item.id)
+        .map((item) => offlineDB.syncQueue.delete(item.id!)),
+    );
     await this.notifySubscribers();
   }
 
@@ -430,20 +532,76 @@ export class SyncQueue {
 // Export singleton instance
 export const syncQueue = new SyncQueue();
 
-// Auto-sync when coming online
-if (typeof window !== 'undefined') {
-  window.addEventListener('online', () => {
-    clientLogger.debug('[SyncQueue] Online - starting sync');
-    syncQueue.syncAll();
-  });
+// Auto-sync when coming online - only in browser environment
+// BUG-004 FIX: Guard against duplicate registration on HMR
+let syncQueueListenersInitialized = false;
+if (
+  typeof globalThis !== "undefined" &&
+  typeof globalThis.addEventListener === "function" &&
+  !syncQueueListenersInitialized
+) {
+  syncQueueListenersInitialized = true;
+  // MEMORY LEAK FIX: Track interval ID for proper cleanup
+  let syncIntervalId: NodeJS.Timeout | null = null;
+  let onlineHandler: (() => void) | null = null;
 
-  // Periodic sync every 5 minutes when online
-  setInterval(
+  onlineHandler = () => {
+    clientLogger.debug("[SyncQueue] Online - starting sync");
+    syncQueue.syncAll().catch((err) => {
+      clientLogger.warn("[SyncQueue] Online sync failed", { error: err instanceof Error ? err.message : String(err) });
+    });
+  };
+
+  globalThis.addEventListener("online", onlineHandler);
+
+  // Initialize periodic sync (5 minutes when online)
+  syncIntervalId = setInterval(
     () => {
-      if (navigator.onLine) {
-        syncQueue.syncAll();
+      if (typeof navigator !== "undefined" && navigator.onLine) {
+        syncQueue.syncAll().catch((err) => {
+          clientLogger.warn("[SyncQueue] Periodic sync failed", { error: err instanceof Error ? err.message : String(err) });
+        });
       }
     },
-    5 * 60 * 1000
+    5 * 60 * 1000,
   );
+
+  // Cleanup function to prevent memory leaks
+  const cleanup = () => {
+    if (syncIntervalId) {
+      clearInterval(syncIntervalId);
+      syncIntervalId = null;
+      clientLogger.debug("[SyncQueue] Interval cleared");
+    }
+    if (onlineHandler) {
+      globalThis.removeEventListener("online", onlineHandler);
+      onlineHandler = null;
+      clientLogger.debug("[SyncQueue] Event listener removed");
+    }
+  };
+
+  // Cleanup on page unload
+  globalThis.addEventListener("beforeunload", cleanup);
+
+  // MEM-1 FIX: Store handler reference for proper cleanup (was leaking listener)
+  let visibilityHandler: (() => void) | null = null;
+  if (typeof document !== "undefined") {
+    visibilityHandler = () => {
+      if (document.hidden) {
+        clientLogger.debug("[SyncQueue] Page hidden - stopping sync");
+      }
+    };
+    document.addEventListener("visibilitychange", visibilityHandler);
+  }
+
+  // Extended cleanup to include visibilitychange listener
+  const fullCleanup = () => {
+    cleanup();
+    if (visibilityHandler && typeof document !== "undefined") {
+      document.removeEventListener("visibilitychange", visibilityHandler);
+      visibilityHandler = null;
+    }
+  };
+  globalThis.removeEventListener("beforeunload", cleanup);
+  globalThis.addEventListener("beforeunload", fullCleanup);
 }

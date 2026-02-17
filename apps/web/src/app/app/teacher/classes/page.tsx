@@ -1,58 +1,57 @@
-import { redirect } from 'next/navigation'
-import { createClient, getCurrentUser } from '@/lib/supabase-server'
-import { authLogger } from '@/lib/auth-logger'
-import { CreateClassDialog } from '@/components/teacher/CreateClassDialog'
-import { ClassCard } from '@/components/teacher/ClassCard'
-import { ProfileButton } from '@/components/teacher/ProfileButton'
-import { SignOutButton } from '@/components/teacher/SignOutButton'
+import { redirect } from "next/navigation";
+import { createClient, getCurrentUser } from "@/lib/supabase-server";
+import { authLogger } from "@/lib/auth-logger";
+import { CreateClassDialog } from "@/components/teacher/CreateClassDialog";
+import { ClassCard } from "@/components/teacher/ClassCard";
+import { ProfileButton } from "@/components/teacher/ProfileButton";
+import { SignOutButton } from "@/components/teacher/SignOutButton";
 
 interface Class {
-  id: string
-  name: string
-  class_code: string
-  teacher_id: string
-  created_at: string
-  [key: string]: unknown
+  id: string;
+  name: string;
+  class_code: string;
+  teacher_id: string;
+  created_at: string;
 }
 
 interface TeacherData {
-  classes: Class[]
+  classes: Class[];
 }
 
 async function getTeacherData(userId: string): Promise<TeacherData> {
   try {
-    const supabase = await createClient()
+    const supabase = await createClient();
 
-    // Fetch classes
+    // PERF-004 FIX: Select only needed columns instead of SELECT *
     const { data: classes, error } = await supabase
-      .from('classes')
-      .select('*')
-      .eq('teacher_id', userId)
-      .order('created_at', { ascending: false })
+      .from("classes")
+      .select("id, name, class_code, teacher_id, created_at")
+      .eq("teacher_id", userId)
+      .order("created_at", { ascending: false });
 
     if (error && Object.keys(error).length > 0) {
-      authLogger.error('[getTeacherData] Failed to fetch classes', error)
+      authLogger.error("[getTeacherData] Failed to fetch classes", error);
     }
 
     return {
       classes: classes || [],
-    }
+    };
   } catch (error) {
-    authLogger.error('[getTeacherData] Unexpected error', error)
+    authLogger.error("[getTeacherData] Unexpected error", error);
     return {
       classes: [],
-    }
+    };
   }
 }
 
 export default async function TeacherClassesPage() {
-  const user = await getCurrentUser()
+  const user = await getCurrentUser();
 
   if (!user) {
-    redirect('/teacher/start')
+    redirect("/teacher/start");
   }
 
-  const { classes } = await getTeacherData(user.id)
+  const { classes } = await getTeacherData(user.id);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-cream via-surface to-cyan-lightest page-layout">
@@ -80,9 +79,7 @@ export default async function TeacherClassesPage() {
             <div className="w-20 h-20 md:w-24 md:h-24 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-4xl md:text-5xl">📚</span>
             </div>
-            <h2 className="heading-2 text-text-primary mb-2">
-              No classes yet
-            </h2>
+            <h2 className="heading-2 text-text-primary mb-2">No classes yet</h2>
             <p className="text-text-secondary mb-6 text-sm md:text-base">
               Create your first class to get started
             </p>
@@ -96,5 +93,5 @@ export default async function TeacherClassesPage() {
         )}
       </div>
     </div>
-  )
+  );
 }

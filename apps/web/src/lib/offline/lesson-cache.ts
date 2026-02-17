@@ -7,18 +7,21 @@
  * - Retrieving cached lessons
  * - Managing cache storage
  *
+ * Data is fetched from the database when online, with fallback for offline.
+ *
  * Best practices from:
  * - https://developer.mozilla.org/en-US/docs/Web/API/Cache
  * - https://blog.logrocket.com/offline-first-frontend-apps-2025-indexeddb-sqlite/
  */
 
-import { offlineDB, type CachedLesson } from './database';
-import { clientLogger } from '@/lib/client-logger';
+import { offlineDB, type CachedLesson } from "./database";
+import { clientLogger } from "@/lib/client-logger";
+import { createClient as createBrowserClient } from "@/lib/supabase-browser";
 
 /**
  * Cache name for lessons (versioned for updates)
  */
-const LESSON_CACHE = 'atal-lessons-v1';
+const LESSON_CACHE = "atal-lessons-v1";
 
 /**
  * Cache expiry time (7 days in milliseconds)
@@ -28,7 +31,7 @@ const CACHE_EXPIRY = 7 * 24 * 60 * 60 * 1000;
 /**
  * Supported languages
  */
-export type Language = 'en' | 'hi' | 'as';
+export type Language = "en" | "hi" | "as";
 
 /**
  * Topic info for pre-caching
@@ -39,92 +42,109 @@ interface TopicInfo {
 }
 
 /**
- * Module topics mapping
- *
- * Topic ID format matches the ATAL curriculum document:
- * - Module 1: Units 1-3 → Topics T1.1-T3.5
- * - Module 2: Units 4-8 → Topics T4.1-T8.2
- * - Module 3: Units 9-11 → Topics T9.1-T11.2
- * - Module 4: Units 12-15 → Topics T12.1-T15.2
- * - Module 5: Units 16-19 → Topics T16.1-T19.2
- *
- * Each module has 10 topics, matching the curriculum structure.
+ * In-memory cache for topics to avoid repeated DB calls
  */
-const MODULE_TOPICS: Record<string, TopicInfo[]> = {
-  M1: [
-    { id: 'T1.1', title: 'The Four Jobs of a Computer (I→P→O→S)' },
-    { id: 'T1.2', title: 'Main Parts You See and Use' },
-    { id: 'T2.1', title: 'RAM vs Storage — Work Table vs Cupboard' },
-    { id: 'T2.2', title: 'Save Habits that Survive Power Cuts' },
-    { id: 'T2.3', title: 'Backup Basics — The Simple 3-2-1 Rule' },
-    { id: 'T3.1', title: 'What is a File? (Types & Extensions)' },
-    { id: 'T3.2', title: 'Good File Names People Understand' },
-    { id: 'T3.3', title: 'Folders that Make Sense' },
-    { id: 'T3.4', title: 'Safe Saving & Simple Backup' },
-    { id: 'T3.5', title: 'Private Info & Safe Sharing' },
-  ],
-  M2: [
-    { id: 'T4.1', title: 'Understanding the Desktop Interface' },
-    { id: 'T4.2', title: 'Window Management for Multitasking' },
-    { id: 'T5.1', title: 'Create, Copy, Move, Rename, Delete' },
-    { id: 'T5.2', title: 'File Recovery & Versions' },
-    { id: 'T6.1', title: 'Safe Installation from Trusted Sources' },
-    { id: 'T6.2', title: 'Updates, Uninstall, and App Hygiene' },
-    { id: 'T7.1', title: 'Core Protection (AV, Updates, Passwords)' },
-    { id: 'T7.2', title: 'Spotting Scams (Phishing, Pop-ups)' },
-    { id: 'T8.1', title: 'Weekly Care for a Smooth Computer' },
-    { id: 'T8.2', title: 'Step-by-Step Troubleshooting' },
-  ],
-  M3: [
-    { id: 'T9.1', title: 'What is the Internet? (Networks & Packets)' },
-    { id: 'T9.2', title: 'Ways to Connect (Wi-Fi, Mobile Data)' },
-    { id: 'T9.3', title: 'Web Addresses (URLs), Tabs & Browsers' },
-    { id: 'T9.4', title: 'Accounts, OTPs & 2-Step Verification' },
-    { id: 'T10.1', title: 'HTTPS & the Padlock' },
-    { id: 'T10.2', title: 'Spotting Online Scams & Fake Pages' },
-    { id: 'T10.3', title: 'Browser Privacy Basics' },
-    { id: 'T10.4', title: 'Safe Downloads & Files from the Web' },
-    { id: 'T11.1', title: 'Smart Keywords & Operators' },
-    { id: 'T11.2', title: 'Check If Information Is Trustworthy' },
-  ],
-  M4: [
-    { id: 'T12.1', title: 'Create & Secure an Email Account' },
-    { id: 'T12.2', title: 'Compose, Attach & Send Professionally' },
-    { id: 'T12.3', title: 'Inbox Hygiene & Simple Filters' },
-    { id: 'T13.1', title: 'Account Safety & Privacy Settings' },
-    { id: 'T13.2', title: 'Groups, Forwarding & Rumor Control' },
-    { id: 'T13.3', title: 'Backups, Device Linking & Scams' },
-    { id: 'T14.1', title: 'Join/Host Calls & Basic Controls' },
-    { id: 'T14.2', title: 'Low-Data, Low-Noise Calling Etiquette' },
-    { id: 'T15.1', title: 'Respectful Messages & Tone' },
-    { id: 'T15.2', title: 'Consent, Photos & Digital Footprints' },
-  ],
-  M5: [
-    { id: 'T16.1', title: 'Finding Official Government Services' },
-    { id: 'T16.2', title: 'Safe Digital Documents' },
-    { id: 'T16.3', title: 'Filling Forms on Shared Computers' },
-    { id: 'T17.1', title: 'UPI Basics (ID, PIN, QR, Requests)' },
-    { id: 'T17.2', title: 'Payment Scams & Safety Rules' },
-    { id: 'T17.3', title: 'Family/Shop Records & Budgeting' },
-    { id: 'T18.1', title: 'Low-Data Product Photos & Descriptions' },
-    { id: 'T18.2', title: 'Safe Selling Channels & Orders' },
-    { id: 'T19.1', title: 'Weather & Advisory with Low Data' },
-    { id: 'T19.2', title: 'Farm Records & Costing (Profit Basics)' },
-  ],
-};
+const topicsCache: Map<string, { topics: TopicInfo[]; fetchedAt: number }> = new Map();
+const TOPICS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const MAX_TOPICS_CACHE_SIZE = 50; // Prevent unbounded growth
 
 /**
- * Get topics for a module
+ * PERF-003 FIX: In-flight request deduplication
+ * Prevents multiple identical requests when called concurrently
  */
-export function getTopicsForModule(moduleId: string): TopicInfo[] {
-  return MODULE_TOPICS[moduleId] || [];
+const inFlightTopicRequests: Map<string, Promise<TopicInfo[]>> = new Map();
+
+/**
+ * Fetch topics from database for a module
+ */
+async function fetchTopicsFromDB(moduleId: string): Promise<TopicInfo[]> {
+  try {
+    const supabase = createBrowserClient();
+
+    const { data, error } = await supabase
+      .from("topics")
+      .select("id, name_en")
+      .eq("module_id", moduleId)
+      .eq("is_active", true)
+      .order("display_order");
+
+    if (error || !data) {
+      clientLogger.warn("[LessonCache] Failed to fetch topics from DB", { error, moduleId });
+      return [];
+    }
+
+    return data.map((t) => ({ id: t.id, title: t.name_en }));
+  } catch (error) {
+    clientLogger.warn("[LessonCache] Error fetching topics from DB", {
+      error: error instanceof Error ? error.message : String(error),
+      moduleId,
+    });
+    return [];
+  }
+}
+
+/**
+ * Get topics for a module (fetches from DB with in-memory caching)
+ * PERF-003 FIX: Includes request deduplication to prevent duplicate DB calls
+ */
+export async function getTopicsForModule(moduleId: string): Promise<TopicInfo[]> {
+  // Check in-memory cache first
+  const cached = topicsCache.get(moduleId);
+  if (cached && Date.now() - cached.fetchedAt < TOPICS_CACHE_TTL) {
+    return cached.topics;
+  }
+
+  // PERF-003 FIX: Check if there's already an in-flight request for this module
+  const inFlight = inFlightTopicRequests.get(moduleId);
+  if (inFlight) {
+    return inFlight;
+  }
+
+  // Create new request promise and track it
+  const requestPromise = (async () => {
+    try {
+      const topics = await fetchTopicsFromDB(moduleId);
+
+      if (topics.length > 0) {
+        // Cache the result
+        // Evict oldest entry if at capacity to prevent unbounded memory growth
+        if (topicsCache.size >= MAX_TOPICS_CACHE_SIZE) {
+          const oldestKey = topicsCache.keys().next().value;
+          if (oldestKey) topicsCache.delete(oldestKey);
+        }
+        topicsCache.set(moduleId, { topics, fetchedAt: Date.now() });
+        return topics;
+      }
+
+      // Return empty array if no topics found (database might not be seeded yet)
+      clientLogger.warn("[LessonCache] No topics found for module", { moduleId });
+      return [];
+    } finally {
+      // Always clean up the in-flight tracker
+      inFlightTopicRequests.delete(moduleId);
+    }
+  })();
+
+  // Track the in-flight request
+  inFlightTopicRequests.set(moduleId, requestPromise);
+
+  return requestPromise;
+}
+
+/**
+ * Sync version for immediate use (uses cached data if available)
+ * Falls back to empty array if no cache exists
+ */
+export function getTopicsForModuleSync(moduleId: string): TopicInfo[] {
+  const cached = topicsCache.get(moduleId);
+  return cached?.topics || [];
 }
 
 /**
  * Check if Cache API is available
  */
 export function isCacheApiAvailable(): boolean {
-  return typeof window !== 'undefined' && 'caches' in window;
+  return typeof globalThis !== "undefined" && "caches" in globalThis;
 }
 
 /**
@@ -140,22 +160,50 @@ export function isCacheApiAvailable(): boolean {
  */
 export async function preCacheLessons(
   moduleId: string,
-  language: Language
+  language: Language,
 ): Promise<{ cached: number; failed: number }> {
-  const topics = getTopicsForModule(moduleId);
+  // Fetch topics from database
+  const topics = await getTopicsForModule(moduleId);
+
+  if (topics.length === 0) {
+    clientLogger.warn("[LessonCache] No topics to cache for module", { moduleId });
+    return { cached: 0, failed: 0 };
+  }
+
   let cached = 0;
   let failed = 0;
+  // BUG-008 FIX: Track which topics failed for debugging/retry
+  const failedTopics: string[] = [];
 
-  for (const topic of topics) {
-    const success = await preCacheLesson(moduleId, topic.id, language);
-    if (success) {
+  // PERF-014 FIX: Cache all topics in parallel (independent operations)
+  const results = await Promise.allSettled(
+    topics.map((topic) => preCacheLesson(moduleId, topic.id, language)),
+  );
+
+  for (let i = 0; i < results.length; i++) {
+    const result = results[i];
+    if (result.status === "fulfilled" && result.value) {
       cached++;
     } else {
       failed++;
+      failedTopics.push(topics[i].id);
+      if (result.status === "rejected") {
+        // BUG-008 FIX: Handle exceptions in individual topic caching
+        clientLogger.warn("[LessonCache] Exception caching topic", {
+          topicId: topics[i].id,
+          error: result.reason instanceof Error ? result.reason.message : String(result.reason),
+        });
+      }
     }
   }
 
-  clientLogger.debug('[LessonCache] Pre-cached lessons', { cached, total: topics.length, moduleId });
+  clientLogger.debug("[LessonCache] Pre-cached lessons", {
+    cached,
+    failed,
+    total: topics.length,
+    moduleId,
+    failedTopics: failedTopics.length > 0 ? failedTopics : undefined,
+  });
   return { cached, failed };
 }
 
@@ -165,7 +213,7 @@ export async function preCacheLessons(
 export async function preCacheLesson(
   moduleId: string,
   topicId: string,
-  language: Language
+  language: Language,
 ): Promise<boolean> {
   if (!isCacheApiAvailable()) {
     // Fall back to IndexedDB
@@ -182,16 +230,27 @@ export async function preCacheLesson(
       return true;
     }
 
-    // Fetch and cache
+    // Fetch and cache with expiry metadata
     const response = await fetch(url);
     if (response.ok) {
-      await cache.put(url, response.clone());
+      // Add x-cached-at header for expiry checking on reads
+      const headers = new Headers(response.headers);
+      headers.set("x-cached-at", String(Date.now()));
+      const cachedResponse = new Response(response.clone().body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers,
+      });
+      await cache.put(url, cachedResponse);
       return true;
     }
 
     return false;
   } catch (error) {
-    clientLogger.warn('[LessonCache] Failed to cache lesson', { topicId, error: error instanceof Error ? error.message : String(error) });
+    clientLogger.warn("[LessonCache] Failed to cache lesson", {
+      topicId,
+      error: error instanceof Error ? error.message : String(error),
+    });
     return false;
   }
 }
@@ -202,7 +261,7 @@ export async function preCacheLesson(
 async function preCacheLessonToIndexedDB(
   moduleId: string,
   topicId: string,
-  language: Language
+  language: Language,
 ): Promise<boolean> {
   try {
     // Check if already cached
@@ -213,7 +272,7 @@ async function preCacheLessonToIndexedDB(
 
     // Fetch lesson content
     const response = await fetch(
-      `/api/lessons/${moduleId}/${topicId}?lang=${language}`
+      `/api/lessons/${moduleId}/${topicId}?lang=${language}`,
     );
     if (!response.ok) return false;
 
@@ -232,7 +291,10 @@ async function preCacheLessonToIndexedDB(
     await offlineDB.lessons.put(cachedLesson);
     return true;
   } catch (error) {
-    clientLogger.warn('[LessonCache] IndexedDB cache failed', { topicId, error: error instanceof Error ? error.message : String(error) });
+    clientLogger.warn("[LessonCache] IndexedDB cache failed", {
+      topicId,
+      error: error instanceof Error ? error.message : String(error),
+    });
     return false;
   }
 }
@@ -243,12 +305,12 @@ async function preCacheLessonToIndexedDB(
 export async function isLessonCached(
   moduleId: string,
   topicId: string,
-  language?: Language
+  language?: Language,
 ): Promise<boolean> {
   // Check Cache API first
   if (isCacheApiAvailable()) {
     const cache = await caches.open(LESSON_CACHE);
-    const languages = language ? [language] : ['en', 'hi', 'as'];
+    const languages = language ? [language] : ["en", "hi", "as"];
 
     for (const lang of languages) {
       const url = `/api/lessons/${moduleId}/${topicId}?lang=${lang}`;
@@ -272,8 +334,8 @@ export async function isLessonCached(
 export async function getCachedLesson(
   moduleId: string,
   topicId: string,
-  language: Language
-): Promise<CachedLesson['content'] | null> {
+  language: Language,
+): Promise<CachedLesson["content"] | null> {
   // Try Cache API first
   if (isCacheApiAvailable()) {
     try {
@@ -282,21 +344,37 @@ export async function getCachedLesson(
       const response = await cache.match(url);
 
       if (response) {
+        // Check expiry via custom header (set when caching)
+        const cachedAt = response.headers.get("x-cached-at");
+        const CACHE_API_TTL = 24 * 60 * 60 * 1000; // 24 hours
+        if (cachedAt && Date.now() - parseInt(cachedAt, 10) > CACHE_API_TTL) {
+          // Expired - remove stale entry
+          await cache.delete(url);
+          return null;
+        }
         return response.json();
       }
     } catch (error) {
-      clientLogger.warn('[LessonCache] Cache API read failed', { error: error instanceof Error ? error.message : String(error) });
+      clientLogger.warn("[LessonCache] Cache API read failed", {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
   // Try IndexedDB
   try {
     const cached = await offlineDB.lessons.get(topicId);
-    if (cached && cached.expires_at > Date.now() && cached.language === language) {
+    if (
+      cached &&
+      cached.expires_at > Date.now() &&
+      cached.language === language
+    ) {
       return cached.content;
     }
   } catch (error) {
-    clientLogger.warn('[LessonCache] IndexedDB read failed', { error: error instanceof Error ? error.message : String(error) });
+    clientLogger.warn("[LessonCache] IndexedDB read failed", {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 
   return null;
@@ -306,18 +384,20 @@ export async function getCachedLesson(
  * Get all cached lessons for a module
  */
 export async function getCachedLessonsForModule(
-  moduleId: string
+  moduleId: string,
 ): Promise<CachedLesson[]> {
   try {
     const lessons = await offlineDB.lessons
-      .where('module_id')
+      .where("module_id")
       .equals(moduleId)
       .filter((lesson) => lesson.expires_at > Date.now())
       .toArray();
 
     return lessons;
   } catch (error) {
-    clientLogger.warn('[LessonCache] Failed to get cached lessons', { error: error instanceof Error ? error.message : String(error) });
+    clientLogger.warn("[LessonCache] Failed to get cached lessons", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return [];
   }
 }
@@ -360,18 +440,21 @@ export async function clearModuleCache(moduleId: string): Promise<number> {
       const cache = await caches.open(LESSON_CACHE);
       const requests = await cache.keys();
 
-      for (const request of requests) {
-        if (request.url.includes(`/api/lessons/${moduleId}/`)) {
-          await cache.delete(request);
-        }
-      }
+      // PERF-014 FIX: Delete cache entries in parallel (independent operations)
+      await Promise.all(
+        requests
+          .filter((request) => request.url.includes(`/api/lessons/${moduleId}/`))
+          .map((request) => cache.delete(request)),
+      );
     } catch (error) {
-      clientLogger.warn('[LessonCache] Cache API clear failed', { error: error instanceof Error ? error.message : String(error) });
+      clientLogger.warn("[LessonCache] Cache API clear failed", {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
   // Clear from IndexedDB
-  return offlineDB.lessons.where('module_id').equals(moduleId).delete();
+  return offlineDB.lessons.where("module_id").equals(moduleId).delete();
 }
 
 /**
@@ -386,7 +469,7 @@ export async function clearAllLessonCache(): Promise<void> {
   // Clear IndexedDB
   await offlineDB.lessons.clear();
 
-  clientLogger.debug('[LessonCache] All caches cleared');
+  clientLogger.debug("[LessonCache] All caches cleared");
 }
 
 /**
@@ -394,5 +477,5 @@ export async function clearAllLessonCache(): Promise<void> {
  */
 export async function clearExpiredLessons(): Promise<number> {
   const now = Date.now();
-  return offlineDB.lessons.where('expires_at').below(now).delete();
+  return offlineDB.lessons.where("expires_at").below(now).delete();
 }

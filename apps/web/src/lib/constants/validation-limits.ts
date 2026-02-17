@@ -33,9 +33,9 @@ export const AI_CONTENT_LIMITS = {
   contentMinLength: 100,
   /** Maximum content length for summarization */
   contentMaxLength: 15000,
-  /** Maximum text length for TTS */
-  ttsMaxLength: 1000,
-} as const
+  /** Maximum text length for TTS (matches Google Cloud TTS service limit) */
+  ttsMaxLength: 5000,
+} as const;
 
 /**
  * User Profile Field Limits
@@ -50,7 +50,7 @@ export const PROFILE_LIMITS = {
   emailMaxLength: 255,
   /** Maximum roll number length */
   rollNumberMaxLength: 50,
-} as const
+} as const;
 
 /**
  * School & Class Field Limits
@@ -64,7 +64,7 @@ export const SCHOOL_LIMITS = {
   subjectMaxLength: 100,
   /** Maximum search query length */
   searchQueryMaxLength: 100,
-} as const
+} as const;
 
 /**
  * Assessment & Response Limits
@@ -80,7 +80,7 @@ export const ASSESSMENT_LIMITS = {
   optionIdMaxLength: 100,
   /** Maximum responses per submission */
   responsesMaxCount: 1000,
-} as const
+} as const;
 
 /**
  * Database Query Limits
@@ -93,7 +93,7 @@ export const QUERY_LIMITS = {
   searchResultsMax: 100,
   /** Default pagination page size */
   paginationDefault: 25,
-} as const
+} as const;
 
 /**
  * PIN Generation Limits
@@ -106,14 +106,14 @@ export const PIN_LIMITS = {
   max: 9999,
   /** PIN length in digits */
   length: 4,
-} as const
+} as const;
 
 /**
  * Type exports for TypeScript
  */
-export type AIContentLimitKey = keyof typeof AI_CONTENT_LIMITS
-export type ProfileLimitKey = keyof typeof PROFILE_LIMITS
-export type SchoolLimitKey = keyof typeof SCHOOL_LIMITS
-export type AssessmentLimitKey = keyof typeof ASSESSMENT_LIMITS
-export type QueryLimitKey = keyof typeof QUERY_LIMITS
-export type PINLimitKey = keyof typeof PIN_LIMITS
+export type AIContentLimitKey = keyof typeof AI_CONTENT_LIMITS;
+export type ProfileLimitKey = keyof typeof PROFILE_LIMITS;
+export type SchoolLimitKey = keyof typeof SCHOOL_LIMITS;
+export type AssessmentLimitKey = keyof typeof ASSESSMENT_LIMITS;
+export type QueryLimitKey = keyof typeof QUERY_LIMITS;
+export type PINLimitKey = keyof typeof PIN_LIMITS;

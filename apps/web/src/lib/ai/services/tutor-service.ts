@@ -43,24 +43,42 @@
  * See: /src/lib/offline/mutation-queue.ts for sync implementation.
  */
 
-import { streamText, generateText, CoreMessage } from 'ai';
-import { getAIModel, MODEL_CONFIGS } from '../providers';
-import { CurriculumRAGService, ragService } from './rag-service';
-import { AdaptiveLearningService, adaptiveService } from './adaptive-service';
-import { buildSystemPrompt, getFeedbackPrompt } from '../prompts/socratic-tutor';
-import { createClient } from '@/lib/supabase-server';
-import { authLogger } from '@/lib/auth-logger';
+import { streamText, generateText, CoreMessage } from "ai";
+import { getAIModel, MODEL_CONFIGS } from "../providers";
+import { CurriculumRAGService, ragService } from "./rag-service";
+import { AdaptiveLearningService, adaptiveService } from "./adaptive-service";
+import {
+  buildSystemPrompt,
+  getFeedbackPrompt,
+} from "../prompts/socratic-tutor";
+import { createClient } from "@/lib/supabase-server";
+import { authLogger } from "@/lib/auth-logger";
+import { aiProviderBreakers } from "@/lib/circuit-breaker";
+import { getLanguageLabelForAI } from "@/lib/form-utils";
+
+// BP-15 FIX: Extract hardcoded timeout to named constant
+const AI_REQUEST_TIMEOUT_MS = 60000;
 
 /**
  * Supported languages
  */
-export type TutorLanguage = 'en' | 'hi' | 'as';
+export type TutorLanguage = "en" | "hi" | "as";
+
+/**
+ * Message role in a chat conversation
+ */
+export type TutorMessageRole = "user" | "assistant" | "system";
+
+/**
+ * Input mode for chat messages
+ */
+export type TutorInputMode = "text" | "voice";
 
 /**
  * Chat message structure
  */
 export interface TutorMessage {
-  role: 'user' | 'assistant' | 'system';
+  role: TutorMessageRole;
   content: string;
 }
 
@@ -75,7 +93,7 @@ export interface TutorChatRequest {
   moduleId?: string;
   language: TutorLanguage;
   conversationHistory?: TutorMessage[];
-  inputMode?: 'text' | 'voice';
+  inputMode?: TutorInputMode;
 }
 
 /**
@@ -90,11 +108,24 @@ export interface TutorChatResponse {
 }
 
 /**
+ * Get hint level based on attempt count
+ */
+function getHintLevelByAttempts(previousAttempts: number): string {
+  if (previousAttempts <= 1) {
+    return "gentle nudge";
+  }
+  if (previousAttempts <= 2) {
+    return "more specific hint";
+  }
+  return "clear guidance toward the answer";
+}
+
+/**
  * AI Tutor Service
  */
 export class TutorService {
-  private ragService: CurriculumRAGService;
-  private adaptiveService: AdaptiveLearningService;
+  private readonly ragService: CurriculumRAGService;
+  private readonly adaptiveService: AdaptiveLearningService;
 
   constructor() {
     this.ragService = ragService;
@@ -123,7 +154,7 @@ export class TutorService {
     // Get student's learning style for personalization
     const learningProfile = await this.adaptiveService.getAdaptedContent(
       params.studentId,
-      params.topicId || 'general'
+      params.topicId || "general",
     );
 
     // Build personalized system prompt
@@ -137,38 +168,57 @@ export class TutorService {
     });
 
     // Get AI model
-    const model = getAIModel('gemini');
+    const model = getAIModel("gemini");
 
     // Convert conversation history to CoreMessage format
     const messages: CoreMessage[] = [
       ...(params.conversationHistory || []).map((msg) => ({
-        role: msg.role as 'user' | 'assistant',
+        role: msg.role as "user" | "assistant",
         content: msg.content,
       })),
-      { role: 'user' as const, content: params.message },
+      { role: "user" as const, content: params.message },
     ];
 
-    // Stream response using Vercel AI SDK
-    const result = streamText({
-      model,
-      system: systemPrompt,
-      messages,
-      ...MODEL_CONFIGS.tutor,
-      onFinish: async ({ text, usage }) => {
-        // Log interaction for teacher visibility
-        await this.logInteraction({
-          studentId: params.studentId,
-          sessionId: params.sessionId,
-          topicId: params.topicId,
-          messageRole: 'assistant',
-          messageContent: text,
-          inputMode: params.inputMode || 'text',
-          language: params.language,
-          tokensUsed: usage?.totalTokens || 0,
-          responseTimeMs: Date.now() - startTime,
-        });
+    // Stream response using Vercel AI SDK with circuit breaker protection
+    // This prevents cascading failures if the AI provider is down
+    const breaker = aiProviderBreakers.getBreaker("tutor-chat", {
+      failureThreshold: 5,
+      timeout: AI_REQUEST_TIMEOUT_MS,
+      onStateChange: (state) => {
+        if (state === "OPEN") {
+          authLogger.error(
+            "[TutorService] AI provider circuit breaker OPEN - service degraded",
+          );
+        } else if (state === "CLOSED") {
+          authLogger.info(
+            "[TutorService] AI provider circuit breaker CLOSED - service recovered",
+          );
+        }
       },
     });
+
+    const result = await breaker.execute(async () =>
+      streamText({
+        model,
+        system: systemPrompt,
+        messages,
+        ...MODEL_CONFIGS.tutor,
+        onFinish: async ({ text, usage }) => {
+          // Log interaction for teacher visibility
+          await this.logInteraction({
+            studentId: params.studentId,
+            sessionId: params.sessionId,
+            topicId: params.topicId,
+            messageRole: "assistant",
+            messageContent: text,
+            inputMode: params.inputMode || "text",
+            language: params.language,
+            tokensUsed: usage?.totalTokens || 0,
+            responseTimeMs: Date.now() - startTime,
+          });
+        },
+      }),
+    );
 
     return result;
   }
@@ -189,7 +239,7 @@ export class TutorService {
     // Get student's learning style
     const learningProfile = await this.adaptiveService.getAdaptedContent(
       params.studentId,
-      params.topicId || 'general'
+      params.topicId || "general",
     );
 
     // Build system prompt
@@ -203,24 +253,31 @@ export class TutorService {
     });
 
     // Get AI model
-    const model = getAIModel('gemini');
+    const model = getAIModel("gemini");
 
     // Convert conversation history
     const messages: CoreMessage[] = [
       ...(params.conversationHistory || []).map((msg) => ({
-        role: msg.role as 'user' | 'assistant',
+        role: msg.role as "user" | "assistant",
         content: msg.content,
       })),
-      { role: 'user' as const, content: params.message },
+      { role: "user" as const, content: params.message },
     ];
 
-    // Generate response
-    const result = await generateText({
-      model,
-      system: systemPrompt,
-      messages,
-      ...MODEL_CONFIGS.tutor,
+    // Generate response with circuit breaker protection
+    const breaker = aiProviderBreakers.getBreaker("tutor-generate", {
+      failureThreshold: 5,
+      timeout: AI_REQUEST_TIMEOUT_MS,
     });
+
+    const result = await breaker.execute(() =>
+      generateText({
+        model,
+        system: systemPrompt,
+        messages,
+        ...MODEL_CONFIGS.tutor,
+      }),
+    );
 
     const responseTimeMs = Date.now() - startTime;
 
@@ -229,9 +286,9 @@ export class TutorService {
       studentId: params.studentId,
       sessionId: params.sessionId,
       topicId: params.topicId,
-      messageRole: 'assistant',
+      messageRole: "assistant",
       messageContent: result.text,
-      inputMode: params.inputMode || 'text',
+      inputMode: params.inputMode || "text",
       language: params.language,
       tokensUsed: result.usage?.totalTokens || 0,
       responseTimeMs,
@@ -241,7 +298,7 @@ export class TutorService {
       content: result.text,
       tokensUsed: result.usage?.totalTokens,
       responseTimeMs,
-      provider: 'gemini',
+      provider: "gemini",
       context,
     };
   }
@@ -257,25 +314,32 @@ export class TutorService {
     isCorrect: boolean;
     language: TutorLanguage;
   }): Promise<string> {
-    const model = getAIModel('gemini');
+    const model = getAIModel("gemini");
     const feedbackPrompt = getFeedbackPrompt(params.language);
 
-    const result = await generateText({
-      model,
-      system: feedbackPrompt,
-      messages: [
-        {
-          role: 'user',
-          content: `Question: ${params.question}
-Student's Answer: ${params.studentAnswer}
-Was it correct? ${params.isCorrect ? 'Yes' : 'No'}
-${!params.isCorrect ? `Correct answer hint: The answer relates to "${params.correctAnswer.substring(0, 20)}..."` : ''}
+    const breaker = aiProviderBreakers.getBreaker("tutor-feedback", {
+      failureThreshold: 5,
+      timeout: AI_REQUEST_TIMEOUT_MS,
+    });
+
+    const result = await breaker.execute(() =>
+      generateText({
+        model,
+        system: feedbackPrompt,
+        messages: [
+          {
+            role: "user",
+            content: `<question>${params.question.slice(0, 2000)}</question>
+<student_answer>${params.studentAnswer.slice(0, 500)}</student_answer>
+Was it correct? ${params.isCorrect ? "Yes" : "No"}
+${params.isCorrect ? "" : `Correct answer hint: The answer relates to "${params.correctAnswer.slice(0, 20)}..."`}
 
 Please provide encouraging feedback.`,
-        },
-      ],
-      ...MODEL_CONFIGS.assessment,
-    });
+          },
+        ],
+        ...MODEL_CONFIGS.assessment,
+      }),
+    );
 
     return result.text;
   }
@@ -294,35 +358,37 @@ Please provide encouraging feedback.`,
     const context = await this.ragService.getTopicContext(
       params.topicId,
       params.language,
-      2
+      2,
     );
 
-    const hintLevel =
-      params.previousAttempts <= 1
-        ? 'gentle nudge'
-        : params.previousAttempts <= 2
-        ? 'more specific hint'
-        : 'clear guidance toward the answer';
+    const hintLevel = getHintLevelByAttempts(params.previousAttempts);
 
-    const model = getAIModel('gemini');
+    const model = getAIModel("gemini");
 
-    const result = await generateText({
-      model,
-      system: `You are providing a ${hintLevel} to help a student answer a question.
+    const breaker = aiProviderBreakers.getBreaker("tutor-hint", {
+      failureThreshold: 5,
+      timeout: AI_REQUEST_TIMEOUT_MS,
+    });
+
+    const result = await breaker.execute(() =>
+      generateText({
+        model,
+        system: `You are providing a ${hintLevel} to help a student answer a question.
 Never give away the answer directly. Use the Socratic method.
-Language: ${params.language === 'en' ? 'English' : params.language === 'hi' ? 'Hindi' : 'Assamese'}`,
-      messages: [
-        {
-          role: 'user',
-          content: `Question: ${params.question}
+Language: ${getLanguageLabelForAI(params.language)}`,
+        messages: [
+          {
+            role: "user",
+            content: `<question>${params.question.slice(0, 2000)}</question>
 Context: ${context}
 Previous attempts: ${params.previousAttempts}
 
 Provide a ${hintLevel} to help the student.`,
-        },
-      ],
-      ...MODEL_CONFIGS.retrieval,
-    });
+          },
+        ],
+        ...MODEL_CONFIGS.retrieval,
+      }),
+    );
 
     return result.text;
   }
@@ -334,9 +400,9 @@ Provide a ${hintLevel} to help the student.`,
     studentId: string;
     sessionId: string;
     topicId?: string;
-    messageRole: 'user' | 'assistant' | 'system';
+    messageRole: TutorMessageRole;
     messageContent: string;
-    inputMode: 'text' | 'voice';
+    inputMode: TutorInputMode;
     language: TutorLanguage;
     tokensUsed: number;
     responseTimeMs: number;
@@ -344,7 +410,7 @@ Provide a ${hintLevel} to help the student.`,
     try {
       const supabase = await createClient();
 
-      await supabase.from('ai_tutor_interactions').insert({
+      const { error: insertError } = await supabase.from("ai_tutor_interactions").insert({
         student_id: params.studentId,
         session_id: params.sessionId,
         topic_id: params.topicId,
@@ -355,8 +421,11 @@ Provide a ${hintLevel} to help the student.`,
         tokens_used: params.tokensUsed,
         response_time_ms: params.responseTimeMs,
       });
+      if (insertError) {
+        authLogger.error("[Tutor] Error logging interaction:", insertError);
+      }
     } catch (error) {
-      authLogger.error('[Tutor] Error logging interaction:', error);
+      authLogger.error("[Tutor] Error logging interaction:", error);
     }
   }
 
@@ -367,20 +436,22 @@ Provide a ${hintLevel} to help the student.`,
     try {
       const supabase = await createClient();
 
+      // PERF-2 FIX: Limit history to prevent unbounded growth
       const { data, error } = await supabase
-        .from('ai_tutor_interactions')
-        .select('message_role, message_content')
-        .eq('session_id', sessionId)
-        .order('created_at', { ascending: true });
+        .from("ai_tutor_interactions")
+        .select("message_role, message_content")
+        .eq("session_id", sessionId)
+        .order("created_at", { ascending: true })
+        .limit(200);
 
       if (error) throw error;
 
       return (data || []).map((row) => ({
-        role: row.message_role as 'user' | 'assistant' | 'system',
+        role: row.message_role as TutorMessageRole,
         content: row.message_content,
       }));
     } catch (error) {
-      authLogger.error('[Tutor] Error getting session history:', error);
+      authLogger.error("[Tutor] Error getting session history:", error);
       return [];
     }
   }

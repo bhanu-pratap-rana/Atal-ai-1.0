@@ -20,7 +20,13 @@
 
 # next.js
 /.next/
+/.next
+.next/
+.next
 /out/
+/.swc/
+.swc/
+.swc
 
 # production
 /build
@@ -34,9 +40,17 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+*.log
+test-output.log
+*-test.log
+test-results.json
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# auth files - contain session tokens
+playwright/.auth/*.json
 
 # vercel
 .vercel
@@ -48,8 +62,7 @@ next-env.d.ts
 # Sentry Config File
 .env.sentry-build-plugin
 
-# PWA generated files (next-pwa)
-/public/sw.js
+# PWA generated files (legacy next-pwa, no longer used)
 /public/sw.js.map
 /public/workbox-*.js
 /public/workbox-*.js.map

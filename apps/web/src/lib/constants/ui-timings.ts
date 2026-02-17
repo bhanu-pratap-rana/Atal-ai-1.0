@@ -20,7 +20,7 @@ export const TOAST_DURATIONS = {
   default: 3000,
   /** Important messages requiring attention */
   long: 5000,
-} as const
+} as const;
 
 /**
  * Clipboard copy feedback timing
@@ -28,7 +28,7 @@ export const TOAST_DURATIONS = {
 export const CLIPBOARD_TIMING = {
   /** How long to show "Copied!" feedback */
   successFeedback: 2000,
-} as const
+} as const;
 
 /**
  * Form submission feedback timing
@@ -38,7 +38,7 @@ export const FORM_TIMING = {
   successCallback: 1500,
   /** Delay before showing next steps after form success */
   nextStepsDelay: 2000,
-} as const
+} as const;
 
 /**
  * Assessment-related timing
@@ -48,7 +48,7 @@ export const ASSESSMENT_TIMING = {
   rapidResponseThreshold: 5000,
   /** How long to show rapid response warning */
   rapidWarningDuration: 3000,
-} as const
+} as const;
 
 /**
  * Navigation timing
@@ -56,7 +56,7 @@ export const ASSESSMENT_TIMING = {
 export const NAVIGATION_TIMING = {
   /** Delay before redirecting after success */
   redirectDelay: 1500,
-} as const
+} as const;
 
 /**
  * Profile editor timing
@@ -64,9 +64,9 @@ export const NAVIGATION_TIMING = {
 export const PROFILE_TIMING = {
   /** How long to show success message */
   successMessage: 3000,
-} as const
+} as const;
 
 /**
  * Type exports for TypeScript
  */
-export type ToastDuration = keyof typeof TOAST_DURATIONS
+export type ToastDuration = keyof typeof TOAST_DURATIONS;

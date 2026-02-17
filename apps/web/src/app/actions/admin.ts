@@ -1,14 +1,18 @@
-'use server'
+"use server";
 
-import { z } from 'zod'
-import { createAdminClient, verifySuperAdminAuth } from '@/lib/supabase-server'
-import { authLogger } from '@/lib/auth-logger'
-import { AdminEmailSchema } from '@/lib/validation-schemas'
+import { createAdminClient, verifySuperAdminAuth } from "@/lib/supabase-server";
+import { authLogger } from "@/lib/auth-logger";
+import { checkAdminOperationRateLimit } from "@/lib/rate-limiter-distributed";
+import { isAdmin } from "@/lib/auth/role-utils";
+import { AdminEmailSchema } from "@/lib/validation-schemas";
+import { findAuthUserByEmail } from "@/lib/admin-utils";
+import { validateInput, handleActionError } from "./action-utils";
+import { RATE_LIMIT_ERRORS } from "@/lib/constants/error-messages";
 
 export interface SetAdminRoleResult {
-  success: boolean
-  error?: string
-  message?: string
+  success: boolean;
+  error?: string;
+  message?: string;
 }
 
 /**
@@ -21,77 +25,85 @@ export interface SetAdminRoleResult {
 export async function setAdminRole(email: string): Promise<SetAdminRoleResult> {
   try {
     // Validate email input
-    const normalizedEmail = AdminEmailSchema.parse(email)
+    const validation = validateInput(email, AdminEmailSchema);
+    if (!validation.success || !validation.data) {
+      return { success: false, error: validation.error ?? "Invalid input" };
+    }
+    const normalizedEmail = validation.data;
 
     // SECURITY: Verify caller is authenticated and authorized as super_admin
-    const auth = await verifySuperAdminAuth('setAdminRole')
+    const auth = await verifySuperAdminAuth("setAdminRole");
     if (!auth.authorized) {
-      return auth.error!
+      return auth.error;
     }
 
-    const adminClient = await createAdminClient()
-
-    // Find user by email
-    const { data: users, error: listError } = await adminClient.auth.admin.listUsers()
-
-    if (listError) {
-      authLogger.error('[setAdminRole] Failed to list users', listError)
+    // SECURITY: Rate limit admin operations to prevent abuse
+    const roleChangeAllowed = await checkAdminOperationRateLimit(auth.user.id);
+    if (!roleChangeAllowed) {
+      authLogger.warn("[setAdminRole] Rate limit exceeded", {
+        userId: auth.user.id,
+      });
       return {
         success: false,
-        error: 'Failed to access user database',
-      }
+        error: RATE_LIMIT_ERRORS.TOO_MANY_REQUESTS,
+      };
     }
 
-    const user = users?.users.find((u) => u.email?.toLowerCase() === normalizedEmail)
+    const adminClient = await createAdminClient();
+
+    // Find user by email (with pagination support for large user bases)
+    const user = await findAuthUserByEmail(adminClient, normalizedEmail);
 
     if (!user) {
-      authLogger.warn('[setAdminRole] User not found', { email: normalizedEmail })
+      authLogger.warn("[setAdminRole] User not found", {
+        email: normalizedEmail,
+      });
       return {
         success: false,
         error: `User with email ${email} not found`,
-      }
+      };
     }
 
     // Check if already admin
-    const existingRole = user.app_metadata?.role
-    if (existingRole === 'admin' || existingRole === 'super_admin') {
+    const existingRole = user.app_metadata?.role as
+      | string
+      | null
+      | undefined;
+    if (isAdmin(existingRole)) {
       return {
         success: true,
         message: `User ${email} already has ${existingRole} role`,
-      }
+      };
     }
 
     // Update user with admin role
-    const { error: updateError } = await adminClient.auth.admin.updateUserById(user.id, {
-      app_metadata: {
-        ...user.app_metadata,
-        role: 'admin',
+    const { error: updateError } = await adminClient.auth.admin.updateUserById(
+      user.id,
+      {
+        app_metadata: {
+          ...user.app_metadata,
+          role: "admin",
+        },
       },
-    })
+    );
 
     if (updateError) {
-      authLogger.error('[setAdminRole] Failed to update user', updateError)
+      authLogger.error("[setAdminRole] Failed to update user", updateError);
       return {
         success: false,
-        error: 'Failed to set admin role',
-      }
+        error: "Failed to set admin role",
+      };
     }
 
-    authLogger.success('[setAdminRole] Admin role set successfully', { email: normalizedEmail })
+    authLogger.success("[setAdminRole] Admin role set successfully", {
+      email: normalizedEmail,
+    });
     return {
       success: true,
       message: `Admin role successfully set for ${email}`,
-    }
+    };
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      const firstError = error.issues[0]
-      return { success: false, error: firstError?.message || 'Invalid input' }
-    }
-    authLogger.error('[setAdminRole] Unexpected error', error)
-    return {
-      success: false,
-      error: 'An unexpected error occurred',
-    }
+    return handleActionError("setAdminRole", error);
   }
 }
 
@@ -100,37 +112,50 @@ export async function setAdminRole(email: string): Promise<SetAdminRoleResult> {
  * Lightweight check that doesn't require full admin operations
  */
 export async function checkAdminRoleByEmail(email: string): Promise<{
-  hasAdminRole: boolean
-  error?: string
+  hasAdminRole: boolean;
+  error?: string;
 }> {
   try {
     // Validate email input
-    const normalizedEmail = AdminEmailSchema.parse(email)
+    const validation = validateInput(email, AdminEmailSchema);
+    if (!validation.success || !validation.data) {
+      return { hasAdminRole: false, error: validation.error ?? "Invalid input" };
+    }
+    const normalizedEmail = validation.data;
 
-    const adminClient = await createAdminClient()
-
-    // Find user by email
-    const { data: users, error: listError } = await adminClient.auth.admin.listUsers()
-
-    if (listError) {
-      return { hasAdminRole: false, error: 'Failed to check user role' }
+    // SECURITY: Require authentication to prevent email enumeration
+    const auth = await verifySuperAdminAuth("checkAdminRoleByEmail");
+    if (!auth.authorized) {
+      return { hasAdminRole: false, error: "Authentication required" };
     }
 
-    const user = users?.users.find((u) => u.email?.toLowerCase() === normalizedEmail)
+    // SECURITY: Rate limit admin operations to prevent abuse
+    const roleLookupAllowed = await checkAdminOperationRateLimit(
+      auth.user.id,
+    );
+    if (!roleLookupAllowed) {
+      authLogger.warn("[checkAdminRoleByEmail] Rate limit exceeded", {
+        email: normalizedEmail,
+      });
+      return {
+        hasAdminRole: false,
+        error: RATE_LIMIT_ERRORS.TOO_MANY_REQUESTS,
+      };
+    }
+
+    const adminClient = await createAdminClient();
+
+    // Find user by email (with pagination support for large user bases)
+    const user = await findAuthUserByEmail(adminClient, normalizedEmail);
 
     if (!user) {
-      return { hasAdminRole: false, error: 'User not found' }
+      return { hasAdminRole: false, error: "User not found" };
     }
 
-    const role = user.app_metadata?.role
-    const isAdmin = role === 'admin' || role === 'super_admin'
-    return { hasAdminRole: isAdmin }
+    const role = user.app_metadata?.role as string | null | undefined;
+    return { hasAdminRole: isAdmin(role) };
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      const firstError = error.issues[0]
-      return { hasAdminRole: false, error: firstError?.message || 'Invalid input' }
-    }
-    authLogger.error('[checkAdminRoleByEmail] Error', error)
-    return { hasAdminRole: false, error: 'Failed to check role' }
+    authLogger.error("[checkAdminRoleByEmail] Error", error);
+    return { hasAdminRole: false, error: "Failed to check role" };
   }
 }

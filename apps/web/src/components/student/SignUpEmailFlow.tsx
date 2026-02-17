@@ -1,23 +1,24 @@
-'use client'
+"use client";
 
-import { useState, useEffect, useCallback } from 'react'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
-import { RefreshCw } from 'lucide-react'
+import { useState, useEffect, useCallback } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 import {
   validateEmail,
   validatePassword,
   validatePasswordMatch,
-} from '@/lib/validation-utils'
-import { OTP_LENGTH } from '@/lib/auth-constants'
-import type { UseOTPInputReturn } from '@/hooks/useOTPInput'
-import { requestOtp } from '@/app/actions/auth'
-import { createClient } from '@/lib/supabase-browser'
-import { authLogger } from '@/lib/auth-logger'
-import { toast } from 'sonner'
-import { useRouter } from 'next/navigation'
-import type { AuthState, AuthActions } from '@/hooks/useAuthState'
+} from "@/lib/validation-utils";
+import { OTP_LENGTH } from "@/lib/auth-constants";
+import type { UseOTPInputReturn } from "@/hooks/useOTPInput";
+import { requestOtp } from "@/app/actions/auth";
+import { createClient } from "@/lib/supabase-browser";
+import { authLogger } from "@/lib/auth-logger";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import type { AuthState, AuthActions } from "@/hooks/useAuthState";
+import { formatTimeTidyCompact } from "@/lib/time-utils";
 
 /**
  * ATAL AI Student Sign Up (Email) - Jyoti Theme
@@ -29,14 +30,42 @@ import type { AuthState, AuthActions } from '@/hooks/useAuthState'
  * - Muted text: text-text-muted
  */
 
-const RESEND_COOLDOWN_SECONDS = 60
+const RESEND_COOLDOWN_SECONDS = 60;
+
+/**
+ * Resend button state constants - S2301 compliance (no boolean params)
+ */
+const RESEND_BUTTON = {
+  class: {
+    disabled: "text-text-muted cursor-not-allowed",
+    enabled: "text-primary hover:text-primary-dark hover:underline",
+  },
+  icon: {
+    active: "h-4 w-4 animate-spin",
+    idle: "h-4 w-4",
+  },
+  text: {
+    sending: "Sending...",
+    idle: "Resend OTP",
+  },
+} as const;
+
+/**
+ * Get resend button text with cooldown formatting
+ */
+function formatResendText(cooldown: number): string {
+  if (cooldown > 0) {
+    return `Resend OTP in ${formatTimeTidyCompact(cooldown)}`;
+  }
+  return RESEND_BUTTON.text.idle;
+}
 
 interface SignUpEmailFlowProps {
-  state: AuthState
-  actions: AuthActions
-  otpInput: UseOTPInputReturn
-  isLoading: boolean
-  onSuccess: () => void
+  readonly state: AuthState;
+  readonly actions: AuthActions;
+  readonly otpInput: UseOTPInputReturn;
+  readonly isLoading: boolean;
+  readonly onSuccess: () => void;
 }
 
 export function SignUpEmailFlow({
@@ -46,115 +75,123 @@ export function SignUpEmailFlow({
   isLoading,
   onSuccess,
 }: SignUpEmailFlowProps) {
-  const router = useRouter()
-  const supabase = createClient()
-  const [resendCooldown, setResendCooldown] = useState(0)
-  const [isResending, setIsResending] = useState(false)
+  const router = useRouter();
+  const supabase = createClient();
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [isResending, setIsResending] = useState(false);
 
   // Start cooldown timer when OTP is sent
   useEffect(() => {
     if (state.signupEmailOtpSent && resendCooldown === 0) {
-      setResendCooldown(RESEND_COOLDOWN_SECONDS)
+      setResendCooldown(RESEND_COOLDOWN_SECONDS);
     }
-  }, [state.signupEmailOtpSent])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.signupEmailOtpSent]);
 
   // Countdown timer
   useEffect(() => {
     if (resendCooldown > 0) {
       const timer = setTimeout(() => {
-        setResendCooldown(resendCooldown - 1)
-      }, 1000)
-      return () => clearTimeout(timer)
+        setResendCooldown(resendCooldown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
     }
-  }, [resendCooldown])
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return mins > 0 ? `${mins}:${secs.toString().padStart(2, '0')}` : `${secs}s`
-  }
+  }, [resendCooldown]);
 
   const handleResendOtp = useCallback(async () => {
-    if (resendCooldown > 0 || isResending) return
+    if (resendCooldown > 0 || isResending) return;
 
-    setIsResending(true)
+    setIsResending(true);
     try {
-      const result = await requestOtp(state.signupEmailAddress.trim())
+      const result = await requestOtp(state.signupEmailAddress.trim());
       if (result.success) {
-        toast.success('OTP resent to your email!')
-        setResendCooldown(RESEND_COOLDOWN_SECONDS)
+        toast.success("OTP resent to your email!");
+        setResendCooldown(RESEND_COOLDOWN_SECONDS);
       } else {
-        toast.error(result.error || 'Failed to resend OTP')
+        toast.error(result.error || "Failed to resend OTP");
       }
     } catch (error) {
-      toast.error('Failed to resend OTP')
+      authLogger.error(
+        "[SignUpEmailFlow] Failed to resend OTP",
+        error instanceof Error ? error : new Error(String(error))
+      );
+      toast.error("Failed to resend OTP");
     } finally {
-      setIsResending(false)
+      setIsResending(false);
     }
-  }, [resendCooldown, isResending, state.signupEmailAddress])
+  }, [resendCooldown, isResending, state.signupEmailAddress]);
 
   async function handleSignUpEmailSendOtp(e: React.FormEvent) {
-    e.preventDefault()
-    actions.setIsLoading(true)
-    actions.setSignupEmailError(null)
+    e.preventDefault();
+    actions.setIsLoading(true);
+    actions.setSignupEmailError(null);
 
     // Validate email
-    const emailValidation = validateEmail(state.signupEmailAddress)
+    const emailValidation = validateEmail(state.signupEmailAddress);
     if (!emailValidation.valid) {
-      actions.setSignupEmailError(emailValidation.error || 'Invalid email')
-      actions.setIsLoading(false)
-      return
+      actions.setSignupEmailError(emailValidation.error || "Invalid email");
+      actions.setIsLoading(false);
+      return;
     }
 
     try {
-      const result = await requestOtp(state.signupEmailAddress.trim())
-      if (!result.success) {
-        // Check if email already exists - redirect to login
-        if (result.exists) {
-          authLogger.debug('[SignUp Email] Email already exists, redirecting to login')
-          toast.error(result.error || 'This email is already registered')
-          // Switch to signin tab with email prefilled
-          actions.setSigninEmailAddress(state.signupEmailAddress)
-          actions.setMainStep('signin')
-          actions.setSigninTab('email')
-        } else {
-          actions.setSignupEmailError(result.error || 'Failed to send OTP')
-          toast.error(result.error || 'Failed to send OTP')
-        }
+      const result = await requestOtp(state.signupEmailAddress.trim());
+      if (result.success) {
+        toast.success("OTP sent to your email!");
+        actions.setSignupEmailOtpSent(true);
       } else {
-        toast.success('OTP sent to your email!')
-        actions.setSignupEmailOtpSent(true)
+        // SECURITY FIX: Don't differentiate email enumeration responses
+        // All error responses are generic for security (prevents email enumeration attacks)
+        // The generic error message already suggests checking inbox or creating account
+        authLogger.debug("[SignUp Email] OTP request failed", {
+          error: result.error,
+        });
+        actions.setSignupEmailError(
+          result.error ||
+            "Failed to send OTP. If this email is registered, check your inbox for a login link.",
+        );
+        toast.error(
+          result.error ||
+            "Failed to send OTP. If this email is registered, check your inbox for a login link.",
+        );
       }
     } catch (error) {
-      authLogger.error('[SignUp Email] Failed to send OTP', error)
-      actions.setSignupEmailError('Failed to send OTP')
-      toast.error('Failed to send OTP')
+      authLogger.error(
+        "[SignUp Email] Failed to send OTP",
+        error instanceof Error ? error : undefined,
+      );
+      actions.setSignupEmailError("Failed to send OTP");
+      toast.error("Failed to send OTP");
     } finally {
-      actions.setIsLoading(false)
+      actions.setIsLoading(false);
     }
   }
 
   async function handleSignUpEmailVerifyAndCreate(e: React.FormEvent) {
-    e.preventDefault()
-    actions.setIsLoading(true)
-    actions.setSignupEmailError(null)
+    e.preventDefault();
+    actions.setIsLoading(true);
+    actions.setSignupEmailError(null);
 
     // Validate inputs
-    const passwordValidation = validatePassword(state.signupEmailPassword)
+    const passwordValidation = validatePassword(state.signupEmailPassword);
     if (!passwordValidation.valid) {
-      actions.setSignupEmailError(passwordValidation.errors.join(', ') || 'Invalid password')
-      actions.setIsLoading(false)
-      return
+      actions.setSignupEmailError(
+        passwordValidation.errors.join(", ") || "Invalid password",
+      );
+      actions.setIsLoading(false);
+      return;
     }
 
     const matchValidation = validatePasswordMatch(
       state.signupEmailPassword,
-      state.signupEmailPasswordConfirm
-    )
+      state.signupEmailPasswordConfirm,
+    );
     if (!matchValidation.valid) {
-      actions.setSignupEmailError(matchValidation.error || 'Passwords do not match')
-      actions.setIsLoading(false)
-      return
+      actions.setSignupEmailError(
+        matchValidation.error || "Passwords do not match",
+      );
+      actions.setIsLoading(false);
+      return;
     }
 
     try {
@@ -162,44 +199,47 @@ export function SignUpEmailFlow({
       const { data, error } = await supabase.auth.verifyOtp({
         email: state.signupEmailAddress,
         token: otpInput.value,
-        type: 'email',
-      })
+        type: "email",
+      });
 
       if (error) {
-        authLogger.error('[SignUp Email] Verification failed', error)
-        actions.setSignupEmailError(error.message || 'Failed to verify OTP')
-        toast.error(error.message || 'OTP verification failed')
-        return
+        authLogger.error("[SignUp Email] Verification failed", error);
+        actions.setSignupEmailError(error.message || "Failed to verify OTP");
+        toast.error(error.message || "OTP verification failed");
+        return;
       }
 
       if (!data.user) {
-        actions.setSignupEmailError('Verification failed')
-        toast.error('Email verification failed')
-        return
+        actions.setSignupEmailError("Verification failed");
+        toast.error("Email verification failed");
+        return;
       }
 
       // Set password
       const { error: updateError } = await supabase.auth.updateUser({
         password: state.signupEmailPassword,
-      })
+      });
 
       if (updateError) {
-        authLogger.error('[SignUp Email] Failed to set password', updateError)
-        actions.setSignupEmailError('Failed to set password')
-        toast.error('Failed to set password')
-        return
+        authLogger.error("[SignUp Email] Failed to set password", updateError);
+        actions.setSignupEmailError("Failed to set password");
+        toast.error("Failed to set password");
+        return;
       }
 
-      toast.success('Account created successfully! 🎉')
-      actions.resetSignupEmail()
-      onSuccess()
-      router.push('/app/dashboard')
+      toast.success("Account created successfully! 🎉");
+      actions.resetSignupEmail();
+      onSuccess();
+      router.push("/app/dashboard");
     } catch (error) {
-      authLogger.error('[SignUp Email] Unexpected error', error)
-      actions.setSignupEmailError('An unexpected error occurred')
-      toast.error('An unexpected error occurred')
+      authLogger.error(
+        "[SignUp Email] Unexpected error",
+        error instanceof Error ? error : undefined,
+      );
+      actions.setSignupEmailError("An unexpected error occurred");
+      toast.error("An unexpected error occurred");
     } finally {
-      actions.setIsLoading(false)
+      actions.setIsLoading(false);
     }
   }
 
@@ -208,7 +248,9 @@ export function SignUpEmailFlow({
     return (
       <form onSubmit={handleSignUpEmailSendOtp} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="signup-email" className="text-text">Email Address</Label>
+          <Label htmlFor="signup-email" className="text-text">
+            Email Address
+          </Label>
           <Input
             id="signup-email"
             type="email"
@@ -229,18 +271,20 @@ export function SignUpEmailFlow({
           disabled={isLoading || !state.signupEmailAddress}
           loading={isLoading}
         >
-          Send OTP
+          <span>Send OTP</span>
           <span className="ml-2">→</span>
         </Button>
       </form>
-    )
+    );
   }
 
   // Verify OTP & create account step
   return (
     <form onSubmit={handleSignUpEmailVerifyAndCreate} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="signup-email-otp" className="text-text">Verification Code</Label>
+        <Label htmlFor="signup-email-otp" className="text-text">
+          Verification Code
+        </Label>
         <Input
           id="signup-email-otp"
           type="text"
@@ -252,11 +296,15 @@ export function SignUpEmailFlow({
           maxLength={OTP_LENGTH}
           className="text-center text-2xl font-mono tracking-widest"
         />
-        <p className="text-xs text-text-muted">Enter the 6-digit code sent to your email</p>
+        <p className="text-xs text-text-muted">
+          Enter the 6-digit code sent to your email
+        </p>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="signup-email-password" className="text-text">Password</Label>
+        <Label htmlFor="signup-email-password" className="text-text">
+          Password
+        </Label>
         <Input
           id="signup-email-password"
           type="password"
@@ -269,13 +317,17 @@ export function SignUpEmailFlow({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="signup-email-password-confirm" className="text-text">Confirm Password</Label>
+        <Label htmlFor="signup-email-password-confirm" className="text-text">
+          Confirm Password
+        </Label>
         <Input
           id="signup-email-password-confirm"
           type="password"
           placeholder="Re-enter your password"
           value={state.signupEmailPasswordConfirm}
-          onChange={(e) => actions.setSignupEmailPasswordConfirm(e.target.value)}
+          onChange={(e) =>
+            actions.setSignupEmailPasswordConfirm(e.target.value)
+          }
           required
           disabled={isLoading}
         />
@@ -295,7 +347,7 @@ export function SignUpEmailFlow({
         }
         loading={isLoading}
       >
-        Create Account
+        <span>Create Account</span>
         <span className="ml-2">→</span>
       </Button>
 
@@ -305,26 +357,18 @@ export function SignUpEmailFlow({
           type="button"
           onClick={handleResendOtp}
           disabled={isLoading || isResending || resendCooldown > 0}
-          className={`flex items-center gap-2 text-sm transition-colors ${
-            resendCooldown > 0 || isResending
-              ? 'text-text-muted cursor-not-allowed'
-              : 'text-primary hover:text-primary-dark hover:underline'
-          }`}
+          className={`flex items-center gap-2 text-sm transition-colors ${resendCooldown > 0 || isResending ? RESEND_BUTTON.class.disabled : RESEND_BUTTON.class.enabled}`}
         >
-          <RefreshCw className={`h-4 w-4 ${isResending ? 'animate-spin' : ''}`} />
-          {isResending
-            ? 'Sending...'
-            : resendCooldown > 0
-              ? `Resend OTP in ${formatTime(resendCooldown)}`
-              : 'Resend OTP'}
+          <RefreshCw className={isResending ? RESEND_BUTTON.icon.active : RESEND_BUTTON.icon.idle} />
+          {isResending ? RESEND_BUTTON.text.sending : formatResendText(resendCooldown)}
         </button>
       </div>
 
       <button
         type="button"
         onClick={() => {
-          actions.setSignupEmailOtpSent(false)
-          otpInput.reset()
+          actions.setSignupEmailOtpSent(false);
+          otpInput.reset();
         }}
         className="text-sm text-text-secondary hover:text-primary hover:underline block w-full text-center transition-colors"
         disabled={isLoading}
@@ -332,5 +376,5 @@ export function SignUpEmailFlow({
         Change email
       </button>
     </form>
-  )
+  );
 }

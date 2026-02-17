@@ -11,7 +11,33 @@
  * - https://developer.mozilla.org/en-US/docs/Web/API/Background_Synchronization_API
  */
 
-import { clientLogger } from '@/lib/client-logger';
+import { clientLogger } from "@/lib/client-logger";
+
+/**
+ * Background Sync API type definitions
+ * Extends standard ServiceWorkerRegistration with sync capabilities
+ */
+
+// SyncManager interface for one-time background sync
+interface SyncManager {
+  register(tag: string): Promise<void>;
+  getTags(): Promise<string[]>;
+}
+
+// PeriodicSyncManager interface for periodic background sync
+interface PeriodicSyncManager {
+  register(tag: string, options?: { minInterval?: number }): Promise<void>;
+  unregister(tag: string): Promise<void>;
+  getTags(): Promise<string[]>;
+}
+
+// Extend ServiceWorkerRegistration with sync properties
+declare global {
+  interface ServiceWorkerRegistration {
+    sync?: SyncManager;
+    periodicSync?: PeriodicSyncManager;
+  }
+}
 
 /**
  * Sync tags for different mutation types
@@ -19,15 +45,15 @@ import { clientLogger } from '@/lib/client-logger';
  */
 export const SYNC_TAGS = {
   /** Assessment submissions - highest priority */
-  ASSESSMENT: 'sync-assessments',
+  ASSESSMENT: "sync-assessments",
   /** Progress updates - medium priority */
-  PROGRESS: 'sync-progress',
+  PROGRESS: "sync-progress",
   /** AI chat messages - can be batched */
-  CHAT: 'sync-chat',
+  CHAT: "sync-chat",
   /** Points awards - low priority */
-  POINTS: 'sync-points',
+  POINTS: "sync-points",
   /** All pending data */
-  ALL: 'sync-all',
+  ALL: "sync-all",
 } as const;
 
 export type SyncTag = (typeof SYNC_TAGS)[keyof typeof SYNC_TAGS];
@@ -37,22 +63,29 @@ export type SyncTag = (typeof SYNC_TAGS)[keyof typeof SYNC_TAGS];
  */
 export const PERIODIC_SYNC_TAGS = {
   /** Sync curriculum content for offline access */
-  CURRICULUM: 'periodic-curriculum-sync',
+  CURRICULUM: "periodic-curriculum-sync",
   /** Check for new badges */
-  BADGES: 'periodic-badges-check',
+  BADGES: "periodic-badges-check",
 } as const;
 
 export type PeriodicSyncTag =
   (typeof PERIODIC_SYNC_TAGS)[keyof typeof PERIODIC_SYNC_TAGS];
 
 /**
+ * Check if Service Worker is supported
+ */
+export function isServiceWorkerSupported(): boolean {
+  return typeof navigator !== "undefined" && "serviceWorker" in navigator;
+}
+
+/**
  * Check if Background Sync API is supported
  */
 export function isBackgroundSyncSupported(): boolean {
   return (
-    typeof navigator !== 'undefined' &&
-    'serviceWorker' in navigator &&
-    'SyncManager' in window
+    isServiceWorkerSupported() &&
+    typeof globalThis !== "undefined" &&
+    "SyncManager" in globalThis
   );
 }
 
@@ -61,9 +94,9 @@ export function isBackgroundSyncSupported(): boolean {
  */
 export function isPeriodicSyncSupported(): boolean {
   return (
-    typeof navigator !== 'undefined' &&
-    'serviceWorker' in navigator &&
-    'periodicSync' in ServiceWorkerRegistration.prototype
+    typeof navigator !== "undefined" &&
+    "serviceWorker" in navigator &&
+    "periodicSync" in ServiceWorkerRegistration.prototype
   );
 }
 
@@ -78,19 +111,23 @@ export function isPeriodicSyncSupported(): boolean {
  */
 export async function registerSync(tag: SyncTag): Promise<boolean> {
   if (!isBackgroundSyncSupported()) {
-    clientLogger.warn('[BackgroundSync] Not supported in this browser');
+    clientLogger.warn("[BackgroundSync] Not supported in this browser");
     return false;
   }
 
   try {
     const registration = await navigator.serviceWorker.ready;
-    // Background Sync API types not in standard TypeScript lib
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (registration as any).sync.register(tag);
-    clientLogger.debug('[BackgroundSync] Registered', { tag });
+    // Use properly typed sync interface
+    if (!registration.sync) {
+      throw new Error("Background Sync API not available");
+    }
+    await registration.sync.register(tag);
+    clientLogger.debug("[BackgroundSync] Registered", { tag });
     return true;
   } catch (error) {
-    clientLogger.warn('[BackgroundSync] Registration failed', { error: error instanceof Error ? error.message : String(error) });
+    clientLogger.warn("[BackgroundSync] Registration failed", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return false;
   }
 }
@@ -111,32 +148,42 @@ export async function registerSync(tag: SyncTag): Promise<boolean> {
  */
 export async function registerPeriodicSync(
   tag: PeriodicSyncTag,
-  minInterval: number = 24 * 60 * 60 * 1000 // 24 hours default
+  minInterval: number = 24 * 60 * 60 * 1000, // 24 hours default
 ): Promise<boolean> {
   if (!isPeriodicSyncSupported()) {
-    clientLogger.warn('[PeriodicSync] Not supported in this browser');
+    clientLogger.warn("[PeriodicSync] Not supported in this browser");
     return false;
   }
 
   try {
     // Check permission
     const status = await navigator.permissions.query({
-      name: 'periodic-background-sync' as PermissionName,
+      name: "periodic-background-sync" as PermissionName,
     });
 
-    if (status.state !== 'granted') {
-      clientLogger.warn('[PeriodicSync] Permission not granted', { state: status.state });
+    if (status.state !== "granted") {
+      clientLogger.warn("[PeriodicSync] Permission not granted", {
+        state: status.state,
+      });
       return false;
     }
 
     const registration = await navigator.serviceWorker.ready;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (registration as any).periodicSync.register(tag, { minInterval });
+    // Use properly typed periodicSync interface
+    if (!registration.periodicSync) {
+      throw new Error("Periodic Background Sync API not available");
+    }
+    await registration.periodicSync.register(tag, { minInterval });
 
-    clientLogger.debug('[PeriodicSync] Registered', { tag, interval: minInterval });
+    clientLogger.debug("[PeriodicSync] Registered", {
+      tag,
+      interval: minInterval,
+    });
     return true;
   } catch (error) {
-    clientLogger.warn('[PeriodicSync] Registration failed', { error: error instanceof Error ? error.message : String(error) });
+    clientLogger.warn("[PeriodicSync] Registration failed", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return false;
   }
 }
@@ -145,7 +192,7 @@ export async function registerPeriodicSync(
  * Unregister a periodic background sync
  */
 export async function unregisterPeriodicSync(
-  tag: PeriodicSyncTag
+  tag: PeriodicSyncTag,
 ): Promise<boolean> {
   if (!isPeriodicSyncSupported()) {
     return false;
@@ -153,12 +200,17 @@ export async function unregisterPeriodicSync(
 
   try {
     const registration = await navigator.serviceWorker.ready;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (registration as any).periodicSync.unregister(tag);
-    clientLogger.debug('[PeriodicSync] Unregistered', { tag });
+    // Use properly typed periodicSync interface
+    if (!registration.periodicSync) {
+      throw new Error("Periodic Background Sync API not available");
+    }
+    await registration.periodicSync.unregister(tag);
+    clientLogger.debug("[PeriodicSync] Unregistered", { tag });
     return true;
   } catch (error) {
-    clientLogger.warn('[PeriodicSync] Unregistration failed', { error: error instanceof Error ? error.message : String(error) });
+    clientLogger.warn("[PeriodicSync] Unregistration failed", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return false;
   }
 }
@@ -173,11 +225,16 @@ export async function getPeriodicSyncTags(): Promise<string[]> {
 
   try {
     const registration = await navigator.serviceWorker.ready;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const tags = await (registration as any).periodicSync.getTags();
+    // Use properly typed periodicSync interface
+    if (!registration.periodicSync) {
+      throw new Error("Periodic Background Sync API not available");
+    }
+    const tags = await registration.periodicSync.getTags();
     return tags;
   } catch (error) {
-    clientLogger.warn('[PeriodicSync] Failed to get tags', { error: error instanceof Error ? error.message : String(error) });
+    clientLogger.warn("[PeriodicSync] Failed to get tags", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return [];
   }
 }
@@ -186,9 +243,9 @@ export async function getPeriodicSyncTags(): Promise<string[]> {
  * Send a message to the service worker
  */
 export async function sendMessageToSW<T = unknown>(
-  message: Record<string, unknown>
+  message: Record<string, unknown>,
 ): Promise<T | null> {
-  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) {
+  if (!isServiceWorkerSupported()) {
     return null;
   }
 
@@ -197,24 +254,48 @@ export async function sendMessageToSW<T = unknown>(
     const controller = registration.active;
 
     if (!controller) {
-      clientLogger.warn('[ServiceWorker] No active controller');
+      clientLogger.warn("[ServiceWorker] No active controller");
       return null;
     }
 
     return new Promise((resolve) => {
       const messageChannel = new MessageChannel();
+      let resolved = false;
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+      // BUG-007/BUG-013 FIX: Proper cleanup to prevent memory leaks
+      const cleanup = () => {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+        messageChannel.port1.onmessage = null;
+        messageChannel.port1.close();
+      };
 
       messageChannel.port1.onmessage = (event) => {
-        resolve(event.data as T);
+        if (!resolved) {
+          resolved = true;
+          cleanup();
+          resolve(event.data as T);
+        }
       };
 
       controller.postMessage(message, [messageChannel.port2]);
 
-      // Timeout after 5 seconds
-      setTimeout(() => resolve(null), 5000);
+      // BUG-013 FIX: Clear timeout when message received, and cleanup on timeout
+      timeoutId = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          cleanup();
+          resolve(null);
+        }
+      }, 5000);
     });
   } catch (error) {
-    clientLogger.warn('[ServiceWorker] Message failed', { error: error instanceof Error ? error.message : String(error) });
+    clientLogger.warn("[ServiceWorker] Message failed", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return null;
   }
 }
@@ -224,7 +305,7 @@ export async function sendMessageToSW<T = unknown>(
  */
 export async function requestImmediateSync(tag: SyncTag): Promise<boolean> {
   const response = await sendMessageToSW<{ success: boolean }>({
-    type: 'SYNC_NOW',
+    type: "SYNC_NOW",
     tag,
   });
 
@@ -242,7 +323,7 @@ export async function getSyncStatus(): Promise<{
     isReady: boolean;
     pendingTags: string[];
   }>({
-    type: 'GET_SYNC_STATUS',
+    type: "GET_SYNC_STATUS",
   });
 
   return response ?? { isReady: false, pendingTags: [] };
@@ -252,25 +333,44 @@ export async function getSyncStatus(): Promise<{
  * Initialize background sync for offline-first functionality
  * Call this on app startup
  */
+let bgSyncInitialized = false;
+
 export async function initializeBackgroundSync(): Promise<void> {
-  if (!isBackgroundSyncSupported()) {
-    clientLogger.debug('[BackgroundSync] Not supported - using fallback');
+  // Guard against duplicate initialization (e.g., HMR in development)
+  if (bgSyncInitialized) {
+    clientLogger.debug("[BackgroundSync] Already initialized, skipping");
     return;
   }
 
-  // Pre-register all sync tags
+  if (!isBackgroundSyncSupported()) {
+    clientLogger.debug("[BackgroundSync] Not supported - using fallback");
+    return;
+  }
+
+  bgSyncInitialized = true;
+
+  // BUG-010 FIX: Pre-register all sync tags with error handling
+  // Continue with other tags if one fails to register
   for (const tag of Object.values(SYNC_TAGS)) {
-    // These will only trigger when there's data to sync
-    await registerSync(tag);
+    try {
+      // These will only trigger when there's data to sync
+      await registerSync(tag);
+    } catch (error) {
+      clientLogger.warn("[BackgroundSync] Failed to register sync tag", {
+        tag,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      // Continue with next tag instead of crashing initialization
+    }
   }
 
   // Register periodic sync for curriculum updates (if supported)
   if (isPeriodicSyncSupported()) {
     await registerPeriodicSync(
       PERIODIC_SYNC_TAGS.CURRICULUM,
-      24 * 60 * 60 * 1000 // Daily
+      24 * 60 * 60 * 1000, // Daily
     );
   }
 
-  clientLogger.debug('[BackgroundSync] Initialized');
+  clientLogger.debug("[BackgroundSync] Initialized");
 }

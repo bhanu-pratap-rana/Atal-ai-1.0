@@ -16,4 +16,4 @@ export {
   MODEL_CONFIGS,
   type AIProviderType,
   type ModelConfigKey,
-} from './gemini';
+} from "./gemini";

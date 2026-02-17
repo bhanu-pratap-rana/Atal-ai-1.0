@@ -21,6 +21,20 @@ interface CheckResult {
 
 const results: CheckResult[] = []
 
+/**
+ * Get the status icon for a check result
+ */
+function getStatusIcon(status: 'pass' | 'fail' | 'skip'): string {
+  switch (status) {
+    case 'pass':
+      return '✅'
+    case 'fail':
+      return '❌'
+    case 'skip':
+      return '⏭️'
+  }
+}
+
 function runCheck(name: string, command: string, optional = false): boolean {
   const startTime = Date.now()
   console.log(`\n⏳ Running: ${name}...`)
@@ -77,7 +91,7 @@ async function main() {
 
   console.log('\nResults:')
   results.forEach(r => {
-    const icon = r.status === 'pass' ? '✅' : r.status === 'fail' ? '❌' : '⏭️'
+    const icon = getStatusIcon(r.status)
     console.log(`  ${icon} ${r.name}`)
   })
 

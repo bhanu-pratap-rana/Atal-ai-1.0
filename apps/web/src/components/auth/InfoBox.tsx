@@ -1,30 +1,30 @@
-import { ReactNode } from 'react'
-import { cn } from '@/lib/utils'
+import { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 /**
  * ATAL AI InfoBox Component - Jyoti Theme
- * 
+ *
  * STRICT RULES:
  * - default: Uses PRIMARY-light background (#FFE8DB)
  * - success/warning/error/info: Use semantic colors
  */
 
-type InfoBoxVariant = 'default' | 'info' | 'warning' | 'success' | 'error'
+type InfoBoxVariant = "default" | "info" | "warning" | "success" | "error";
 
 const variantStyles: Record<InfoBoxVariant, string> = {
-  default: 'bg-primary-light border-l-4 border-primary text-primary-dark',
-  info: 'bg-info-light border-l-4 border-info text-info-dark',
-  warning: 'bg-warning-light border-l-4 border-warning text-warning-dark',
-  success: 'bg-success-light border-l-4 border-success text-success-dark',
-  error: 'bg-error-light border-l-4 border-error text-error-dark',
-}
+  default: "bg-primary-light border-l-4 border-primary text-primary-dark",
+  info: "bg-info-light border-l-4 border-info text-info-dark",
+  warning: "bg-warning-light border-l-4 border-warning text-warning-dark",
+  success: "bg-success-light border-l-4 border-success text-success-dark",
+  error: "bg-error-light border-l-4 border-error text-error-dark",
+};
 
 interface InfoBoxProps {
-  children: ReactNode
-  variant?: InfoBoxVariant
-  title?: string
-  icon?: ReactNode
-  className?: string
+  readonly children: ReactNode;
+  readonly variant?: InfoBoxVariant;
+  readonly title?: string;
+  readonly icon?: ReactNode;
+  readonly className?: string;
 }
 
 /**
@@ -33,18 +33,14 @@ interface InfoBoxProps {
  */
 export function InfoBox({
   children,
-  variant = 'default',
+  variant = "default",
   title,
   icon,
-  className = '',
+  className = "",
 }: InfoBoxProps) {
   return (
-    <div 
-      className={cn(
-        "rounded-xl p-4",
-        variantStyles[variant],
-        className
-      )} 
+    <div
+      className={cn("rounded-xl p-4", variantStyles[variant], className)}
       role="alert"
     >
       <div className="flex gap-3">
@@ -55,5 +51,5 @@ export function InfoBox({
         </div>
       </div>
     </div>
-  )
+  );
 }

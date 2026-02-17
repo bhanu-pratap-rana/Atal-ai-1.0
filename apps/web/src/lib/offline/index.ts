@@ -15,7 +15,7 @@ export {
   type CachedLesson,
   type CachedProgress,
   type CachedConversation,
-} from './database';
+} from "./database";
 
 // Sync Queue
 export {
@@ -23,7 +23,7 @@ export {
   SyncQueue,
   type SyncStatus,
   type SyncResult,
-} from './sync-queue';
+} from "./sync-queue";
 
 // Lesson Cache
 export {
@@ -39,7 +39,7 @@ export {
   getTopicsForModule,
   isCacheApiAvailable,
   type Language,
-} from './lesson-cache';
+} from "./lesson-cache";
 
 // Background Sync
 export {
@@ -57,7 +57,7 @@ export {
   initializeBackgroundSync,
   type SyncTag,
   type PeriodicSyncTag,
-} from './background-sync';
+} from "./background-sync";
 
 // Mutation Queue Helpers
 export {
@@ -72,4 +72,4 @@ export {
   type ChatMessagePayload,
   type PointsAwardPayload,
   type ProgressUpdatePayload,
-} from './mutation-queue';
+} from "./mutation-queue";

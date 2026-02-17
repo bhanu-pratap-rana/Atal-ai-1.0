@@ -10,7 +10,7 @@ export {
   ragService,
   type CurriculumMatch,
   type RAGSearchOptions,
-} from './rag-service';
+} from "./rag-service";
 
 // TTS Service - AI4Bharat Text-to-Speech
 export {
@@ -19,7 +19,7 @@ export {
   type TTSLanguage,
   type TTSOptions,
   type VoiceConfig,
-} from './tts-service';
+} from "./tts-service";
 
 // Adaptive Learning Service
 export {
@@ -32,7 +32,7 @@ export {
   type LearningStyleProfile,
   type ContentAdaptation,
   type BehaviorSignal,
-} from './adaptive-service';
+} from "./adaptive-service";
 
 // Tutor Service - Socratic AI Tutoring
 export {
@@ -42,4 +42,4 @@ export {
   type TutorMessage,
   type TutorChatRequest,
   type TutorChatResponse,
-} from './tutor-service';
+} from "./tutor-service";

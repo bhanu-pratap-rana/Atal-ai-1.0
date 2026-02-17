@@ -12,7 +12,7 @@
  */
 
 export interface LogContext {
-  [key: string]: unknown
+  [key: string]: unknown;
 }
 
 /**
@@ -21,10 +21,10 @@ export interface LogContext {
  * @example "john.doe@example.com" => "jo***@example.com"
  */
 export function maskEmail(email?: string): string {
-  if (!email) return 'unknown'
-  const [local, domain] = email.split('@')
-  if (!local || !domain) return '***@***'
-  return `${local.substring(0, 2)}***@${domain}`
+  if (!email) return "unknown";
+  const [local, domain] = email.split("@");
+  if (!local || !domain) return "***@***";
+  return `${local.slice(0, 2)}***@${domain}`;
 }
 
 /**
@@ -33,17 +33,18 @@ export function maskEmail(email?: string): string {
  * @example "+919876543210" => "***3210"
  */
 export function maskPhone(phone?: string): string {
-  if (!phone) return 'unknown'
-  const cleaned = phone.replace(/\D/g, '')
-  if (cleaned.length < 4) return '****'
-  return `***${cleaned.slice(-4)}`
+  if (!phone) return "unknown";
+  const cleaned = phone.replaceAll(/\D/g, "");
+  if (cleaned.length < 4) return "****";
+  return `***${cleaned.slice(-4)}`;
 }
 
 /**
  * Alias for maskPhone for compatibility with phone-validation.ts exports
  * Returns format: ***XXXX (last 4 digits)
  */
-export const maskPhoneNumber = (phone: string): string => maskPhone(phone) || '****'
+export const maskPhoneNumber = (phone: string): string =>
+  maskPhone(phone) || "****";
 
 /**
  * Mask user ID for logging
@@ -51,8 +52,8 @@ export const maskPhoneNumber = (phone: string): string => maskPhone(phone) || '*
  * @example "abc12345-6789-..." => "abc12345..."
  */
 export function maskUserId(id?: string): string {
-  if (!id) return 'unknown'
-  return `${id.substring(0, 8)}...`
+  if (!id) return "unknown";
+  return `${id.slice(0, 8)}...`;
 }
 
 /**
@@ -60,9 +61,9 @@ export function maskUserId(id?: string): string {
  * Keeps only first 20 characters (or less for short tokens)
  */
 export function maskToken(token?: string): string {
-  if (!token) return 'unknown'
-  if (token.length <= 20) return '***'
-  return `${token.substring(0, 20)}...`
+  if (!token) return "unknown";
+  if (token.length <= 20) return "***";
+  return `${token.slice(0, 20)}...`;
 }
 
 /**
@@ -73,36 +74,38 @@ export function maskToken(token?: string): string {
  * @returns Masked copy of the data
  */
 export function maskSensitiveData(data: unknown, depth = 0): unknown {
-  if (depth > 3 || !data || typeof data !== 'object') {
-    return data
+  if (depth > 3 || !data || typeof data !== "object") {
+    return data;
   }
 
   if (Array.isArray(data)) {
-    return data.map(item => maskSensitiveData(item, depth + 1))
+    return data.map((item) => maskSensitiveData(item, depth + 1));
   }
 
-  const masked: LogContext = {}
+  const masked: LogContext = {};
 
   for (const [key, value] of Object.entries(data)) {
-    const lowerKey = key.toLowerCase()
+    const lowerKey = key.toLowerCase();
+    // TYPE-009 FIX: Add runtime type checks before calling masking functions
+    const valueAsString = typeof value === "string" ? value : undefined;
 
     // Mask sensitive fields based on key name
-    if (lowerKey.includes('email')) {
-      masked[key] = maskEmail(value as string)
-    } else if (lowerKey.includes('phone')) {
-      masked[key] = maskPhone(value as string)
-    } else if (lowerKey.includes('password') || lowerKey.includes('pwd')) {
-      masked[key] = '***'
-    } else if (lowerKey.includes('token') || lowerKey.includes('otp')) {
-      masked[key] = maskToken(value as string)
-    } else if (lowerKey === 'id' || lowerKey.includes('user_id')) {
-      masked[key] = maskUserId(value as string)
-    } else if (typeof value === 'object') {
-      masked[key] = maskSensitiveData(value, depth + 1)
+    if (lowerKey.includes("email")) {
+      masked[key] = maskEmail(valueAsString);
+    } else if (lowerKey.includes("phone")) {
+      masked[key] = maskPhone(valueAsString);
+    } else if (lowerKey.includes("password") || lowerKey.includes("pwd")) {
+      masked[key] = "***";
+    } else if (lowerKey.includes("token") || lowerKey.includes("otp")) {
+      masked[key] = maskToken(valueAsString);
+    } else if (lowerKey === "id" || lowerKey.includes("user_id")) {
+      masked[key] = maskUserId(valueAsString);
+    } else if (typeof value === "object") {
+      masked[key] = maskSensitiveData(value, depth + 1);
     } else {
-      masked[key] = value
+      masked[key] = value;
     }
   }
 
-  return masked
+  return masked;
 }

@@ -4,31 +4,32 @@
  */
 
 // Password validation
-export const PASSWORD_MIN_LENGTH = 8
-export const PASSWORD_MAX_LENGTH = 128
+export const PASSWORD_MIN_LENGTH = 8;
+export const PASSWORD_MAX_LENGTH = 128;
 
 // OTP validation
-export const OTP_LENGTH = 6
-export const OTP_EXPIRY_MINUTES = 10
+export const OTP_LENGTH = 6;
+export const OTP_EXPIRY_MINUTES = 10;
 
 // PIN validation (for class joining)
-export const PIN_LENGTH = 4
-export const PIN_MAX_ATTEMPTS = 3
+export const PIN_LENGTH = 4;
+export const PIN_MAX_ATTEMPTS = 3;
 
 // Phone number validation (India-specific)
-export const PHONE_COUNTRY_CODE = '+91'
-export const PHONE_DIGIT_LENGTH = 10
-export const PHONE_TOTAL_LENGTH = PHONE_COUNTRY_CODE.length + PHONE_DIGIT_LENGTH // 13 (+91 + 10 digits)
+export const PHONE_COUNTRY_CODE = "+91";
+export const PHONE_DIGIT_LENGTH = 10;
+export const PHONE_TOTAL_LENGTH =
+  PHONE_COUNTRY_CODE.length + PHONE_DIGIT_LENGTH; // 13 (+91 + 10 digits)
 
 // Email validation
-export const EMAIL_MAX_LENGTH = 254
-export const EMAIL_VERIFIED_REQUIRED = false // Can be false for demo, true for production
+export const EMAIL_MAX_LENGTH = 254;
+export const EMAIL_VERIFIED_REQUIRED = false; // Can be false for demo, true for production
 // Strict regex for email validation - allows standard email formats
 // Matches: local@domain.extension where both local and domain have specific character restrictions
-export const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+export const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 // Class code validation
-export const CLASS_CODE_LENGTH = 6
+export const CLASS_CODE_LENGTH = 6;
 
 // Rate limiting
 // NOTE: Rate limit values are defined in constants/rate-limits.ts
@@ -38,57 +39,57 @@ export const CLASS_CODE_LENGTH = 6
 
 // Valid email providers (whitelist legitimate domains)
 export const VALID_EMAIL_PROVIDERS = [
-  'gmail.com',
-  'yahoo.com',
-  'outlook.com',
-  'hotmail.com',
-  'icloud.com',
-  'protonmail.com',
-  'mail.com',
-  'yandex.com',
-  'aol.com',
-  'gmx.com',
-  'fastmail.com',
-  'tutanota.com',
-  'zoho.com',
-  'mailgun.org',
-  'example.com', // For testing
-  'googlemail.com',
-  'rediffmail.com', // Popular in India
-  'live.com',
-  'msn.com',
-  'inbox.com',
-  'mail.ru',
-  '163.com',
-  'qq.com',
-  'sina.com',
-  'sohu.com',
-  'vip.qq.com',
-]
+  "gmail.com",
+  "yahoo.com",
+  "outlook.com",
+  "hotmail.com",
+  "icloud.com",
+  "protonmail.com",
+  "mail.com",
+  "yandex.com",
+  "aol.com",
+  "gmx.com",
+  "fastmail.com",
+  "tutanota.com",
+  "zoho.com",
+  "mailgun.org",
+  "example.com", // For testing
+  "googlemail.com",
+  "rediffmail.com", // Popular in India
+  "live.com",
+  "msn.com",
+  "inbox.com",
+  "mail.ru",
+  "163.com",
+  "qq.com",
+  "sina.com",
+  "sohu.com",
+  "vip.qq.com",
+];
 
 // Common email domain typos for detection
 // Maps common misspellings to correct domains
 export const COMMON_DOMAIN_TYPOS: Record<string, string> = {
-  'gmai.com': 'gmail.com',
-  'gmal.com': 'gmail.com',
-  'gmial.com': 'gmail.com',
-  'gmali.com': 'gmail.com',
-  'gmil.com': 'gmail.com',
-  'gamail.com': 'gmail.com',
-  'gmain.com': 'gmail.com',
-  'gmaul.com': 'gmail.com',
-  'gail.com': 'gmail.com',
-  'yahooo.com': 'yahoo.com',
-  'yaho.com': 'yahoo.com',
-  'ahoo.com': 'yahoo.com',
-  'outlook.co': 'outlook.com',
-  'outloik.com': 'outlook.com',
-  'hotmial.com': 'hotmail.com',
-  'hotmai.com': 'hotmail.com',
-  'hotmal.com': 'hotmail.com',
-  'icloud.co': 'icloud.com',
-  'icloud.cm': 'icloud.com',
-}
+  "gmai.com": "gmail.com",
+  "gmal.com": "gmail.com",
+  "gmial.com": "gmail.com",
+  "gmali.com": "gmail.com",
+  "gmil.com": "gmail.com",
+  "gamail.com": "gmail.com",
+  "gmain.com": "gmail.com",
+  "gmaul.com": "gmail.com",
+  "gail.com": "gmail.com",
+  "yahooo.com": "yahoo.com",
+  "yaho.com": "yahoo.com",
+  "ahoo.com": "yahoo.com",
+  "outlook.co": "outlook.com",
+  "outloik.com": "outlook.com",
+  "hotmial.com": "hotmail.com",
+  "hotmai.com": "hotmail.com",
+  "hotmal.com": "hotmail.com",
+  "icloud.co": "icloud.com",
+  "icloud.cm": "icloud.com",
+};
 
 /**
  * Blocked email domains (disposable/fake services)
@@ -96,79 +97,80 @@ export const COMMON_DOMAIN_TYPOS: Record<string, string> = {
  * This eliminates 30+ duplicate entries that were previously scattered
  */
 export const BLOCKED_EMAIL_DOMAINS = new Set([
-  'tempmail.com',
-  'guerrillamail.com',
-  '10minutemail.com',
-  'mailinator.com',
-  'throwaway.email',
-  'maildrop.cc',
-  'sharklasers.com',
-  'guerrillapop.com',
-  'spam4.me',
-  'trashmail.com',
-  'fakeinbox.com',
-  'yopmail.com',
-  'temp-mail.org',
-  'mytrashmail.com',
-  'bugmenot.com',
-  'disposablemail.com',
-  'fakemail.net',
-  'spam.la',
-  'protonmailrmez3lotccipshtkleegetolb73fuirgj7r4o4vfu7ozyd.onion',
-  'thraml.com',
-  'vpn.com',
-  'vpnmail.com',
-  'dontreplytome.com',
-  'nomail.com',
-  'anymail.net',
-  'armyspy.com',
-  'dayroommail.com',
-  'fakemail.fr',
-  'guerrillamail.info',
-  'guerrillamail.net',
-  'guerrillamail.org',
-  'guerrillamail.biz',
-  'pokemail.net',
-  'thingymail.com',
-  'trashmail.de',
-  'spamgourmet.com',
-])
+  "tempmail.com",
+  "guerrillamail.com",
+  "10minutemail.com",
+  "mailinator.com",
+  "throwaway.email",
+  "maildrop.cc",
+  "sharklasers.com",
+  "guerrillapop.com",
+  "spam4.me",
+  "trashmail.com",
+  "fakeinbox.com",
+  "yopmail.com",
+  "temp-mail.org",
+  "mytrashmail.com",
+  "bugmenot.com",
+  "disposablemail.com",
+  "fakemail.net",
+  "spam.la",
+  "protonmailrmez3lotccipshtkleegetolb73fuirgj7r4o4vfu7ozyd.onion",
+  "thraml.com",
+  "vpn.com",
+  "vpnmail.com",
+  "dontreplytome.com",
+  "nomail.com",
+  "anymail.net",
+  "armyspy.com",
+  "dayroommail.com",
+  "fakemail.fr",
+  "guerrillamail.info",
+  "guerrillamail.net",
+  "guerrillamail.org",
+  "guerrillamail.biz",
+  "pokemail.net",
+  "thingymail.com",
+  "trashmail.de",
+  "spamgourmet.com",
+]);
 
 // Auth error messages
 export const AUTH_ERRORS = {
-  INVALID_EMAIL: 'Please enter a valid email address',
-  EMAIL_ALREADY_EXISTS: 'This email is already registered',
+  INVALID_EMAIL: "Please enter a valid email address",
+  EMAIL_ALREADY_EXISTS: "This email is already registered",
   INVALID_PASSWORD: `Password must be at least ${PASSWORD_MIN_LENGTH} characters long`,
-  PASSWORD_MISMATCH: 'Passwords do not match',
-  INVALID_OTP: 'Please enter a valid OTP',
-  INVALID_PHONE: 'Please enter a valid phone number',
-  INVALID_PIN: 'Please enter a valid 4-digit PIN',
-  INVALID_CLASS_CODE: 'Please enter a valid 6-character class code',
-  INVALID_ROLL_NUMBER: 'Please enter a valid roll number',
-  NETWORK_ERROR: 'Network error. Please check your connection and try again',
-  UNEXPECTED_ERROR: 'An unexpected error occurred. Please try again.',
-  INVALID_CREDENTIALS: 'Invalid email/phone or password',
-  ACCOUNT_NOT_FOUND: 'Account not found. Please sign up first.',
-  OTP_EXPIRED: 'OTP has expired. Please request a new one.',
-  MAX_OTP_ATTEMPTS: 'Too many failed attempts. Please request a new OTP.',
-  RATE_LIMITED: 'Too many requests. Please wait a moment before trying again.',
-  DISPOSABLE_EMAIL: 'Disposable email addresses are not allowed',
-  EMAIL_IN_USE_AS_TEACHER: 'This email is already used as a teacher account. Please sign in instead.',
-  EMAIL_IN_USE_AS_STUDENT: 'This email is already used as a student account. Please sign in instead.',
-  PHONE_IN_USE: 'This phone number is already registered.',
-}
+  PASSWORD_MISMATCH: "Passwords do not match",
+  INVALID_OTP: "Please enter a valid OTP",
+  INVALID_PHONE: "Please enter a valid phone number",
+  INVALID_PIN: "Please enter a valid 4-digit PIN",
+  INVALID_CLASS_CODE: "Please enter a valid 6-character class code",
+  INVALID_ROLL_NUMBER: "Please enter a valid roll number",
+  NETWORK_ERROR: "Network error. Please check your connection and try again",
+  UNEXPECTED_ERROR: "An unexpected error occurred. Please try again.",
+  INVALID_CREDENTIALS: "Invalid email/phone or password",
+  ACCOUNT_NOT_FOUND: "Account not found. Please sign up first.",
+  OTP_EXPIRED: "OTP has expired. Please request a new one.",
+  MAX_OTP_ATTEMPTS: "Too many failed attempts. Please request a new OTP.",
+  RATE_LIMITED: "Too many requests. Please wait a moment before trying again.",
+  DISPOSABLE_EMAIL: "Disposable email addresses are not allowed",
+  EMAIL_IN_USE_AS_TEACHER:
+    "This email is already used as a teacher account. Please sign in instead.",
+  EMAIL_IN_USE_AS_STUDENT:
+    "This email is already used as a student account. Please sign in instead.",
+  PHONE_IN_USE: "This phone number is already registered.",
+};
 
 // Success messages
 export const SUCCESS_MESSAGES = {
-  OTP_SENT: 'OTP sent to your email!',
-  OTP_SENT_PHONE: 'OTP sent to your phone!',
-  EMAIL_VERIFIED: 'Email verified successfully!',
-  PHONE_VERIFIED: 'Phone verified successfully!',
-  ACCOUNT_CREATED: 'Account created successfully! 🎉',
-  SIGNED_IN: 'Signed in successfully! 🎉',
-  SIGNED_OUT: 'Signed out successfully',
-  PASSWORD_CHANGED: 'Password changed successfully',
-  PROFILE_UPDATED: 'Profile updated successfully',
-  CLASS_JOINED: 'Successfully joined class! 🎉',
-}
-
+  OTP_SENT: "OTP sent to your email!",
+  OTP_SENT_PHONE: "OTP sent to your phone!",
+  EMAIL_VERIFIED: "Email verified successfully!",
+  PHONE_VERIFIED: "Phone verified successfully!",
+  ACCOUNT_CREATED: "Account created successfully! 🎉",
+  SIGNED_IN: "Signed in successfully! 🎉",
+  SIGNED_OUT: "Signed out successfully",
+  PASSWORD_CHANGED: "Password changed successfully",
+  PROFILE_UPDATED: "Profile updated successfully",
+  CLASS_JOINED: "Successfully joined class! 🎉",
+};

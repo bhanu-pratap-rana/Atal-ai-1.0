@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from "react";
 
 /**
  * ATAL AI Assessment Result Circle - Jyoti Theme
@@ -16,77 +16,86 @@ import { useEffect, useState } from 'react'
 
 interface ResultCircleProps {
   /** Score percentage (0-100) */
-  percentage: number
+  readonly percentage: number;
   /** Size of the circle in pixels */
-  size?: number
+  readonly size?: number;
   /** Stroke width in pixels */
-  strokeWidth?: number
+  readonly strokeWidth?: number;
   /** Label text below percentage */
-  label?: string
+  readonly label?: string;
   /** Whether to animate the fill */
-  animate?: boolean
+  readonly animate?: boolean;
   /** Custom class name */
-  className?: string
+  readonly className?: string;
+}
+
+/**
+ * Shared helper: Get color class based on percentage
+ * Extracted to avoid S4144 duplication between ResultCircle and CompactResultCircle
+ */
+function getColorClass(pct: number): string {
+  if (pct >= 80) return "text-success";
+  if (pct >= 60) return "text-warning";
+  return "text-error";
 }
 
 export function ResultCircle({
   percentage,
   size = 160,
   strokeWidth = 12,
-  label = 'Score',
+  label = "Score",
   animate = true,
-  className = '',
+  className = "",
 }: ResultCircleProps) {
-  const [displayPercentage, setDisplayPercentage] = useState(animate ? 0 : percentage)
+  const [displayPercentage, setDisplayPercentage] = useState(
+    animate ? 0 : percentage,
+  );
 
   // Calculate SVG values
-  const radius = (size - strokeWidth) / 2
-  const circumference = 2 * Math.PI * radius
-  const strokeDashoffset = circumference - (displayPercentage / 100) * circumference
-
-  // Determine color class based on percentage
-  const getColorClass = (pct: number) => {
-    if (pct >= 80) return 'text-success'
-    if (pct >= 60) return 'text-warning'
-    return 'text-error'
-  }
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset =
+    circumference - (displayPercentage / 100) * circumference;
 
   const getPerformanceText = (pct: number) => {
-    if (pct >= 80) return 'Excellent!'
-    if (pct >= 60) return 'Good!'
-    return 'Keep Practicing'
-  }
+    if (pct >= 80) return "Excellent!";
+    if (pct >= 60) return "Good!";
+    return "Keep Practicing";
+  };
 
   // Animate percentage on mount
   useEffect(() => {
     if (!animate) {
-      setDisplayPercentage(percentage)
-      return
+      // Safe to set display percentage synchronously for initial state
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setDisplayPercentage(percentage);
+      return;
     }
 
-    const duration = 1500 // ms
-    const steps = 60
-    const increment = percentage / steps
-    let current = 0
+    const duration = 1500; // ms
+    const steps = 60;
+    const increment = percentage / steps;
+    let current = 0;
 
     const interval = setInterval(() => {
-      current += increment
+      current += increment;
       if (current >= percentage) {
-        setDisplayPercentage(percentage)
-        clearInterval(interval)
+        setDisplayPercentage(percentage);
+        clearInterval(interval);
       } else {
-        setDisplayPercentage(Math.round(current))
+        setDisplayPercentage(Math.round(current));
       }
-    }, duration / steps)
+    }, duration / steps);
 
-    return () => clearInterval(interval)
-  }, [percentage, animate])
+    return () => clearInterval(interval);
+  }, [percentage, animate]);
 
   return (
     <div className={`flex flex-col items-center ${className}`}>
-      {/* SVG Circle */}
+      {/* SVG Circle - role="img" is correct for SVG accessibility */}
       <div className="relative" style={{ width: size, height: size }}>
-        <svg
+        {/* NOSONAR S6819: SVG with role="img" is the correct accessibility pattern */}
+        <svg // NOSONAR
           width={size}
           height={size}
           viewBox={`0 0 ${size} ${size}`}
@@ -135,7 +144,7 @@ export function ResultCircle({
         {getPerformanceText(percentage)}
       </p>
     </div>
-  )
+  );
 }
 
 /**
@@ -145,20 +154,15 @@ export function CompactResultCircle({
   percentage,
   size = 64,
   strokeWidth = 6,
-}: Pick<ResultCircleProps, 'percentage' | 'size' | 'strokeWidth'>) {
-  const radius = (size - strokeWidth) / 2
-  const circumference = 2 * Math.PI * radius
-  const strokeDashoffset = circumference - (percentage / 100) * circumference
-
-  const getColorClass = (pct: number) => {
-    if (pct >= 80) return 'text-success'
-    if (pct >= 60) return 'text-warning'
-    return 'text-error'
-  }
+}: Readonly<Pick<ResultCircleProps, "percentage" | "size" | "strokeWidth">>) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
   return (
     <div className="relative" style={{ width: size, height: size }}>
-      <svg
+      {/* NOSONAR S6819: SVG with role="img" is the correct accessibility pattern */}
+      <svg // NOSONAR
         width={size}
         height={size}
         viewBox={`0 0 ${size} ${size}`}
@@ -194,5 +198,5 @@ export function CompactResultCircle({
         </span>
       </div>
     </div>
-  )
+  );
 }

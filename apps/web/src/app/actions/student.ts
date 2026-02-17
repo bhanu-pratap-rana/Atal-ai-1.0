@@ -1,22 +1,36 @@
-'use server'
+"use server";
 
-import { revalidatePath } from 'next/cache'
-import { timingSafeEqual } from 'crypto'
-import { z } from 'zod'
-import { createClient, getCurrentUser, verifyStudentAuth } from '@/lib/supabase-server'
-import { authLogger } from '@/lib/auth-logger'
-import { checkRateLimit } from '@/lib/rate-limiter-distributed'
-import { RATE_LIMITS } from '@/lib/constants/rate-limits'
-import { JoinClassSchema, StudentProfileSchema, ClassIdSchema } from '@/lib/validation-schemas'
+import { revalidatePath } from "next/cache";
+import { timingSafeEqual } from "node:crypto";
+import {
+  createClient,
+  getCurrentUser,
+  verifyStudentAuth,
+} from "@/lib/supabase-server";
+import { authLogger } from "@/lib/auth-logger";
+import {
+  checkRateLimit,
+  checkStudentMutationRateLimit,
+} from "@/lib/rate-limiter-distributed";
+import { queryCache } from "@/lib/cache/query-cache";
+import { RATE_LIMITS } from "@/lib/constants/rate-limits";
+import {
+  JoinClassSchema,
+  StudentProfileSchema,
+  ClassIdSchema,
+} from "@/lib/validation-schemas";
+import type { UpsertStudentProfileRPCResponse } from "@/types/auth";
+import { handleZodError } from "@/lib/action-error-handler";
+import { RATE_LIMIT_ERRORS } from "@/lib/constants/error-messages";
 
 interface StudentProfileParams {
-  name: string
-  gender: 'male' | 'female'
-  phone?: string
-  rollNumber?: string
-  schoolName?: string
-  className?: string
-  village?: string
+  name: string;
+  gender: "male" | "female";
+  phone?: string;
+  rollNumber?: string;
+  schoolName?: string;
+  className?: string;
+  village?: string;
 }
 
 /**
@@ -26,170 +40,175 @@ interface StudentProfileParams {
 export async function saveStudentProfile(params: StudentProfileParams) {
   try {
     // Validate inputs
-    const validatedInput = StudentProfileSchema.parse(params)
-    authLogger.debug('[saveStudentProfile] Validated input', {
+    let validatedInput;
+    try {
+      validatedInput = StudentProfileSchema.parse(params);
+    } catch (error) {
+      return handleZodError(error);
+    }
+    authLogger.debug("[saveStudentProfile] Validated input", {
       name: validatedInput.name,
-      gender: validatedInput.gender
-    })
+      gender: validatedInput.gender,
+    });
 
-    // Get user using consistent getCurrentUser() pattern
-    const user = await getCurrentUser()
-
-    if (!user) {
-      authLogger.error('[saveStudentProfile] No authenticated user - session may not be synced')
-      return { success: false, error: 'Not authenticated. Please try logging in again.' }
+    // SECURITY: Verify caller is authenticated and is a student (not teacher/admin)
+    const auth = await verifyStudentAuth("saveStudentProfile");
+    if (!auth.authorized) {
+      return auth.error;
     }
 
-    authLogger.debug('[saveStudentProfile] User authenticated', {
+    const user = auth.user;
+
+    authLogger.debug("[saveStudentProfile] User authenticated", {
       userId: user.id,
       email: user.email,
-      isAnonymous: user.is_anonymous
-    })
+      isAnonymous: user.is_anonymous,
+    });
 
-    const supabase = await createClient()
-
-    // Check if profile already exists (use maybeSingle to avoid 406 error when no rows found)
-    const { data: existingProfile, error: selectError } = await supabase
-      .from('student_profiles')
-      .select('user_id')
-      .eq('user_id', user.id)
-      .maybeSingle()
-
-    // Log select error if any (maybeSingle returns null for no rows, not an error)
-    if (selectError) {
-      authLogger.error('[saveStudentProfile] Error checking existing profile', {
-        code: selectError.code,
-        message: selectError.message,
-        details: selectError.details,
-        hint: selectError.hint
-      })
-      // Continue anyway - we'll try to insert and handle duplicate if it exists
+    // SECURITY: Rate limit student mutations to prevent abuse
+    const saveAllowed = await checkStudentMutationRateLimit(user.id);
+    if (!saveAllowed) {
+      authLogger.warn("[saveStudentProfile] Rate limit exceeded", {
+        userId: user.id,
+      });
+      return {
+        success: false,
+        error: RATE_LIMIT_ERRORS.TOO_MANY_REQUESTS,
+      };
     }
 
-    if (existingProfile) {
-      authLogger.debug('[saveStudentProfile] Profile exists, updating...')
-      // Update existing profile
-      const { error: updateError } = await supabase
-        .from('student_profiles')
-        .update({
-          name: validatedInput.name,
-          gender: validatedInput.gender,
-          phone: validatedInput.phone || null,
-          roll_number: validatedInput.rollNumber || null,
-          school_name: validatedInput.schoolName || null,
-          class_name: validatedInput.className || null,
-          village: validatedInput.village || null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', user.id)
+    const supabase = await createClient();
 
-      if (updateError) {
-        authLogger.error('[saveStudentProfile] Failed to update profile', {
-          code: updateError.code,
-          message: updateError.message,
-          details: updateError.details,
-          hint: updateError.hint
-        })
-        return { success: false, error: `Failed to update profile: ${updateError.message}` }
-      }
-
-      authLogger.success('[saveStudentProfile] Profile updated successfully')
-      return { success: true }
-    }
-
-    // Create new profile
-    authLogger.debug('[saveStudentProfile] Creating new profile...', { userId: user.id })
-    const { data: insertData, error: insertError } = await supabase
-      .from('student_profiles')
-      .insert({
-        user_id: user.id,
+    // SECURITY FIX #2: Use atomic UPSERT RPC to eliminate race condition
+    // Single database operation ensures concurrent requests are serialized atomically
+    // No check-then-insert pattern window for concurrent requests to exploit
+    authLogger.debug(
+      "[saveStudentProfile] Calling atomic upsert_student_profile RPC...",
+      {
+        userId: user.id,
         name: validatedInput.name,
-        gender: validatedInput.gender,
-        phone: validatedInput.phone || null,
-        roll_number: validatedInput.rollNumber || null,
-        school_name: validatedInput.schoolName || null,
-        class_name: validatedInput.className || null,
-        village: validatedInput.village || null,
-      })
-      .select()
+      },
+    );
 
-    if (insertError) {
-      authLogger.error('[saveStudentProfile] Failed to create profile', {
-        code: insertError.code,
-        message: insertError.message,
-        details: insertError.details,
-        hint: insertError.hint,
-        userId: user.id
-      })
+    const { data: rpcResult, error: rpcError } = await supabase.rpc(
+      "upsert_student_profile",
+      {
+        p_user_id: user.id,
+        p_name: validatedInput.name,
+        p_gender: validatedInput.gender,
+        p_date_of_birth: null, // Not in current schema - reserved for future
+        p_phone: validatedInput.phone || null,
+        p_location: validatedInput.village || null,
+        p_medium: null, // Not in current schema - reserved for future
+        p_board: null, // Not in current schema - reserved for future
+        p_class: validatedInput.className || null,
+      },
+    );
 
-      // Provide more specific error messages based on error code
-      let errorMessage = 'Failed to create profile'
-      if (insertError.code === '23505') {
-        errorMessage = 'Profile already exists for this user'
-      } else if (insertError.code === '23503') {
-        errorMessage = 'User account not found. Please try signing up again.'
-      } else if (insertError.code === '42501') {
-        errorMessage = 'Permission denied. Please try logging in again.'
-      } else if (insertError.message) {
-        errorMessage = insertError.message
+    if (rpcError) {
+      authLogger.error(
+        "[saveStudentProfile] RPC upsert_student_profile failed",
+        {
+          code: rpcError.code,
+          message: rpcError.message,
+          details: rpcError.details,
+          hint: rpcError.hint,
+          userId: user.id,
+        },
+      );
+      return {
+        success: false,
+        error: "Failed to save profile. Please try again.",
+      };
+    }
+
+    // RPC returns JSON object with success/error
+    const rpcResponse = rpcResult as UpsertStudentProfileRPCResponse;
+    if (rpcResponse && typeof rpcResponse === "object") {
+      if (!rpcResponse.success) {
+        authLogger.error("[saveStudentProfile] RPC returned error", {
+          error: rpcResponse.error,
+          code: rpcResponse.code,
+        });
+        return {
+          success: false,
+          error: "Failed to save profile. Please try again.",
+        };
       }
-
-      return { success: false, error: errorMessage }
     }
 
-    authLogger.success('[saveStudentProfile] Profile created successfully', {
-      userId: user.id,
-      insertData
-    })
-    revalidatePath('/app/dashboard')
-    return { success: true }
+    authLogger.success(
+      "[saveStudentProfile] Profile saved successfully (UPSERT)",
+      {
+        userId: user.id,
+        result: rpcResult,
+      },
+    );
+    revalidatePath("/app/dashboard");
+    return { success: true };
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      const firstError = error.issues[0]
-      authLogger.error('[saveStudentProfile] Validation error', { issues: error.issues })
-      return { success: false, error: firstError?.message || 'Invalid input' }
-    }
-    authLogger.error('[saveStudentProfile] Unexpected error', error)
+    authLogger.error("[saveStudentProfile] Unexpected error", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'An unexpected error occurred',
-    }
+      error:
+        error instanceof Error ? error.message : "An unexpected error occurred",
+    };
   }
 }
 
 /**
+ * Internal function to fetch student profile from database
+ * This is wrapped by getStudentProfile() with query caching
+ */
+async function fetchStudentProfileFromDB(userId: string) {
+  const supabase = await createClient();
+
+  // Use maybeSingle to avoid 406 error when profile doesn't exist
+  // OPTIMIZATION: Select only needed columns instead of *
+  const { data: profile, error } = await supabase
+    .from("student_profiles")
+    .select(
+      "user_id, name, gender, phone, roll_number, school_id, school_name, class_name, village, created_at, updated_at",
+    )
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return profile;
+}
+
+/**
  * Get current user's student profile
+ * PERFORMANCE: Results cached for 2 minutes to reduce database load
  */
 export async function getStudentProfile() {
   try {
-    const user = await getCurrentUser()
+    const user = await getCurrentUser();
 
     if (!user) {
-      return { success: false, error: 'Not authenticated', profile: null }
+      return { success: false, error: "Not authenticated", profile: null };
     }
 
-    const supabase = await createClient()
+    // PERFORMANCE: Use query cache - 2 minute TTL for student profiles
+    // Student profiles change less frequently and benefit from caching
+    const profile = await queryCache.getOrFetch(
+      `student:${user.id}:profile`,
+      () => fetchStudentProfileFromDB(user.id),
+      2 * 60 * 1000, // 2 minutes
+    );
 
-    // Use maybeSingle to avoid 406 error when profile doesn't exist
-    const { data: profile, error } = await supabase
-      .from('student_profiles')
-      .select('*')
-      .eq('user_id', user.id)
-      .maybeSingle()
-
-    if (error) {
-      authLogger.error('[getStudentProfile] Error fetching profile', error)
-      return { success: false, error: 'Failed to fetch profile', profile: null }
-    }
-
-    return { success: true, profile }
+    return { success: true, profile };
   } catch (error) {
-    authLogger.error('[getStudentProfile] Unexpected error', error)
+    authLogger.error("[getStudentProfile] Unexpected error", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'An unexpected error occurred',
+      error:
+        error instanceof Error ? error.message : "An unexpected error occurred",
       profile: null,
-    }
+    };
   }
 }
 
@@ -199,222 +218,361 @@ export async function getStudentProfile() {
  * This allows students to verify they're joining the right class
  */
 export async function previewClass(classCode: string): Promise<{
-  success: boolean
+  success: boolean;
   data?: {
-    className: string
-    teacherName: string
-    subject: string | null
-    studentCount: number
-  }
-  error?: string
+    className: string;
+    teacherName: string;
+    subject: string | null;
+    studentCount: number;
+  };
+  error?: string;
 }> {
   try {
-    // Normalize class code
-    classCode = classCode.toUpperCase().replace(/[^A-Z0-9]/g, '')
-
-    if (classCode.length !== 6) {
-      return { success: false, error: 'Class code must be 6 characters' }
+    // Validate input using schema (consistent with other functions)
+    let validatedClassCode;
+    try {
+      validatedClassCode = JoinClassSchema.pick({ classCode: true }).parse({
+        classCode: classCode.toUpperCase().replaceAll(/[^A-Z0-9]/g, ""),
+      }).classCode;
+    } catch (error) {
+      const zodError = handleZodError(error);
+      return { success: zodError.success, error: zodError.error };
     }
 
-    const supabase = await createClient()
+    // Use regular client - RLS policy allows authenticated users to preview classes by code
+    const supabase = await createClient();
 
     // Find class by code (no PIN required for preview)
     const { data: classData, error: classError } = await supabase
-      .from('classes')
-      .select(`
+      .from("classes")
+      .select(
+        `
         id,
         name,
         subject,
         teacher_id
-      `)
-      .eq('class_code', classCode)
-      .maybeSingle()
+      `,
+      )
+      .eq("class_code", validatedClassCode)
+      .maybeSingle();
 
     if (classError) {
-      authLogger.error('[previewClass] Error looking up class', classError)
-      return { success: false, error: 'Failed to lookup class' }
+      authLogger.error("[previewClass] Error looking up class", classError);
+      return { success: false, error: "Failed to lookup class" };
     }
 
     if (!classData) {
-      return { success: false, error: 'Class not found. Please check the code.' }
+      return {
+        success: false,
+        error: "Class not found. Please check the code.",
+      };
     }
 
     // Get teacher name
     const { data: teacherProfile } = await supabase
-      .from('teacher_profiles')
-      .select('name')
-      .eq('user_id', classData.teacher_id)
-      .maybeSingle()
+      .from("teacher_profiles")
+      .select("name")
+      .eq("user_id", classData.teacher_id)
+      .maybeSingle();
 
     // Get student count
     const { count: studentCount } = await supabase
-      .from('enrollments')
-      .select('*', { count: 'exact', head: true })
-      .eq('class_id', classData.id)
+      .from("enrollments")
+      .select("*", { count: "exact", head: true })
+      .eq("class_id", classData.id);
 
     return {
       success: true,
       data: {
         className: classData.name,
-        teacherName: teacherProfile?.name || 'Unknown Teacher',
+        teacherName: teacherProfile?.name || "Unknown Teacher",
         subject: classData.subject,
-        studentCount: studentCount || 0
-      }
-    }
+        studentCount: studentCount || 0,
+      },
+    };
   } catch (error) {
-    authLogger.error('[previewClass] Unexpected error', error)
+    authLogger.error("[previewClass] Unexpected error", error);
     return {
       success: false,
-      error: 'An unexpected error occurred'
-    }
+      error: "An unexpected error occurred",
+    };
   }
 }
 
 interface JoinClassParams {
-  classCode: string
-  pin: string
+  classCode: string;
+  pin: string;
 }
 
-export async function joinClass({ classCode, pin }: JoinClassParams) {
+/**
+ * Helper: Verify PIN using constant-time comparison
+ */
+function verifyPin(pin: string, storedPin: string | null): boolean {
+  if (!storedPin) {
+    return false;
+  }
   try {
-    // Validate inputs
-    const validatedInput = JoinClassSchema.parse({ classCode, pin })
-    classCode = validatedInput.classCode
-    pin = validatedInput.pin
-
-    // SECURITY: Verify caller is authenticated and is a student
-    const auth = await verifyStudentAuth('joinClass')
-    if (!auth.authorized) {
-      return auth.error!
-    }
-
-    // SECURITY: Rate limit to prevent PIN brute force attacks
-    // Uses dedicated class join limits (5 attempts per hour per class)
-    const isAllowed = await checkRateLimit(`join-class:${auth.user!.id}:${classCode}`, RATE_LIMITS.classJoinAttempts)
-    if (!isAllowed) {
-      authLogger.warn('[joinClass] Rate limit exceeded', { userId: auth.user!.id, classCode })
-      return {
-        success: false,
-        error: 'Too many join attempts. Please wait before trying again.',
-      }
-    }
-
-    const supabase = await createClient()
-
-    // Find class by code and verify PIN - use .maybeSingle() since class may not exist
-    const { data: classData, error: classError } = await supabase
-      .from('classes')
-      .select('id, name, class_code, join_pin')
-      .eq('class_code', classCode)
-      .maybeSingle()
-
-    if (classError) {
-      authLogger.error('[joinClass] Error looking up class', classError)
-      return { success: false, error: 'Failed to lookup class' }
-    }
-
-    if (!classData) {
-      authLogger.debug('[joinClass] Class not found', { classCode })
-      return { success: false, error: 'Invalid class code or PIN' }
-    }
-
-    // Verify PIN using constant-time comparison to prevent timing attacks
-    let pinMatch = false
-    if (classData.join_pin) {
-      try {
-        pinMatch = timingSafeEqual(Buffer.from(pin), Buffer.from(classData.join_pin))
-      } catch {
-        // timingSafeEqual throws if buffers are different lengths
-        pinMatch = false
-      }
-    }
-
-    if (!pinMatch) {
-      authLogger.warn('[joinClass] Invalid PIN attempt', { classCode, userId: auth.user!.id })
-      return { success: false, error: 'Invalid class code or PIN' }
-    }
-
-    // Check if already enrolled
-    // Use .maybeSingle() instead of .single() - .single() throws PGRST116 when no rows found
-    const { data: existingEnrollment, error: enrollmentCheckError } = await supabase
-      .from('enrollments')
-      .select('id')
-      .eq('class_id', classData.id)
-      .eq('student_id', auth.user!.id)
-      .maybeSingle()
-
-    if (enrollmentCheckError) {
-      authLogger.error('[joinClass] Error checking existing enrollment', enrollmentCheckError)
-      return { success: false, error: 'Failed to check enrollment status' }
-    }
-
-    if (existingEnrollment) {
-      return { success: false, error: 'Already enrolled in this class' }
-    }
-
-    // Create enrollment
-    const { data, error } = await supabase
-      .from('enrollments')
-      .insert({
-        class_id: classData.id,
-        student_id: auth.user!.id,
-      })
-      .select()
-      .single()
-
-    if (error) {
-      return { success: false, error: error.message }
-    }
-
-    revalidatePath('/app/student/classes')
-    return {
-      success: true,
-      data: {
-        ...data,
-        className: classData.name,
-      },
-    }
+    return timingSafeEqual(Buffer.from(pin), Buffer.from(storedPin));
   } catch (error) {
+    authLogger.error(
+      "[Student] PIN verification failed",
+      error instanceof Error ? error : { error: String(error) },
+    );
+    return false;
+  }
+}
+
+/**
+ * Helper: Lookup class by code
+ * Uses regular client - RLS policy allows authenticated users to preview classes by code
+ */
+async function lookupClassByCode(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  classCode: string,
+): Promise<
+  | {
+      success: true;
+      classData: {
+        id: string;
+        name: string;
+        class_code: string;
+        join_pin: string | null;
+      };
+    }
+  | { success: false; error: string }
+> {
+  const { data: classData, error: classError } = await supabase
+    .from("classes")
+    .select("id, name, class_code, join_pin")
+    .eq("class_code", classCode)
+    .maybeSingle();
+
+  if (classError) {
+    authLogger.error("[joinClass] Error looking up class", classError);
+    return { success: false, error: "Failed to lookup class" };
+  }
+
+  if (!classData) {
+    authLogger.debug("[joinClass] Class not found", { classCode });
+    return { success: false, error: "Invalid class code or PIN" };
+  }
+
+  return { success: true, classData };
+}
+
+/**
+ * Helper: Check if student is already enrolled
+ */
+async function checkExistingEnrollment(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  classId: string,
+  studentId: string,
+): Promise<{ enrolled: true } | { enrolled: false; error?: string }> {
+  const { data: existingEnrollment, error: enrollmentCheckError } =
+    await supabase
+      .from("enrollments")
+      .select("id")
+      .eq("class_id", classId)
+      .eq("student_id", studentId)
+      .maybeSingle();
+
+  if (enrollmentCheckError) {
+    authLogger.error(
+      "[joinClass] Error checking existing enrollment",
+      enrollmentCheckError,
+    );
+    return { enrolled: false, error: "Failed to check enrollment status" };
+  }
+
+  if (existingEnrollment) {
+    return { enrolled: true };
+  }
+
+  return { enrolled: false };
+}
+
+/**
+ * Helper: Create enrollment
+ */
+async function createEnrollment(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  classId: string,
+  studentId: string,
+  className: string,
+): Promise<
+  | { success: true; data: { className: string; [key: string]: unknown } }
+  | { success: false; error: string }
+> {
+  const { data, error } = await supabase
+    .from("enrollments")
+    .insert({
+      class_id: classId,
+      student_id: studentId,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    authLogger.error("[joinClass] Failed to create enrollment", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      classId,
+      studentId,
+    });
+
+    if (error.code === "23505") {
+      return { success: false, error: "Already enrolled in this class" };
+    }
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'An unexpected error occurred',
+      error: "Failed to enroll in class. Please try again.",
+    };
+  }
+
+  return {
+    success: true,
+    data: {
+      ...data,
+      className,
+    },
+  };
+}
+
+/**
+ * Join a class using class code and PIN (refactored to reduce cognitive complexity)
+ * CRITICAL FIX: Reduced complexity from 16 to <15 by extracting helper functions
+ */
+export async function joinClass({ classCode, pin }: JoinClassParams) {
+  try {
+    let validatedInput;
+    try {
+      validatedInput = JoinClassSchema.parse({ classCode, pin });
+    } catch (error) {
+      return handleZodError(error);
     }
+    const validatedClassCode = validatedInput.classCode;
+    const validatedPin = validatedInput.pin;
+
+    const auth = await verifyStudentAuth("joinClass");
+    if (!auth.authorized) {
+      return auth.error;
+    }
+
+    const isAllowed = await checkRateLimit(
+      `join-class:${auth.user.id}:${validatedClassCode}`,
+      RATE_LIMITS.classJoinAttempts,
+    );
+    if (!isAllowed) {
+      authLogger.warn("[joinClass] Rate limit exceeded", {
+        userId: auth.user.id,
+        classCode: validatedClassCode,
+      });
+      return {
+        success: false,
+        error: "Too many join attempts. Please wait before trying again.",
+      };
+    }
+
+    const supabase = await createClient();
+    // Use regular client - RLS policy allows authenticated users to preview classes by code
+    const classLookup = await lookupClassByCode(supabase, validatedClassCode);
+    if (!classLookup.success) {
+      return { success: false, error: classLookup.error };
+    }
+
+    const pinValid = verifyPin(validatedPin, classLookup.classData.join_pin);
+    if (!pinValid) {
+      authLogger.warn("[joinClass] Invalid PIN attempt", {
+        classCode: validatedClassCode,
+        userId: auth.user.id,
+      });
+      return { success: false, error: "Invalid class code or PIN" };
+    }
+
+    const enrollmentCheck = await checkExistingEnrollment(
+      supabase,
+      classLookup.classData.id,
+      auth.user.id,
+    );
+    if (enrollmentCheck.enrolled) {
+      return { success: false, error: "Already enrolled in this class" };
+    }
+    if (enrollmentCheck.error) {
+      return { success: false, error: enrollmentCheck.error };
+    }
+
+    const enrollmentResult = await createEnrollment(
+      supabase,
+      classLookup.classData.id,
+      auth.user.id,
+      classLookup.classData.name,
+    );
+
+    if (enrollmentResult.success) {
+      revalidatePath("/app/student/classes");
+    }
+
+    return enrollmentResult;
+  } catch (error) {
+    authLogger.error("[joinClass] Unexpected error", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "An unexpected error occurred",
+    };
   }
 }
 
 export async function leaveClass(classId: string) {
   try {
     // Validate class ID
-    const validatedClassId = ClassIdSchema.parse(classId)
+    let validatedClassId;
+    try {
+      validatedClassId = ClassIdSchema.parse(classId);
+    } catch (error) {
+      return handleZodError(error);
+    }
 
     // SECURITY: Verify caller is authenticated and is a student
-    const auth = await verifyStudentAuth('leaveClass')
+    const auth = await verifyStudentAuth("leaveClass");
     if (!auth.authorized) {
-      return auth.error!
+      return auth.error;
     }
 
-    const supabase = await createClient()
+    // SECURITY: Rate limit student mutations to prevent abuse
+    const leaveAllowed = await checkStudentMutationRateLimit(auth.user.id);
+    if (!leaveAllowed) {
+      authLogger.warn("[leaveClass] Rate limit exceeded", {
+        userId: auth.user.id,
+      });
+      return {
+        success: false,
+        error: RATE_LIMIT_ERRORS.TOO_MANY_REQUESTS,
+      };
+    }
+
+    const supabase = await createClient();
 
     const { error } = await supabase
-      .from('enrollments')
+      .from("enrollments")
       .delete()
-      .eq('class_id', validatedClassId)
-      .eq('student_id', auth.user!.id)
+      .eq("class_id", validatedClassId)
+      .eq("student_id", auth.user.id);
 
     if (error) {
-      return { success: false, error: error.message }
+      authLogger.error("[leaveClass] Database error", { error: error.message });
+      return { success: false, error: "Failed to leave class. Please try again." };
     }
 
-    revalidatePath('/app/student/classes')
-    return { success: true }
+    revalidatePath("/app/student/classes");
+    return { success: true };
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      const firstError = error.issues[0]
-      return { success: false, error: firstError?.message || 'Invalid input' }
-    }
+    authLogger.error("[leaveClass] Unexpected error", error instanceof Error ? error : { error: String(error) });
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'An unexpected error occurred',
-    }
+      error: "An unexpected error occurred",
+    };
   }
 }

@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import { Button } from '@/components/ui/button'
+import { Button } from "@/components/ui/button";
 
 /**
  * ATAL AI Assessment Question Navigation - Jyoti Theme
@@ -13,16 +13,37 @@ import { Button } from '@/components/ui/button'
  */
 
 interface QuestionNavigationProps {
-  currentIndex: number
-  totalQuestions: number
-  hasSelectedAnswer: boolean
-  isSubmitting: boolean
-  canGoBack: boolean
-  isReviewingHistory: boolean
-  onPrevious: () => void
-  onSkip: () => void
-  onClear: () => void
-  onNext: () => void
+  readonly currentIndex: number;
+  readonly totalQuestions: number;
+  readonly hasSelectedAnswer: boolean;
+  readonly isSubmitting: boolean;
+  readonly canGoBack: boolean;
+  readonly isReviewingHistory: boolean;
+  readonly onPrevious: () => void;
+  readonly onSkip: () => void;
+  readonly onClear: () => void;
+  readonly onNext: () => void;
+}
+
+/**
+ * Get next button text based on submission and question state
+ */
+function getNextButtonText(
+  isSubmitting: boolean,
+  isLastQuestion: boolean,
+  isReviewingHistory: boolean,
+  hasSelectedAnswer: boolean,
+): string {
+  if (isSubmitting) {
+    return "Submitting...";
+  }
+  if (isLastQuestion && !isReviewingHistory) {
+    return "Complete Assessment";
+  }
+  if (hasSelectedAnswer) {
+    return "Submit & Next";
+  }
+  return "Next";
 }
 
 export function QuestionNavigation({
@@ -37,17 +58,16 @@ export function QuestionNavigation({
   onClear,
   onNext,
 }: QuestionNavigationProps) {
-  const isFirstQuestion = currentIndex === 0 && !canGoBack
-  const isLastQuestion = currentIndex >= totalQuestions - 1
+  const isFirstQuestion = currentIndex === 0 && !canGoBack;
+  const isLastQuestion = currentIndex >= totalQuestions - 1;
 
   // Determine button text based on state
-  const nextButtonText = isSubmitting
-    ? 'Submitting...'
-    : isLastQuestion && !isReviewingHistory
-      ? 'Complete Assessment'
-      : hasSelectedAnswer
-        ? 'Submit & Next'
-        : 'Next'
+  const nextButtonText = getNextButtonText(
+    isSubmitting,
+    isLastQuestion,
+    isReviewingHistory,
+    hasSelectedAnswer,
+  );
 
   return (
     <div className="mt-6">
@@ -65,7 +85,7 @@ export function QuestionNavigation({
             aria-label="Go to previous question"
           >
             <span className="mr-1">←</span>
-            Previous
+            <span>Previous</span>
           </Button>
 
           {/* Submit/Next */}
@@ -75,7 +95,11 @@ export function QuestionNavigation({
             disabled={isSubmitting}
             loading={isSubmitting}
             className="flex-1 min-h-[2.75rem]"
-            aria-label={hasSelectedAnswer ? 'Submit answer and go to next question' : 'Go to next question'}
+            aria-label={
+              hasSelectedAnswer
+                ? "Submit answer and go to next question"
+                : "Go to next question"
+            }
           >
             {nextButtonText}
             {!isLastQuestion && <span className="ml-1">→</span>}
@@ -124,7 +148,7 @@ export function QuestionNavigation({
           aria-label="Go to previous question"
         >
           <span className="mr-2">←</span>
-          Previous
+          <span>Previous</span>
         </Button>
 
         {/* Center: Skip and Clear */}
@@ -162,12 +186,16 @@ export function QuestionNavigation({
           loading={isSubmitting}
           size="lg"
           className="min-w-[160px]"
-          aria-label={hasSelectedAnswer ? 'Submit answer and go to next question' : 'Go to next question'}
+          aria-label={
+            hasSelectedAnswer
+              ? "Submit answer and go to next question"
+              : "Go to next question"
+          }
         >
           {nextButtonText}
           {!isLastQuestion && <span className="ml-2">→</span>}
         </Button>
       </div>
     </div>
-  )
+  );
 }

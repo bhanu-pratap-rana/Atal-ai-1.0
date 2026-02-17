@@ -13,17 +13,18 @@
  * 4. Adapt to learning style (visual/text/auditory)
  */
 
-import type { LearningStyle } from '../services/adaptive-service';
+import type { LearningStyle } from "../services/adaptive-service";
+import type { SupportedLanguage } from "@/types/common";
 
 /**
  * Placeholder tokens for dynamic content injection
  */
 const PLACEHOLDERS = {
-  context: '{context}',
-  learningStyle: '{learning_style}',
-  showImages: '{show_images}',
-  topic: '{topic}',
-  module: '{module}',
+  context: "{context}",
+  learningStyle: "{learning_style}",
+  showImages: "{show_images}",
+  topic: "{topic}",
+  module: "{module}",
 } as const;
 
 /**
@@ -71,8 +72,28 @@ Use examples relevant to:
  */
 export const SOCRATIC_PROMPT_EN = `${SOCRATIC_BASE}
 
-## Language
-Respond in clear, simple English. Avoid complex technical jargon.
+## Language - INTELLIGENT HYBRID APPROACH
+You must respond in the student's preferred language, with intelligent adaptation.
+
+**PRIORITY ORDER:**
+1. **FIRST PRIORITY - Selected Language**: The student has selected **ENGLISH** as their preferred language. Use English by default.
+
+2. **SECOND PRIORITY - Language Switch Detection**: If the student clearly switches language in their message, adapt to that language:
+   - Hindi (Devanagari script like "मुझे बताओ") → Switch to Hindi
+   - Hindi (Romanized like "mujhe batao", "kya hai", "bataiye", "samjhao") → Switch to Hindi
+   - Assamese (অসমীয়া script) → Switch to Assamese
+   - Explicit request ("respond in Hindi", "Assamese mein bolo") → Switch to that language
+
+3. **STAY CONSISTENT**: Once you switch language based on user's input, continue in that language until user switches again.
+
+**Example Flow:**
+- User selected: English
+- User asks: "What is internet?" → Respond in English
+- User asks: "mujhe batao computer kya hai" → Detect Hindi, respond in Hindi
+- User asks: "aur email?" → Continue in Hindi (same language context)
+- User asks: "Now explain in English" → Switch back to English
+
+Respond in clear, simple language appropriate for secondary school students. Avoid complex technical jargon.
 
 ## Learning Style Adaptation
 Student's preferred learning style: ${PLACEHOLDERS.learningStyle}
@@ -106,8 +127,36 @@ Remember: Guide discovery, don't just inform!`;
  */
 export const SOCRATIC_PROMPT_HI = `${SOCRATIC_BASE}
 
-## भाषा (Language)
-हिंदी में जवाब दें। सरल शब्दों का उपयोग करें जो ग्रामीण छात्र समझ सकें।
+## भाषा (Language) - बुद्धिमान हाइब्रिड तरीका
+आपको छात्र की पसंदीदा भाषा में जवाब देना है, साथ ही बुद्धिमान अनुकूलन के साथ।
+
+**प्राथमिकता क्रम:**
+1. **पहली प्राथमिकता - चयनित भाषा**: छात्र ने **हिंदी** चुनी है। डिफ़ॉल्ट रूप से हिंदी में जवाब दें।
+
+2. **दूसरी प्राथमिकता - भाषा बदलाव पहचान**: यदि छात्र स्पष्ट रूप से भाषा बदलता है:
+   - अंग्रेजी में लिखे ("What is computer?") → अंग्रेजी में जवाब दें
+   - असमिया लिपि (অসমীয়া) → असमिया में जवाब दें
+   - स्पष्ट अनुरोध ("respond in English", "Assamese mein bolo") → उस भाषा में जवाब दें
+
+3. **निरंतर रहें**: एक बार भाषा बदलने के बाद, उसी भाषा में जारी रखें जब तक छात्र फिर से न बदले।
+
+**उदाहरण:**
+- चयनित: हिंदी
+- छात्र: "इंटरनेट क्या है?" → हिंदी में जवाब
+- छात्र: "What is email?" → अंग्रेजी का पता लगाएं, अंग्रेजी में जवाब दें
+- छात्र: "And browser?" → अंग्रेजी में जारी रखें
+- छात्र: "अब हिंदी में बताओ" → हिंदी में वापस आएं
+
+सरल शब्दों का उपयोग करें जो ग्रामीण छात्र समझ सकें।
+
+## लिपि संबंधी महत्वपूर्ण नियम (CRITICAL SCRIPT RULES)
+**देवनागरी लिपि अनिवार्य है।**
+- सभी हिंदी टेक्स्ट केवल देवनागरी लिपि में लिखें।
+- रोमन/लैटिन अक्षरों में हिंदी कभी न लिखें।
+- "Computer" नहीं → "कंप्यूटर" लिखें
+- "Kaam" नहीं → "काम" लिखें
+- "Input/Output" नहीं → "इनपुट/आउटपुट" लिखें
+- यदि आप "mujhe batao" जैसे रोमन हिंदी लिखते हैं, यह गलत है। सही: "मुझे बताओ"
 
 ## सीखने की शैली (Learning Style)
 छात्र की पसंदीदा शैली: ${PLACEHOLDERS.learningStyle}
@@ -141,8 +190,34 @@ ${PLACEHOLDERS.context}
  */
 export const SOCRATIC_PROMPT_AS = `${SOCRATIC_BASE}
 
-## ভাষা (Language)
-অসমীয়াত উত্তৰ দিয়ক। গ্ৰাম্য ছাত্ৰ-ছাত্ৰীয়ে বুজি পোৱা সৰল শব্দ ব্যৱহাৰ কৰক।
+## ভাষা (Language) - বুদ্ধিমান হাইব্ৰিড পদ্ধতি
+আপুনি ছাত্ৰৰ পছন্দৰ ভাষাত উত্তৰ দিব লাগিব, বুদ্ধিমান অভিযোজনৰ সৈতে।
+
+**অগ্ৰাধিকাৰ ক্ৰম:**
+1. **প্ৰথম অগ্ৰাধিকাৰ - নিৰ্বাচিত ভাষা**: ছাত্ৰজনে **অসমীয়া** বাছনি কৰিছে। অবিকল্পভাৱে অসমীয়াত উত্তৰ দিয়ক।
+
+2. **দ্বিতীয় অগ্ৰাধিকাৰ - ভাষা পৰিৱৰ্তন চিনাক্তকৰণ**: যদি ছাত্ৰজনে স্পষ্টভাৱে ভাষা সলনি কৰে:
+   - ইংৰাজীত লিখে ("What is computer?") → ইংৰাজীত উত্তৰ দিয়ক
+   - হিন্দীত লিখে (দেৱনাগৰী বা "mujhe batao") → হিন্দীত উত্তৰ দিয়ক
+   - স্পষ্ট অনুৰোধ ("respond in Hindi", "English mein bolo") → সেই ভাষা ব্যৱহাৰ কৰক
+
+3. **ধাৰাবাহিক থাকক**: এবাৰ ভাষা সলনি কৰাৰ পিছত, সেই ভাষাত থাকক যেতিয়ালৈকে ছাত্ৰজনে পুনৰ সলনি নকৰে।
+
+**উদাহৰণ:**
+- নিৰ্বাচিত: অসমীয়া
+- ছাত্ৰ: "ইণ্টাৰনেট কি?" → অসমীয়াত উত্তৰ
+- ছাত্ৰ: "What is email?" → ইংৰাজী চিনাক্ত কৰক, ইংৰাজীত উত্তৰ দিয়ক
+- ছাত্ৰ: "And browser?" → ইংৰাজীত চলি থাকক
+- ছাত্ৰ: "এতিয়া অসমীয়াত কওক" → অসমীয়ালৈ উভতি আহক
+
+গ্ৰাম্য ছাত্ৰ-ছাত্ৰীয়ে বুজি পোৱা সৰল শব্দ ব্যৱহাৰ কৰক।
+
+## লিপি সম্পৰ্কীয় গুৰুত্বপূৰ্ণ নিয়ম (CRITICAL SCRIPT RULES)
+**অসমীয়া লিপি বাধ্যতামূলক।**
+- সকলো অসমীয়া টেক্সট কেৱল অসমীয়া লিপিত লিখক।
+- ৰোমান/লেটিন আখৰত অসমীয়া কেতিয়াও নিলিখিব।
+- "Computer" নহয় → "কম্পিউটাৰ" লিখক
+- "Input/Output" নহয় → "ইনপুট/আউটপুট" লিখক
 
 ## শিক্ষণ শৈলী (Learning Style)
 ছাত্ৰৰ পছন্দৰ শৈলী: ${PLACEHOLDERS.learningStyle}
@@ -174,7 +249,7 @@ ${PLACEHOLDERS.context}
 /**
  * Get Socratic prompt for language
  */
-export function getSocraticPrompt(language: 'en' | 'hi' | 'as'): string {
+export function getSocraticPrompt(language: SupportedLanguage): string {
   const prompts = {
     en: SOCRATIC_PROMPT_EN,
     hi: SOCRATIC_PROMPT_HI,
@@ -187,7 +262,7 @@ export function getSocraticPrompt(language: 'en' | 'hi' | 'as'): string {
  * Build complete system prompt with context
  */
 export function buildSystemPrompt(params: {
-  language: 'en' | 'hi' | 'as';
+  language: SupportedLanguage;
   context: string;
   learningStyle: LearningStyle;
   showImages: boolean;
@@ -197,9 +272,13 @@ export function buildSystemPrompt(params: {
   let prompt = getSocraticPrompt(params.language);
 
   // Replace placeholders
-  prompt = prompt.replace(PLACEHOLDERS.context, params.context || 'No specific context provided.');
-  prompt = prompt.replace(PLACEHOLDERS.learningStyle, params.learningStyle);
-  prompt = prompt.replace(PLACEHOLDERS.showImages, String(params.showImages));
+  prompt = prompt
+    .replaceAll(
+      PLACEHOLDERS.context,
+      params.context || "No specific context provided.",
+    )
+    .replaceAll(PLACEHOLDERS.learningStyle, params.learningStyle)
+    .replaceAll(PLACEHOLDERS.showImages, String(params.showImages));
 
   if (params.topic) {
     prompt += `\n\n## Current Topic: ${params.topic}`;
@@ -246,7 +325,7 @@ Keep feedback brief (2-3 sentences). Never give away the answer directly.`,
 /**
  * Get feedback prompt for language
  */
-export function getFeedbackPrompt(language: 'en' | 'hi' | 'as'): string {
+export function getFeedbackPrompt(language: SupportedLanguage): string {
   return FEEDBACK_PROMPT[language] || FEEDBACK_PROMPT.en;
 }
 

@@ -45,6 +45,7 @@ A comprehensive digital literacy platform built with Next.js, Supabase, and mode
 ### Project Structure
 ```
 Atal-ai-1.0/
+├── README.md                  # Main project documentation
 ├── apps/
 │   ├── web/                    # Next.js web application
 │   │   ├── src/
@@ -63,9 +64,13 @@ Atal-ai-1.0/
 │   │   │   │   └── utils.ts   # Helper functions
 │   │   │   └── data/          # Static data
 │   │   └── public/            # Static assets
-│   └── db/                    # Database related files
-│       └── email-templates/   # Custom email templates
-├── docs/                      # Documentation
+│   └── db/
+│       └── migrations/        # Database migrations (120+)
+├── docs/                      # 📁 Documentation Directory
+│   ├── DATABASE.md            # Database schema and setup
+│   ├── TESTING_GUIDE.md       # QA and testing procedures
+│   ├── ATAL_AI_IMPLEMENTATION_PLAN.md  # Implementation details
+│   └── curriculum/            # Curriculum content
 └── packages/                  # Shared packages (if any)
 ```
 
@@ -112,8 +117,6 @@ Atal-ai-1.0/
 
    b. Run the database migrations (see [Database Setup](#database-setup))
 
-   c. Configure email templates (see [Email Templates](#email-templates))
-
 5. **Run the development server**
    ```bash
    npm run dev
@@ -148,6 +151,14 @@ npm run test:report  # Show test report
 npm run lint         # Run ESLint
 ```
 
+## 📖 Local Documentation
+
+Comprehensive documentation is available in the [`docs/`](./docs/) directory:
+
+- **[DATABASE.md](./docs/DATABASE.md)** - Database schema, migrations, and setup guide
+- **[TESTING_GUIDE.md](./docs/TESTING_GUIDE.md)** - Testing procedures and QA checklist
+- **[ATAL_AI_IMPLEMENTATION_PLAN.md](./docs/ATAL_AI_IMPLEMENTATION_PLAN.md)** - Detailed implementation roadmap
+
 ## 🗄️ Database Setup
 
 ### Schema Overview
@@ -177,31 +188,6 @@ The application uses Row Level Security (RLS) to ensure:
 - Students can only view their own data
 - Teachers can only manage their own classes
 - Proper authentication checks on all operations
-
-## 📧 Email Templates
-
-Custom email templates are located in `apps/db/email-templates/`:
-
-- `magic-link.html` - OTP email for authentication
-- `confirm-signup.html` - New user signup confirmation
-- `invite-user.html` - Class invitation emails
-- `reset-password.html` - Password reset emails
-- `change-email.html` - Email change confirmation
-
-### Configuring Email Templates
-
-1. Go to Supabase Dashboard → **Authentication** → **Email Templates**
-2. Copy content from each template file
-3. Customize with your branding (logo, colors, etc.)
-4. Save each template
-
-### Email Features
-
-- ✅ Responsive design (works on all devices)
-- ✅ Orange/yellow/white color scheme matching brand
-- ✅ Professional formatting
-- ✅ Action buttons for OTP/magic links
-- ✅ Footer with app information
 
 ## 🎨 Design System
 
@@ -592,5 +578,5 @@ For issues and questions:
 
 **Built with ❤️ for digital empowerment in India**
 
-Last updated: 2025-12-29
-Version: 1.1.0 - MVP Complete (All 4 Gaps at 100%, Rule.md Compliance 95% A-)
+Last updated: 2026-01-04
+Version: 1.1.0 - Production Ready (92/100 health score, all critical issues resolved)

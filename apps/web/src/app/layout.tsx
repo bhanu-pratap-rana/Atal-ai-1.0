@@ -1,9 +1,16 @@
 import type { Metadata } from "next";
-import { Nunito, Noto_Sans_Devanagari, Noto_Sans_Bengali } from "next/font/google";
+import {
+  Nunito,
+  Noto_Sans_Devanagari,
+  Noto_Sans_Bengali,
+} from "next/font/google";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { PageTransition } from "@/components/ui/page-transition";
 import { OfflineBanner } from "@/components/offline/OfflineBanner";
+import { BackgroundSyncInitializer } from "@/components/offline/BackgroundSyncInitializer";
+import { GlobalErrorBoundary } from "@/components/errors/GlobalErrorBoundary";
+import { LanguageProvider } from "@/lib/i18n";
 import "./globals.css";
 
 /* ============================================
@@ -42,7 +49,8 @@ const notoSansBengali = Noto_Sans_Bengali({
 
 export const metadata: Metadata = {
   title: "ATAL AI - Digital Empowerment Platform",
-  description: "Empowering education through AI & technology - Jyoti (ज्योति) brings light to learning",
+  description:
+    "Empowering education through AI & technology - Jyoti (ज्योति) brings light to learning",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -59,7 +67,14 @@ export const metadata: Metadata = {
       { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     ],
   },
-  keywords: ["ATAL AI", "digital literacy", "education", "India", "Northeast", "Jyoti"],
+  keywords: [
+    "ATAL AI",
+    "digital literacy",
+    "education",
+    "India",
+    "Northeast",
+    "Jyoti",
+  ],
   authors: [{ name: "ATAL AI Team" }],
 };
 
@@ -83,8 +98,13 @@ export default function RootLayout({
       <head>
         {/* Preconnect to Google Fonts for faster loading */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
         {/* Baloo 2 for display headings - loaded via CSS for flexibility */}
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
           href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&display=swap"
           rel="stylesheet"
@@ -96,17 +116,29 @@ export default function RootLayout({
           fontFamily: "var(--font-nunito), 'Nunito', system-ui, sans-serif",
         }}
       >
+        {/* Accessibility: Skip navigation link for keyboard/screen-reader users */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-black focus:rounded focus:shadow-lg"
+        >
+          Skip to main content
+        </a>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
           enableSystem
           disableTransitionOnChange
         >
-          <OfflineBanner position="top" />
-          <PageTransition>
-            {children}
-          </PageTransition>
-          <Toaster />
+          <LanguageProvider>
+            <GlobalErrorBoundary>
+              <BackgroundSyncInitializer />
+              <OfflineBanner position="top" />
+              <main id="main-content">
+                <PageTransition>{children}</PageTransition>
+              </main>
+              <Toaster />
+            </GlobalErrorBoundary>
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>

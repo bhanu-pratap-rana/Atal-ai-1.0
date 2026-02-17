@@ -228,13 +228,67 @@ $RECYCLE.BIN/
 *.sln
 *.sw?
 
+# MCP configuration (may contain API keys)
+.mcp.json
+
+# Claude Code / AI tooling
+.claude/
+
+# PMD static analysis config
+.pmd-config.json
+
 # Sentry
 .sentryclirc
 
 # Playwright
 playwright/.cache/
 
-# AI Tool Generated Code
-# NOTE: AI tools (Claude Code, Copilot, etc.) should not be listed as collaborators.
-# Manual commits should exclude AI tool attribution in commit messages.
-# Use: git commit -m "message" (without Co-Authored-By: Claude <...>)
+# SonarQube
+.scannerwork/
+sonar-project.properties
+sonar-*.json
+sonar-*.log
+
+# ESLint reports
+eslint-report.json
+**/eslint-report.json
+sonarqube-*.json
+sonarqube-*.log
+sonarqube-*.txt
+*-issues*.json
+*-issues*.csv
+SONARQUBE_*.csv
+SONARQUBE_*.json
+SONARQUBE_*.md
+violations*.json
+comprehensive-issues*.json
+comprehensive-issues*.txt
+all-issues*.json
+
+# One-off scripts and reports
+fetch-*.js
+generate-reports.js
+process_issues.py
+mark_hotspots.py
+fix-*.sh
+EXTRACTION-*.txt
+ISSUE-EXTRACTION-*.md
+PHASE_*.md
+SESSION_*.md
+README-SONARQUBE-*.md
+
+# Malformed/temp files
+nul
+ctempviolations.json
+c:tempviolations.json
+
+# Google Cloud Service Account Keys - NEVER COMMIT!
+**/keys/*.json
+*-service-account.json
+vertex-service-account.json
+service-account*.json
+client_secret*.json
+
+# Test output files
+test-imagen-output.png
+test-*-output.*

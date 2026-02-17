@@ -1,6 +1,5 @@
-'use client'
+"use client";
 
-import { Progress } from '@/components/ui/progress'
 
 /**
  * ATAL AI Assessment Category Breakdown - Jyoti Theme
@@ -15,42 +14,58 @@ import { Progress } from '@/components/ui/progress'
  */
 
 interface CategoryData {
-  name: string
-  correct: number
-  total: number
+  name: string;
+  correct: number;
+  total: number;
 }
 
 interface CategoryBreakdownProps {
-  categories: Record<string, { total: number; correct: number }>
+  readonly categories: Record<string, { total: number; correct: number }>;
   /** Custom class name */
-  className?: string
+  readonly className?: string;
 }
 
 // Category display names and icons
 const CATEGORY_CONFIG: Record<string, { label: string; icon: string }> = {
-  'digital-device-familiarity': { label: 'Digital Devices', icon: '💻' },
-  'internet-web-awareness': { label: 'Internet & Web', icon: '🌐' },
-  'digital-content-creation': { label: 'Content Creation', icon: '🎨' },
-  'problem-solving-aptitude': { label: 'Problem Solving', icon: '🧩' },
-  'contextual-application': { label: 'Application', icon: '🎯' },
+  "digital-device-familiarity": { label: "Digital Devices", icon: "💻" },
+  "internet-web-awareness": { label: "Internet & Web", icon: "🌐" },
+  "digital-content-creation": { label: "Content Creation", icon: "🎨" },
+  "problem-solving-aptitude": { label: "Problem Solving", icon: "🧩" },
+  "contextual-application": { label: "Application", icon: "🎯" },
   // Fallback for unknown categories
-  default: { label: 'General', icon: '📝' },
-}
+  default: { label: "General", icon: "📝" },
+};
 
 const getCategoryConfig = (key: string) => {
-  return CATEGORY_CONFIG[key] || {
-    label: key.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
-    icon: '📝',
-  }
-}
+  return (
+    CATEGORY_CONFIG[key] || {
+      label: key.replaceAll("-", " ").replaceAll(/\b\w/g, (c) => c.toUpperCase()),
+      icon: "📝",
+    }
+  );
+};
 
-const getPercentageColor = (percentage: number) => {
-  if (percentage >= 80) return 'bg-success'
-  if (percentage >= 60) return 'bg-warning'
-  return 'bg-error'
-}
+const getProgressBarColor = (percentage: number) => {
+  if (percentage >= 80) return "[&::-webkit-progress-value]:bg-success [&::-moz-progress-bar]:bg-success";
+  if (percentage >= 60) return "[&::-webkit-progress-value]:bg-warning [&::-moz-progress-bar]:bg-warning";
+  return "[&::-webkit-progress-value]:bg-error [&::-moz-progress-bar]:bg-error";
+};
 
-export function CategoryBreakdown({ categories, className = '' }: CategoryBreakdownProps) {
+const getPercentageTextColor = (percentage: number) => {
+  if (percentage >= 80) return "text-success";
+  if (percentage >= 60) return "text-warning";
+  return "text-error";
+};
+
+const getCategoryBadgeStyle = (type: "strengths" | "weaknesses") => {
+  if (type === "strengths") return "bg-success-light text-success-dark";
+  return "bg-warning-light text-warning-dark";
+};
+
+export function CategoryBreakdown({
+  categories,
+  className = "",
+}: CategoryBreakdownProps) {
   // Convert categories object to sorted array
   const categoryList: CategoryData[] = Object.entries(categories)
     .map(([key, value]) => ({
@@ -60,13 +75,13 @@ export function CategoryBreakdown({ categories, className = '' }: CategoryBreakd
     }))
     .sort((a, b) => {
       // Sort by percentage (descending)
-      const pctA = a.total > 0 ? (a.correct / a.total) * 100 : 0
-      const pctB = b.total > 0 ? (b.correct / b.total) * 100 : 0
-      return pctB - pctA
-    })
+      const pctA = a.total > 0 ? (a.correct / a.total) * 100 : 0;
+      const pctB = b.total > 0 ? (b.correct / b.total) * 100 : 0;
+      return pctB - pctA;
+    });
 
   if (categoryList.length === 0) {
-    return null
+    return null;
   }
 
   return (
@@ -77,8 +92,9 @@ export function CategoryBreakdown({ categories, className = '' }: CategoryBreakd
 
       <div className="space-y-4">
         {categoryList.map(({ name, correct, total }) => {
-          const config = getCategoryConfig(name)
-          const percentage = total > 0 ? Math.round((correct / total) * 100) : 0
+          const config = getCategoryConfig(name);
+          const percentage =
+            total > 0 ? Math.round((correct / total) * 100) : 0;
 
           return (
             <div key={name} className="space-y-2">
@@ -97,13 +113,7 @@ export function CategoryBreakdown({ categories, className = '' }: CategoryBreakd
                     {correct}/{total}
                   </span>
                   <span
-                    className={`text-sm font-semibold ${
-                      percentage >= 80
-                        ? 'text-success'
-                        : percentage >= 60
-                          ? 'text-warning'
-                          : 'text-error'
-                    }`}
+                    className={`text-sm font-semibold ${getPercentageTextColor(percentage)}`}
                   >
                     {percentage}%
                   </span>
@@ -111,23 +121,18 @@ export function CategoryBreakdown({ categories, className = '' }: CategoryBreakd
               </div>
 
               {/* Progress bar */}
-              <div className="relative h-2 bg-border rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-500 ease-out ${getPercentageColor(percentage)}`}
-                  style={{ width: `${percentage}%` }}
-                  role="progressbar"
-                  aria-valuenow={percentage}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-label={`${config.label}: ${percentage}%`}
-                />
-              </div>
+              <progress
+                className={`w-full h-2 rounded-full overflow-hidden appearance-none [&::-webkit-progress-bar]:bg-border [&::-webkit-progress-bar]:rounded-full [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:transition-all [&::-moz-progress-bar]:rounded-full ${getProgressBarColor(percentage)}`}
+                value={percentage}
+                max={100}
+                aria-label={`${config.label}: ${percentage}%`}
+              />
             </div>
-          )
+          );
         })}
       </div>
     </div>
-  )
+  );
 }
 
 /**
@@ -135,23 +140,25 @@ export function CategoryBreakdown({ categories, className = '' }: CategoryBreakd
  */
 export function CategoryStrengths({
   categories,
-  type = 'strengths',
-}: {
-  categories: Record<string, { total: number; correct: number }>
-  type?: 'strengths' | 'weaknesses'
-}) {
+  type = "strengths",
+}: Readonly<{
+  categories: Record<string, { total: number; correct: number }>;
+  type?: "strengths" | "weaknesses";
+}>) {
   const categoryList = Object.entries(categories)
     .map(([key, value]) => ({
       name: key,
       percentage: value.total > 0 ? (value.correct / value.total) * 100 : 0,
     }))
     .sort((a, b) =>
-      type === 'strengths' ? b.percentage - a.percentage : a.percentage - b.percentage
+      type === "strengths"
+        ? b.percentage - a.percentage
+        : a.percentage - b.percentage,
     )
-    .slice(0, 2) // Top 2 categories
+    .slice(0, 2); // Top 2 categories
 
-  const title = type === 'strengths' ? 'Your Strengths' : 'Areas to Improve'
-  const icon = type === 'strengths' ? '💪' : '📚'
+  const title = type === "strengths" ? "Your Strengths" : "Areas to Improve";
+  const icon = type === "strengths" ? "💪" : "📚";
 
   return (
     <div className="space-y-2">
@@ -161,23 +168,21 @@ export function CategoryStrengths({
       </h4>
       <div className="flex flex-wrap gap-2">
         {categoryList.map(({ name, percentage }) => {
-          const config = getCategoryConfig(name)
+          const config = getCategoryConfig(name);
           return (
             <span
               key={name}
-              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${
-                type === 'strengths'
-                  ? 'bg-success-light text-success-dark'
-                  : 'bg-warning-light text-warning-dark'
-              }`}
+              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${getCategoryBadgeStyle(type)}`}
             >
               <span aria-hidden="true">{config.icon}</span>
               {config.label}
-              <span className="text-xs opacity-80">({Math.round(percentage)}%)</span>
+              <span className="text-xs opacity-80">
+                ({Math.round(percentage)}%)
+              </span>
             </span>
-          )
+          );
         })}
       </div>
     </div>
-  )
+  );
 }

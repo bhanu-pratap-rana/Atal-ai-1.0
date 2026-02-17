@@ -9,4 +9,4 @@ export {
   type BadgeCriteria,
   type StudentBadge,
   type PointsEntry,
-} from './gamification-service';
+} from "./gamification-service";

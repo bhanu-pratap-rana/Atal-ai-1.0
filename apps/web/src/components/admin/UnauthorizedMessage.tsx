@@ -1,26 +1,26 @@
-'use client'
+"use client";
 
-import { AlertCircle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { useRouter } from 'next/navigation'
+import { AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 interface UnauthorizedMessageProps {
-  title?: string
-  message?: string
-  showLoginButton?: boolean
-  onDismiss?: () => void
+  readonly title?: string;
+  readonly message?: string;
+  readonly showLoginButton?: boolean;
+  readonly onDismiss?: () => void;
 }
 
 /**
  * UnauthorizedMessage - Display access denied message with optional actions
  */
 export function UnauthorizedMessage({
-  title = 'Access Denied',
-  message = 'You do not have permission to access this resource.',
+  title = "Access Denied",
+  message = "You do not have permission to access this resource.",
   showLoginButton = true,
   onDismiss,
 }: UnauthorizedMessageProps) {
-  const router = useRouter()
+  const router = useRouter();
 
   return (
     <div className="w-full max-w-md mx-auto p-6">
@@ -34,7 +34,7 @@ export function UnauthorizedMessage({
             <div className="flex gap-2">
               {showLoginButton && (
                 <Button
-                  onClick={() => router.push('/admin/login')}
+                  onClick={() => router.push("/admin/login")}
                   variant="outline"
                   size="sm"
                   className="border-error/30 text-error hover:bg-error-light"
@@ -57,5 +57,5 @@ export function UnauthorizedMessage({
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -1,52 +1,56 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { AdminCreateForm } from '@/components/admin/AdminCreateForm'
-import { AdminListTable } from '@/components/admin/AdminListTable'
-import { ArrowLeft, Plus, Users } from 'lucide-react'
-import { createBrowserClient } from '@supabase/ssr'
+export const dynamic = "force-dynamic";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { AdminCreateForm } from "@/components/admin/AdminCreateForm";
+import { AdminListTable } from "@/components/admin/AdminListTable";
+import { ArrowLeft, Plus, Users } from "lucide-react";
+import { createBrowserClient } from "@supabase/ssr";
+import { clientLogger } from "@/lib/client-logger";
 
 export default function AdminsPage() {
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(true)
-  const [showCreateForm, setShowCreateForm] = useState(false)
-  const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const supabase = createBrowserClient(
           process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        )
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        );
 
         const {
           data: { user },
-        } = await supabase.auth.getUser()
+        } = await supabase.auth.getUser();
 
         if (!user?.email) {
-          router.push('/admin/login')
-          return
+          router.push("/admin/login");
+          return;
         }
 
         // SECURITY: Only super_admin can access admin management page
-        const role = user.app_metadata?.role as string
-        if (role !== 'super_admin') {
+        const role = user.app_metadata?.role;
+        if (typeof role !== "string" || role !== "super_admin") {
           // Regular admins and other users redirected to PIN management
-          router.push('/admin/pins')
-          return
+          router.push("/admin/pins");
+          return;
         }
-      } catch {
-        router.push('/admin/login')
+      } catch (error) {
+        clientLogger.error("[AdminsPage] Auth check failed", error instanceof Error ? error : { error });
+        router.push("/admin/login");
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    checkAuth()
-  }, [router])
+    checkAuth();
+  }, [router]);
 
   if (isLoading) {
     return (
@@ -56,7 +60,7 @@ export default function AdminsPage() {
           <p className="mt-4 text-text-secondary">Loading...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -66,7 +70,7 @@ export default function AdminsPage() {
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
-              onClick={() => router.push('/admin/dashboard')}
+              onClick={() => router.push("/admin/dashboard")}
               variant="outline"
               size="sm"
               className="text-primary border-primary hover:bg-primary/10"
@@ -95,7 +99,9 @@ export default function AdminsPage() {
         {showCreateForm && (
           <section className="mb-8 bg-white rounded-lg shadow p-6 border border-border">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-text">Create New Admin Account</h2>
+              <h2 className="text-xl font-bold text-text">
+                Create New Admin Account
+              </h2>
               <Button
                 onClick={() => setShowCreateForm(false)}
                 variant="outline"
@@ -107,8 +113,8 @@ export default function AdminsPage() {
 
             <AdminCreateForm
               onSuccess={() => {
-                setShowCreateForm(false)
-                setRefreshTrigger((prev) => prev + 1)
+                setShowCreateForm(false);
+                setRefreshTrigger((prev) => prev + 1);
               }}
             />
           </section>
@@ -119,10 +125,13 @@ export default function AdminsPage() {
           <div className="border-b border-border p-6">
             <div className="flex items-center gap-3 mb-2">
               <Users className="w-6 h-6 text-primary" />
-              <h2 className="text-xl font-bold text-text">All Admin Accounts</h2>
+              <h2 className="text-xl font-bold text-text">
+                All Admin Accounts
+              </h2>
             </div>
             <p className="text-sm text-text-secondary">
-              Manage all admin accounts in the system. You can create, delete, and reset passwords.
+              Manage all admin accounts in the system. You can create, delete,
+              and reset passwords.
             </p>
           </div>
 
@@ -139,7 +148,9 @@ export default function AdminsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Super Admin Info */}
             <div className="bg-accent-light border border-accent/30 rounded-lg p-6">
-              <h3 className="font-semibold text-accent-dark mb-2">👑 Super Admin Role</h3>
+              <h3 className="font-semibold text-accent-dark mb-2">
+                👑 Super Admin Role
+              </h3>
               <ul className="text-sm text-text-secondary space-y-2 list-disc list-inside">
                 <li>Full system access and management</li>
                 <li>Can create and delete admin accounts</li>
@@ -151,7 +162,9 @@ export default function AdminsPage() {
 
             {/* Regular Admin Info */}
             <div className="bg-primary-lighter border border-primary/30 rounded-lg p-6">
-              <h3 className="font-semibold text-primary-dark mb-2">👤 Regular Admin Role</h3>
+              <h3 className="font-semibold text-primary-dark mb-2">
+                👤 Regular Admin Role
+              </h3>
               <ul className="text-sm text-text-secondary space-y-2 list-disc list-inside">
                 <li>Limited to PIN management only</li>
                 <li>Can create and rotate school PINs</li>
@@ -164,5 +177,5 @@ export default function AdminsPage() {
         </section>
       </main>
     </div>
-  )
+  );
 }

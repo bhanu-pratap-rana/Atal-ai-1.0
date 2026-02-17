@@ -1,73 +1,9 @@
 import type { NextConfig } from 'next'
 import { withSentryConfig } from '@sentry/nextjs'
-import withPWA from 'next-pwa'
 
-// PWA Configuration
-const pwaConfig = withPWA({
-  dest: 'public',
-  register: true,
-  skipWaiting: true,
-  // Disable PWA: next-pwa v5.6.0 generates middleware incompatible with Next.js 16 edge runtime
-  // TODO: Migrate to @ducanh2912/next-pwa or serwist for Next.js 16 support
-  disable: true,
-  fallbacks: {
-    document: '/offline', // Offline fallback page
-  },
-  runtimeCaching: [
-    {
-      // Cache Supabase REST API only (exclude /auth/ endpoints to prevent caching tokens)
-      urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/.*/i,
-      handler: 'NetworkFirst',
-      options: {
-        cacheName: 'supabase-api',
-        expiration: {
-          maxEntries: 64,
-          maxAgeSeconds: 5 * 60, // 5 minutes (was 24h - reduced to prevent stale auth data)
-        },
-        networkTimeoutSeconds: 10,
-        cacheableResponse: {
-          statuses: [200],
-        },
-      },
-    },
-    {
-      // Cache static assets
-      urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i,
-      handler: 'CacheFirst',
-      options: {
-        cacheName: 'static-images',
-        expiration: {
-          maxEntries: 128,
-          maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
-        },
-      },
-    },
-    {
-      // Cache fonts
-      urlPattern: /\.(?:woff|woff2|ttf|otf|eot)$/i,
-      handler: 'CacheFirst',
-      options: {
-        cacheName: 'static-fonts',
-        expiration: {
-          maxEntries: 16,
-          maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
-        },
-      },
-    },
-    {
-      // Cache Google Fonts
-      urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/i,
-      handler: 'CacheFirst',
-      options: {
-        cacheName: 'google-fonts',
-        expiration: {
-          maxEntries: 16,
-          maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
-        },
-      },
-    },
-  ],
-})
+// NOTE: next-pwa v5.6.0 removed — generates middleware incompatible with Next.js 16 edge runtime
+// causing MIDDLEWARE_INVOCATION_FAILED on Vercel. Even with disable:true, the wrapper still
+// injects middleware code. TODO: Migrate to @ducanh2912/next-pwa or serwist for Next.js 16 support
 
 const nextConfig: NextConfig = {
   // Next.js 16 has Turbopack enabled by default
@@ -196,11 +132,8 @@ const nextConfig: NextConfig = {
 }
 
 // Export config with Sentry wrapper (only if Sentry is configured)
-// Apply PWA wrapper first, then Sentry
-const configWithPWA = pwaConfig(nextConfig)
-
 export default process.env.NEXT_PUBLIC_SENTRY_DSN
-  ? withSentryConfig(configWithPWA, {
+  ? withSentryConfig(nextConfig, {
       // For all available options, see:
       // https://www.npmjs.com/package/@sentry/webpack-plugin#options
 
@@ -226,4 +159,4 @@ export default process.env.NEXT_PUBLIC_SENTRY_DSN
         automaticVercelMonitors: true,
       },
     })
-  : configWithPWA;
+  : nextConfig;

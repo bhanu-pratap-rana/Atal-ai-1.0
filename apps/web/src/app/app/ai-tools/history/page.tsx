@@ -10,7 +10,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase-server";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { ConversationHistory } from "@/components/tutor/ConversationHistory";
 import { authLogger } from "@/lib/auth-logger";
 

@@ -27,12 +27,12 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false }
 });
 
-const MIGRATIONS = [
+const _MIGRATIONS = [
   '133_create_generated_lessons_cache.sql',
   '138_create_curriculum_metadata.sql'
 ];
 
-async function applyMigration(filename) {
+async function _applyMigration(filename) {
   console.log(`\n--- Applying ${filename} ---`);
 
   const filepath = join(__dirname, '..', '..', 'db', 'migrations', filename);
@@ -57,7 +57,7 @@ async function main() {
   console.log('URL:', SUPABASE_URL);
 
   // Check if tables exist first
-  const { data: tables, error: tablesError } = await supabase
+  const { data: _tables, error: tablesError } = await supabase
     .from('information_schema.tables')
     .select('table_name')
     .eq('table_schema', 'public');

@@ -29,7 +29,7 @@ export function StudentAnnouncementsCard({
   className,
   showEmpty = true,
 }: StudentAnnouncementsCardProps) {
-  const [isPending, startTransition] = useTransition();
+  const [_isPending, startTransition] = useTransition();
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
 
   // Mark announcements as read when they come into view

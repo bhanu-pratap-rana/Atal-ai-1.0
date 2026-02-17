@@ -51,8 +51,8 @@ export function AdaptiveRecommendations({
   const { language, t } = useLanguage();
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [modules, setModules] = useState<Module[]>([]);
-  const [topicsByModule, setTopicsByModule] = useState<Map<string, Topic[]>>(new Map());
+  const [_modules, setModules] = useState<Module[]>([]);
+  const [_topicsByModule, setTopicsByModule] = useState<Map<string, Topic[]>>(new Map());
 
   // Fetch modules and topics from database
   const fetchCurriculumData = useCallback(async () => {

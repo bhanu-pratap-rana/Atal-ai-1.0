@@ -25,7 +25,7 @@ export function InvitePanel({
 
   // Set origin client-side only (globalThis.location is undefined during SSR)
   useEffect(() => {
-    setOrigin(globalThis.location.origin);
+    queueMicrotask(() => setOrigin(globalThis.location.origin));
   }, []);
 
   useEffect(() => {

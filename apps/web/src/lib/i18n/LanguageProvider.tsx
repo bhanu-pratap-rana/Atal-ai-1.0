@@ -148,11 +148,13 @@ export function LanguageProvider({
 
   // Hydrate language from localStorage on mount
   useEffect(() => {
-    if (!initialLanguage) {
-      const storedLanguage = getInitialLanguage();
-      setLanguageState(storedLanguage);
-    }
-    setIsHydrated(true);
+    queueMicrotask(() => {
+      if (!initialLanguage) {
+        const storedLanguage = getInitialLanguage();
+        setLanguageState(storedLanguage);
+      }
+      setIsHydrated(true);
+    });
   }, [initialLanguage]);
 
   // Get current translations

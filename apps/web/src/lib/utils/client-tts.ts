@@ -29,7 +29,7 @@ interface TTSOptions {
 let audioContext: AudioContext | null = null;
 let currentSource: AudioBufferSourceNode | null = null;
 // Track current utterance for browser TTS
-let currentUtterance: SpeechSynthesisUtterance | null = null;
+let _currentUtterance: SpeechSynthesisUtterance | null = null;
 
 /**
  * Initialize AudioContext on user gesture (click/tap).
@@ -79,7 +79,7 @@ export function stopTTS(): void {
   if (typeof window !== "undefined" && window.speechSynthesis) {
     window.speechSynthesis.cancel();
   }
-  currentUtterance = null;
+  _currentUtterance = null;
 }
 
 /**
@@ -360,7 +360,7 @@ async function speakWithBrowser(
 
   return new Promise((resolve, reject) => {
     const utterance = new SpeechSynthesisUtterance(text);
-    currentUtterance = utterance;
+    _currentUtterance = utterance;
 
     utterance.lang = BROWSER_TTS_LANG[language];
 
@@ -391,13 +391,13 @@ async function speakWithBrowser(
     };
 
     utterance.onend = () => {
-      currentUtterance = null;
+      _currentUtterance = null;
       onEnd?.();
       resolve();
     };
 
     utterance.onerror = (event) => {
-      currentUtterance = null;
+      _currentUtterance = null;
       // Ignore 'interrupted' and 'canceled' errors as they're expected when stopping
       if (event.error === "interrupted" || event.error === "canceled") {
         resolve();

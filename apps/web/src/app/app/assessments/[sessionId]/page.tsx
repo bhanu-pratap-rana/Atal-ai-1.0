@@ -28,8 +28,8 @@ interface QuestionDetails {
   category: string | null;
 }
 
-// Format time helper
-function formatDuration(ms: number): string {
+// Format time helper (kept for potential future use)
+function _formatDuration(ms: number): string {
   const seconds = Math.round(ms / 1000);
   if (seconds < 60) return `${seconds} seconds`;
   const minutes = Math.floor(seconds / 60);

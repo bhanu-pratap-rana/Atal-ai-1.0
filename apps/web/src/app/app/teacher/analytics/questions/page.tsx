@@ -6,8 +6,6 @@ import Link from "next/link";
 import {
   ArrowLeft,
   BarChart3,
-  CheckCircle,
-  XCircle,
   Clock,
   Lightbulb,
   TrendingUp,

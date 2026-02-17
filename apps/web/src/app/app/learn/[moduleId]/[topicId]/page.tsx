@@ -476,7 +476,7 @@ export default function LessonPage() {
       lastMessage.content
     ) {
       lastSpokenIdRef.current = lastMessage.id;
-      setPendingAIResponse(lastMessage.content);
+      queueMicrotask(() => setPendingAIResponse(lastMessage.content));
     }
   }, [messages, inputMode, chatStatus]);
 

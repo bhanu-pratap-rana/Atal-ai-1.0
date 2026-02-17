@@ -40,7 +40,6 @@ interface MarkdownNodeProps {
  * Components type has strict constraints that conflict with our simplified prop types.
  * Each component handler IS properly typed internally via MarkdownNodeProps/CodeProps/InputProps.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const markdownComponents: Record<string, unknown> = {
           // Headings with semantic sizing and primary color
           h1: ({ node: _node, ...props }: MarkdownNodeProps) => (

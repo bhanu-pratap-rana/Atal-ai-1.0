@@ -7,7 +7,7 @@
 
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
 import { clientLogger } from "@/lib/client-logger";
-import type { SupportedLanguage } from "@/types/common";
+
 
 // ============================================================================
 // TYPES

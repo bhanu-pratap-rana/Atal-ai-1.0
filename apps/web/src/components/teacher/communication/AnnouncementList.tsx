@@ -38,7 +38,7 @@ const priorityConfig = {
 
 export function AnnouncementList({
   announcements,
-  classId,
+  classId: _classId,
 }: AnnouncementListProps) {
   const router = useRouter();
   const [deletingId, setDeletingId] = useState<string | null>(null);

@@ -19,7 +19,7 @@ import { z } from "zod";
 import { generateText } from "ai";
 import { getAIModel } from "@/lib/ai/providers/gemini";
 import { createClient, getCurrentUser } from "@/lib/supabase-server";
-import { retrieveTopicContent, getTopicTitle, getTopicDescriptionSync, getTopicTitleSync } from "@/lib/rag/content-retrieval";
+import { retrieveTopicContent, getTopicTitle, getTopicDescriptionSync } from "@/lib/rag/content-retrieval";
 import { authLogger } from "@/lib/auth-logger";
 import { checkRateLimit } from "@/lib/rate-limiter-distributed";
 import { RATE_LIMITS } from "@/lib/constants/rate-limits";
@@ -57,13 +57,6 @@ export interface GeneratedLesson {
   generatedAt: string;
 }
 
-interface GenerateRequest {
-  moduleId: string;
-  topicId: string;
-  language: SupportedLanguage;
-  learningStyle?: "visual" | "text" | "auditory";
-  masteryLevel?: number;
-}
 
 /**
  * Non-Latin scripts (Assamese, Hindi) use ~2-3x more tokens per character.

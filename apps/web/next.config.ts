@@ -7,7 +7,9 @@ const pwaConfig = withPWA({
   dest: 'public',
   register: true,
   skipWaiting: true,
-  disable: process.env.NODE_ENV === 'development', // Disable in dev for faster builds
+  // Disable PWA: next-pwa v5.6.0 generates middleware incompatible with Next.js 16 edge runtime
+  // TODO: Migrate to @ducanh2912/next-pwa or serwist for Next.js 16 support
+  disable: true,
   fallbacks: {
     document: '/offline', // Offline fallback page
   },

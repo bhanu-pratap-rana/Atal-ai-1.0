@@ -369,8 +369,10 @@ export function LessonPlayer({
   useEffect(() => {
     if (lessonRef.current !== lesson) {
       lessonRef.current = lesson;
-      setCurrentChunk(0);
-      setCompletedChunks(new Set());
+      queueMicrotask(() => {
+        setCurrentChunk(0);
+        setCompletedChunks(new Set());
+      });
     }
   }, [lesson]);
 

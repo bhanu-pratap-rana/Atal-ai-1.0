@@ -72,29 +72,25 @@ export default function AITutorPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Get the latest AI response for speaking (only when streaming is complete)
-  const latestAIMessage = useMemo(() => {
-    if (messages.length === 0 || status === "streaming") return null;
-    const last = messages[messages.length - 1];
-    if (last.role === "assistant" && last.id !== lastSpokenIdRef.current) {
-      return last;
-    }
-    return null;
-  }, [messages, status]);
-
   // Auto-TTS for conversational voice mode
+  // Checks for new AI messages and triggers speech when streaming completes
   useEffect(() => {
+    if (messages.length === 0 || status === "streaming") return;
+    const last = messages[messages.length - 1];
     if (
+      last.role === "assistant" &&
+      last.id !== lastSpokenIdRef.current &&
       autoTTS &&
       inputMode === "voice" &&
       voiceMode === "conversational" &&
-      latestAIMessage &&
-      latestAIMessage.content
+      last.content
     ) {
-      lastSpokenIdRef.current = latestAIMessage.id;
-      setTextToSpeak(latestAIMessage.content);
+      lastSpokenIdRef.current = last.id;
+      // Use queueMicrotask to avoid synchronous setState in effect body
+      const content = last.content;
+      queueMicrotask(() => setTextToSpeak(content));
     }
-  }, [autoTTS, inputMode, voiceMode, latestAIMessage]);
+  }, [messages, status, autoTTS, inputMode, voiceMode]);
 
   // Clear text to speak after it's been processed
   const handleSpokenComplete = useCallback(() => {

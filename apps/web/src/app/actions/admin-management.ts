@@ -17,7 +17,7 @@ import {
   AdminPasswordSchema,
   UserIdSchema,
 } from "@/lib/validation-schemas";
-import { fetchAllAuthUsers, findAuthUserById, findAuthUserByEmail, type SupabaseAuthUser } from "@/lib/admin-utils";
+import { fetchAllAuthUsers, findAuthUserById, findAuthUserByEmail } from "@/lib/admin-utils";
 import { handleZodError } from "@/lib/action-error-handler";
 
 // Use centralized rate limit config for admin operations

@@ -88,14 +88,14 @@ export function ConversationalVoiceChat({
   useEffect(() => {
     // When transitioning from speaking → idle, show the hint briefly
     if (prevStateRef.current === "speaking" && state === "idle") {
-      setShowTapHint(true);
+      queueMicrotask(() => setShowTapHint(true));
       // Hide hint quickly - mic will auto-open in ~800ms
       const timer = setTimeout(() => setShowTapHint(false), 1500);
       return () => clearTimeout(timer);
     }
     // Hide hint when user starts listening
     if (state === "listening") {
-      setShowTapHint(false);
+      queueMicrotask(() => setShowTapHint(false));
     }
     prevStateRef.current = state;
   }, [state]);
@@ -131,6 +131,9 @@ export function ConversationalVoiceChat({
         break;
     }
   }, [state, disabled, startListening, stopListening, interrupt]);
+
+  // Fixed bar heights for voice visualizer (deterministic, no Math.random during render)
+  const barHeights = [20, 28, 14, 24, 18];
 
   // Browser not supported
   if (!isSupported) {
@@ -255,7 +258,7 @@ export function ConversationalVoiceChat({
                 state === "listening" ? "bg-success" : "bg-info"
               }`}
               style={{
-                height: `${Math.random() * 24 + 8}px`,
+                height: `${barHeights[i]}px`,
                 animation: `voiceBar 0.5s ease-in-out ${i * 0.1}s infinite alternate`,
               }}
             />

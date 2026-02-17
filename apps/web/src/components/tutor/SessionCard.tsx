@@ -73,7 +73,7 @@ export function SessionCard({ session, isExpanded, onToggle }: SessionCardProps)
   const previewText = firstUserMessage?.content || "Conversation";
 
   // Count message types
-  const userMessages = session.messages.filter((m) => m.role === "user").length;
+  const _userMessages = session.messages.filter((m) => m.role === "user").length;
   const voiceMessages = session.messages.filter((m) => m.input_mode === "voice").length;
 
   return (

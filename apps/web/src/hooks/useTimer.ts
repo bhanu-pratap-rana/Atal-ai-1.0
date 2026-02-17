@@ -52,7 +52,9 @@ export function useTimer({
 
   // Use ref for callback to avoid interval restarts when parent re-renders
   const onTimeUpdateRef = useRef(onTimeUpdate);
-  onTimeUpdateRef.current = onTimeUpdate;
+  useEffect(() => {
+    onTimeUpdateRef.current = onTimeUpdate;
+  });
 
   // Propagate time updates via useEffect (not inside setState updater)
   // Calling parent setState inside a setState updater causes:

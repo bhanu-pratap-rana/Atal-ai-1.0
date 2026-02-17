@@ -23,7 +23,7 @@ import { RATE_LIMITS } from "@/lib/constants/rate-limits";
 import { authenticateAndRateLimit, validateRequestBody } from "@/lib/api-utils";
 import { parseAIResponseJSON } from "@/lib/ai/lesson-parser";
 import type { SupportedLanguage } from "@/types/common";
-import type { LessonChunk, GeneratedLesson } from "../generate/route";
+import type { GeneratedLesson } from "../generate/route";
 
 // ============================================================================
 // TYPES
@@ -181,7 +181,7 @@ export async function POST(request: NextRequest) {
       RATE_LIMITS.lessonGeneration,
     );
     if (authResult instanceof NextResponse) return authResult;
-    const { user } = authResult;
+    const { user: _user } = authResult;
 
     // DUP-2: Shared request body validation
     const body = await request.json();

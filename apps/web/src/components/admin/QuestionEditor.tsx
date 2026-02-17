@@ -23,7 +23,6 @@ import {
   Loader2,
   CheckCircle,
   AlertCircle,
-  Eye,
   Edit2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -120,7 +119,7 @@ export function QuestionEditor({ question, onUpdate }: QuestionEditorProps) {
       : null;
 
   const optionKeys = Object.keys(question.options).sort();
-  const correctOptionKey = optionKeys[question.correct_answer] || "?";
+  const _correctOptionKey = optionKeys[question.correct_answer] || "?";
 
   return (
     <Card

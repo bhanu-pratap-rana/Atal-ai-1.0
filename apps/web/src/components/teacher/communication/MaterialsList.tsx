@@ -37,7 +37,7 @@ const typeConfig = {
   other: { emoji: "📎", label: "Other" },
 };
 
-export function MaterialsList({ materials, classId }: MaterialsListProps) {
+export function MaterialsList({ materials, classId: _classId }: MaterialsListProps) {
   const router = useRouter();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);

@@ -5,7 +5,6 @@ import { z } from "zod";
 import {
   createClient,
   createAdminClient,
-  verifyTeacherAuth,
   verifyClassOwnership,
 } from "@/lib/supabase-server";
 import { checkTeacherMutationRateLimit } from "@/lib/rate-limiter-distributed";

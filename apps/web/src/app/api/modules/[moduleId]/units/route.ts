@@ -16,7 +16,7 @@ import { checkRateLimit } from "@/lib/rate-limiter-distributed";
 import { RATE_LIMITS } from "@/lib/constants/rate-limits";
 import { MASTERY_THRESHOLDS } from "@/lib/constants/thresholds";
 import { getLocalizedField } from "@/lib/i18n";
-import type { SupportedLanguage } from "@/types/common";
+
 
 // Types
 interface TopicProgress {

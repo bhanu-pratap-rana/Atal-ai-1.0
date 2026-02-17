@@ -8,7 +8,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { CreateAnnouncementDialog } from "./CreateAnnouncementDialog";
 import { AnnouncementList } from "./AnnouncementList";
 import { UploadMaterialDialog } from "./UploadMaterialDialog";

@@ -198,7 +198,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [enrolledClassId, setEnrolledClassId] = useState<string | null>(null);
-  const [assessmentStatus, setAssessmentStatus] = useState<AssessmentStatus | null>(null);
+  const [_assessmentStatus, setAssessmentStatus] = useState<AssessmentStatus | null>(null);
   const [showPrePrompt, setShowPrePrompt] = useState(false);
   const [showPostPrompt, setShowPostPrompt] = useState(false);
   const supabase = createClient();

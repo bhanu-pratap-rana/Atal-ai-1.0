@@ -22,7 +22,6 @@ import {
   getDownloadedLesson,
   saveDownloadedLesson,
   deleteDownloadedLesson,
-  getDownloadedLessonsForModule,
   getOfflineStats,
   type DownloadedLesson,
   type GeneratedLessonData,
